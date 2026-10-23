@@ -16,7 +16,8 @@
     "migrate": "tsx src/cli/migrate.ts",
     "seed": "tsx seed/seed.ts",
     "reset": "tsx src/cli/reset.ts && tsx src/cli/migrate.ts && tsx seed/seed.ts",
-    "codegen": "tsx src/cli/codegen.ts"
+    "codegen": "tsx src/cli/codegen.ts",
+    "check-roles": "tsx src/cli/check-roles.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",

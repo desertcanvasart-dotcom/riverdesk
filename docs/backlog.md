@@ -18,5 +18,4 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 ## Noted during Batch 0
 
 - Bundle `apps/api` and `apps/worker` for deployment (they currently run TypeScript through tsx). Do this with the hosting choice, before Batch 7.
-- Apply the migrations to the hosted Supabase project and confirm the runtime roles log in through Supavisor as `role.projectref`.
-- `pnpm db:check-hosted`: a read-only command that runs the role and RLS structure checks against the hosted database.
+- Run the full role and definer allow-list checks (`checkRolesAndDefiners`) against the hosted database, not only `pnpm db:check-roles`.

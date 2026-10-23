@@ -52,6 +52,7 @@ pnpm db:reset    # drops everything owned by vs_owner, then migrates and seeds
 
 - Real values live in `.env.hosted` (git-ignored, mode 600). Use it with `VS_ENV_FILE=.env.hosted`. The file holds no `service_role` key, and none is needed.
 - Migrate: `VS_ENV_FILE=.env.hosted pnpm db:migrate`. This connects through the Session pooler as `postgres`.
+- Check runtime logins: `VS_ENV_FILE=.env.hosted pnpm db:check-roles` (read-only; prints no secrets).
 - Runtime roles connect through the Supavisor pooler as `<role>.<project ref>`. Back office and API use the transaction port (6543); the worker uses the session port (5432).
 
 ## Roles

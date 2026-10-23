@@ -98,6 +98,7 @@ async function installGraphileWorker(adminUrl: string, ssl: pg.ConnectionConfig[
     },
   });
   pool.on('error', () => {});
+  pool.on('connect', (connection) => connection.on('error', () => {}));
   try {
     await runGraphileMigrations({ pgPool: pool });
     // Graphile Worker enables RLS (with no policies) on its private tables, so only their owner
