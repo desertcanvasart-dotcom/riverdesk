@@ -2,6 +2,7 @@ import { sql, type Transaction } from 'kysely';
 import type { DB, VsDatabase } from '@vs/db';
 import type { Actor } from '@vs/shared';
 import { audit } from './audit';
+import { availabilityChanged, lockBuckets, openException, type EngineContext } from './internal';
 
 export interface InvariantViolation {
   operator_id: string;
@@ -18,10 +19,8 @@ export async function checkInvariants(tx: Transaction<DB>): Promise<InvariantVio
 }
 
 /**
- * Opens one critical `invariant` exception per violation. A violation that already has an open
- * exception is not duplicated (dedupe key). Returns the number of new exceptions.
- *
- * Stopping sales on the affected leg × category is added in Batch 1, when buckets exist.
+ * Rule 6: for each violation, opens one critical `invariant` exception (not duplicated while
+ * open) and stops sales on the leg × category it concerns. Returns the number of new exceptions.
  */
 export async function recordInvariantViolations(
   tx: Transaction<DB>,
@@ -29,22 +28,25 @@ export async function recordInvariantViolations(
   actor: Actor,
   violations: InvariantViolation[],
 ): Promise<number> {
+  const ctx = { operatorId, actor };
   let opened = 0;
+  const stops = new Map<string, { legId: string; categoryId: string }>();
   for (const violation of violations) {
-    const dedupeKey = `invariant:${violation.invariant}:${violation.entity}:${violation.entity_id ?? '-'}`;
-    const { rows } = await sql<{ id: string }>`
-      insert into vs.exception (operator_id, kind, severity, summary, refs, details, dedupe_key)
-      values (
-        ${operatorId}, 'invariant', 'critical',
-        ${`Invariant ${violation.invariant} violated on ${violation.entity}`},
-        ${JSON.stringify(violation.entity_id ? [{ entity: violation.entity, id: violation.entity_id }] : [])}::jsonb,
-        ${JSON.stringify({ invariant: violation.invariant, detail: violation.detail })}::jsonb,
-        ${dedupeKey}
-      )
-      on conflict (operator_id, dedupe_key) where dedupe_key is not null and status in ('open', 'acknowledged')
-      do nothing
-      returning id`.execute(tx);
-    const id = rows[0]?.id;
+    const detail = (violation.detail ?? {}) as { leg_id?: string; category_id?: string };
+    if (detail.leg_id && detail.category_id) {
+      stops.set(`${detail.leg_id}|${detail.category_id}`, {
+        legId: detail.leg_id,
+        categoryId: detail.category_id,
+      });
+    }
+    const id = await openException(tx, ctx, {
+      kind: 'invariant',
+      severity: 'critical',
+      summary: `Invariant ${violation.invariant} violated on ${violation.entity}`,
+      refs: violation.entity_id ? [{ entity: violation.entity, id: violation.entity_id }] : [],
+      details: { invariant: violation.invariant, detail: violation.detail },
+      dedupeKey: `invariant:${violation.invariant}:${violation.entity}:${violation.entity_id ?? '-'}`,
+    });
     if (!id) continue;
     opened += 1;
     await audit(tx, operatorId, actor, {
@@ -59,7 +61,41 @@ export async function recordInvariantViolations(
       },
     });
   }
+  await stopSalesOnViolations(tx, ctx, [...stops.values()]);
   return opened;
+}
+
+/** Stops sales on the pool bucket of each violated leg × category (locked in the global order). */
+async function stopSalesOnViolations(
+  tx: Transaction<DB>,
+  ctx: EngineContext,
+  targets: { legId: string; categoryId: string }[],
+): Promise<void> {
+  if (targets.length === 0) return;
+  const pools = (
+    await lockBuckets(tx, {
+      legIds: [...new Set(targets.map((t) => t.legId))],
+      categoryIds: [...new Set(targets.map((t) => t.categoryId))],
+      kind: 'pool',
+    })
+  ).filter(
+    (pool) =>
+      !pool.stop_sale &&
+      targets.some((t) => t.legId === pool.leg_id && t.categoryId === pool.category_id),
+  );
+  for (const pool of pools) {
+    await tx
+      .updateTable('inventory_bucket')
+      .set({ stop_sale: true, stop_reason: 'invariant' })
+      .where('id', '=', pool.id)
+      .execute();
+  }
+  await availabilityChanged(
+    tx,
+    ctx,
+    pools.map((pool) => pool.id),
+    'invariant.violation',
+  );
 }
 
 /** Operator ids for jobs that process every tenant (worker only, via vs.list_operator_ids). */
