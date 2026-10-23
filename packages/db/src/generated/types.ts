@@ -37,6 +37,76 @@ export interface AuditLog {
   request_key: string | null;
 }
 
+export interface Cabin {
+  accessible: Generated<boolean>;
+  connecting_cabin_id: string | null;
+  created_at: Generated<Timestamp>;
+  deck: string | null;
+  id: Generated<string>;
+  number: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface CabinBlock {
+  cabin_id: string | null;
+  category_id: string;
+  count: number;
+  created_at: Generated<Timestamp>;
+  exception_id: string | null;
+  id: Generated<string>;
+  kind: string;
+  operator_id: string;
+  reason: string;
+  released_at: Timestamp | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface CabinCategory {
+  bed_config: string | null;
+  code: string;
+  created_at: Generated<Timestamp>;
+  deck: string | null;
+  extra_bed_allowed: Generated<boolean>;
+  id: Generated<string>;
+  max_adults: number;
+  max_occupancy: number;
+  name_ar: string;
+  name_en: string;
+  operator_id: string;
+  sort_order: Generated<number>;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+  view: string | null;
+}
+
+export interface CabinPeriod {
+  cabin_id: string;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  during: string;
+  id: Generated<string>;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface Event {
+  id: Generated<string>;
+  occurred_at: Generated<Timestamp>;
+  operator_id: string;
+  payload: Generated<Json>;
+  resource: string;
+  resource_id: string;
+  resource_version: bigint;
+  seq: Generated<bigint>;
+  txid: Generated<string>;
+  type: string;
+}
+
 export interface Exception {
   created_at: Generated<Timestamp>;
   dedupe_key: string | null;
@@ -68,6 +138,64 @@ export interface IdempotencyKey {
   updated_at: Generated<Timestamp>;
 }
 
+export interface InventoryBucket {
+  allotment_id: string | null;
+  block_id: string | null;
+  booked: Generated<number>;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  held: Generated<number>;
+  id: Generated<string>;
+  kind: string;
+  leg_id: string;
+  operator_id: string;
+  overcommit: Generated<number>;
+  released_at: Timestamp | null;
+  stop_reason: string | null;
+  stop_sale: Generated<boolean>;
+  total: Generated<number>;
+  updated_at: Generated<Timestamp>;
+  version: Generated<bigint>;
+  vessel_id: string;
+}
+
+export interface InventoryEvent {
+  actor_id: string | null;
+  actor_label: string | null;
+  actor_type: string;
+  bucket_id: string;
+  category_id: string;
+  cause: string;
+  created_at: Generated<Timestamp>;
+  delta_booked: Generated<number>;
+  delta_held: Generated<number>;
+  delta_overcommit: Generated<number>;
+  delta_total: Generated<number>;
+  id: Generated<string>;
+  leg_id: string;
+  operator_id: string;
+  ref_entity: string | null;
+  ref_id: string | null;
+}
+
+export interface Leg {
+  arrive_date: string;
+  created_at: Generated<Timestamp>;
+  cycle_start: string | null;
+  depart_date: string;
+  from_port_id: string;
+  from_stop_seq: number | null;
+  id: Generated<string>;
+  operator_id: string;
+  status: Generated<string>;
+  template_id: string | null;
+  to_port_id: string;
+  to_stop_seq: number | null;
+  updated_at: Generated<Timestamp>;
+  version: Generated<bigint>;
+  vessel_id: string;
+}
+
 export interface Operator {
   created_at: Generated<Timestamp>;
   default_locale: Generated<string>;
@@ -92,6 +220,100 @@ export interface OperatorSetting {
   updated_at: Generated<Timestamp>;
 }
 
+export interface Port {
+  active: Generated<boolean>;
+  code: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  name_ar: string;
+  name_en: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface Sailing {
+  created_at: Generated<Timestamp>;
+  disembark_date: string;
+  disembark_port_id: string;
+  embark_date: string;
+  embark_port_id: string;
+  id: Generated<string>;
+  nights: number;
+  operator_id: string;
+  pattern_id: string | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  version: Generated<bigint>;
+  vessel_id: string;
+}
+
+export interface SailingLeg {
+  created_at: Generated<Timestamp>;
+  leg_id: string;
+  operator_id: string;
+  sailing_id: string;
+  seq: number;
+}
+
+export interface SailingPattern {
+  active: Generated<boolean>;
+  code: string;
+  created_at: Generated<Timestamp>;
+  disembark_cycle_offset: Generated<number>;
+  disembark_stop_seq: number;
+  embark_stop_seq: number;
+  id: Generated<string>;
+  name_ar: string;
+  name_en: string;
+  nights: number;
+  operator_id: string;
+  template_id: string;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface ScheduleException {
+  created_at: Generated<Timestamp>;
+  date_from: string;
+  date_to: string;
+  details: Generated<Json>;
+  exception_id: string | null;
+  id: Generated<string>;
+  kind: string;
+  operator_id: string;
+  reason: string;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface ScheduleTemplate {
+  active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  cycle_days: number;
+  id: Generated<string>;
+  name: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+  valid_from: string;
+  valid_to: string | null;
+  vessel_id: string;
+}
+
+export interface ScheduleTemplateStop {
+  arrive_time: string | null;
+  created_at: Generated<Timestamp>;
+  day_offset: number;
+  depart_time: string | null;
+  disembark_allowed: Generated<boolean>;
+  embark_allowed: Generated<boolean>;
+  operator_id: string;
+  port_id: string;
+  seq: number;
+  template_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface StaffUser {
   active: Generated<boolean>;
   auth_user_id: string;
@@ -105,11 +327,41 @@ export interface StaffUser {
   updated_at: Generated<Timestamp>;
 }
 
+export interface Vessel {
+  active: Generated<boolean>;
+  code: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  max_guests: number;
+  name: string;
+  operator_id: string;
+  sells_cabins: Generated<boolean>;
+  sells_charter: Generated<boolean>;
+  type: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface DB {
   audit_log: AuditLog;
+  cabin: Cabin;
+  cabin_block: CabinBlock;
+  cabin_category: CabinCategory;
+  cabin_period: CabinPeriod;
+  event: Event;
   exception: Exception;
   idempotency_key: IdempotencyKey;
+  inventory_bucket: InventoryBucket;
+  inventory_event: InventoryEvent;
+  leg: Leg;
   operator: Operator;
   operator_setting: OperatorSetting;
+  port: Port;
+  sailing: Sailing;
+  sailing_leg: SailingLeg;
+  sailing_pattern: SailingPattern;
+  schedule_exception: ScheduleException;
+  schedule_template: ScheduleTemplate;
+  schedule_template_stop: ScheduleTemplateStop;
   staff_user: StaffUser;
+  vessel: Vessel;
 }

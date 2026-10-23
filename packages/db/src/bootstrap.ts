@@ -42,6 +42,9 @@ export async function bootstrap(
   // Lets the admin user SET ROLE vs_owner for migrations without inheriting its rights.
   await client.query(`grant ${OWNER_ROLE} to current_user with inherit false, set true`);
 
+  // Exclusion constraints (no overlapping legs per vessel, no overlapping cabin periods) need
+  // btree_gist. Supabase keeps extensions in schema `extensions`.
+  await client.query('create extension if not exists btree_gist with schema extensions');
   // Graphile Worker's own migrations run `create schema if not exists`, which needs CREATE.
   const { rows } = await client.query<{ db: string }>('select current_database() as db');
   await client.query(

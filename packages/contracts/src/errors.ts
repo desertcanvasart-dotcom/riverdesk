@@ -11,6 +11,16 @@ export const ERROR_CATALOGUE = {
   STOP_SALE: { status: 409, retryable: false, message: 'Sales are stopped' },
   SAILING_CLOSED: { status: 409, retryable: false, message: 'The sailing is closed' },
   INVALID_STATE: { status: 409, retryable: false, message: 'Not allowed in the current state' },
+  CAPACITY_CONFLICT: {
+    status: 409,
+    retryable: false,
+    message: 'The change would go below existing commitments',
+  },
+  SCHEDULE_CONFLICT: {
+    status: 409,
+    retryable: false,
+    message: 'The schedule change conflicts with other legs',
+  },
   // Pricing and contracts
   INVALID_OCCUPANCY: { status: 422, retryable: false, message: 'Occupancy not allowed' },
   NO_RATE_FOR_SEASON: { status: 422, retryable: false, message: 'No rate for this season' },
