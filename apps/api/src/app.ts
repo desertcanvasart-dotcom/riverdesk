@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import ScalarApiReference from '@scalar/fastify-api-reference';
-import { DomainError, isDomainError, openApiDocument, openApiText } from '@vs/contracts';
+import { DomainError, isDomainError } from '@vs/contracts';
+import { openApiDocument, openApiText } from '@vs/contracts/openapi';
 import { pingDatabase, type VsDatabase } from '@vs/engine';
 import { createLogger, type Logger } from '@vs/shared';
 
