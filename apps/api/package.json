@@ -1,0 +1,22 @@
+{
+  "name": "@vs/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vs/contracts": "workspace:*",
+    "@vs/engine": "workspace:*",
+    "@vs/shared": "workspace:*",
+    "fastify": "^5.12.7"
+  },
+  "devDependencies": {
+    "@vs/db": "workspace:*"
+  }
+}
