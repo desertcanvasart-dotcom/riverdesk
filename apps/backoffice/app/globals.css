@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+
+/* Design tokens. Logical properties (ms-/me-, ps-/pe-, start/end) keep every layout correct in RTL. */
+@theme {
+  --font-sans: 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans', Tahoma, system-ui, sans-serif;
+  --color-bg: #f6f6f3;
+  --color-surface: #ffffff;
+  --color-ink: #1b1c1a;
+  --color-muted: #686a64;
+  --color-line: #e3e2dc;
+  --color-brand: #0e6b6b;
+  --color-brand-ink: #ffffff;
+  --color-ok: #1f7a3f;
+  --color-ok-bg: #e5f3e9;
+  --color-warn: #8a5a00;
+  --color-warn-bg: #fcf1d9;
+  --color-bad: #a3261c;
+  --color-bad-bg: #fbe8e5;
+  --color-info-bg: #e7f0f3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #141513;
+    --color-surface: #1d1e1b;
+    --color-ink: #ebeae5;
+    --color-muted: #a3a29b;
+    --color-line: #34352f;
+    --color-brand: #4fbcbc;
+    --color-brand-ink: #0b1414;
+    --color-ok: #7fd29a;
+    --color-ok-bg: #1c3226;
+    --color-warn: #f0c46c;
+    --color-warn-bg: #3a2f17;
+    --color-bad: #f19a90;
+    --color-bad-bg: #3a1e1b;
+    --color-info-bg: #1b2a2e;
+  }
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+/* Numbers and codes stay left-to-right inside Arabic text. */
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

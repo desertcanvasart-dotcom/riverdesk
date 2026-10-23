@@ -1,10 +1,13 @@
 import { pingDatabase } from '@vs/engine';
 import { backofficeDb } from './db';
-import { publicProcedure, router, staffProcedure } from './trpc';
+import { homeRouter } from './routers/home';
+import { meRouter } from './routers/me';
+import { publicProcedure, router } from './trpc';
 
 export const appRouter = router({
   health: publicProcedure.query(async () => ({ database: await pingDatabase(backofficeDb()) })),
-  me: staffProcedure.query(({ ctx }) => ctx.staff),
+  me: meRouter,
+  home: homeRouter,
 });
 
 export type AppRouter = typeof appRouter;

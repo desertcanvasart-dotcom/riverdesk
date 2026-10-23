@@ -1,13 +1,20 @@
 import type { ReactNode } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
+import { Providers } from '../lib/trpc';
+import './globals.css';
 
-export const metadata = { title: 'vessel-system back office' };
+export const metadata = { title: 'Reservations · vessel-system' };
+export const viewport = { width: 'device-width', initialScale: 1 };
 
-// Arabic first (RTL); full i18n with next-intl arrives in Batch 6.
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="ar" dir="rtl">
-      <body style={{ fontFamily: 'system-ui, sans-serif', margin: 0, padding: 16 }}>
-        {children}
+    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+      <body className="min-h-dvh antialiased">
+        <NextIntlClientProvider messages={await getMessages()}>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

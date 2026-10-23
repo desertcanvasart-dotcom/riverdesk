@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { VsDatabase } from '@vs/db';
+import { audit } from './audit';
 
 export type StaffRole = 'owner' | 'reservations' | 'finance' | 'read_only';
 
@@ -56,4 +57,61 @@ export async function claimStaffInvitation(
   return row
     ? { staffUserId: row.staff_user_id, operatorId: row.operator_id, role: row.role }
     : null;
+}
+
+export interface StaffProfile {
+  staffUserId: string;
+  displayName: string;
+  email: string;
+  role: StaffRole;
+  locale: 'ar' | 'en';
+  operatorName: string;
+}
+
+export async function getStaffProfile(
+  db: VsDatabase,
+  ctx: { operatorId: string; actor: import('@vs/shared').Actor },
+  staffUserId: string,
+): Promise<StaffProfile> {
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    const row = await tx
+      .selectFrom('staff_user as s')
+      .innerJoin('operator as o', 'o.id', 's.operator_id')
+      .select([
+        's.id',
+        's.display_name',
+        's.email',
+        's.role',
+        's.locale',
+        'o.name as operator_name',
+      ])
+      .where('s.id', '=', staffUserId)
+      .executeTakeFirstOrThrow();
+    return {
+      staffUserId: row.id,
+      displayName: row.display_name,
+      email: row.email,
+      role: row.role as StaffRole,
+      locale: row.locale === 'en' ? 'en' : 'ar',
+      operatorName: row.operator_name,
+    };
+  });
+}
+
+/** A staff member's own language preference (audited). */
+export async function setStaffLocale(
+  db: VsDatabase,
+  ctx: { operatorId: string; actor: import('@vs/shared').Actor },
+  staffUserId: string,
+  locale: 'ar' | 'en',
+) {
+  await db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    await tx.updateTable('staff_user').set({ locale }).where('id', '=', staffUserId).execute();
+    await audit(tx, ctx.operatorId, ctx.actor, {
+      action: 'staff.locale_set',
+      entity: 'staff_user',
+      entityId: staffUserId,
+      after: { locale },
+    });
+  });
 }

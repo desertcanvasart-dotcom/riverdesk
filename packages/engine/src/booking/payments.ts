@@ -604,6 +604,15 @@ export interface ActionList {
   }[];
   paidUnavailable: { bookingId: string; ref: string; paid: bigint; currency: string }[];
   exceptions: { id: string; kind: string; severity: string; summary: string }[];
+  /** Confirmed bookings near the manifest cut-off with guests or passports missing. */
+  missingGuests: { bookingId: string; ref: string; embarkDate: string; missing: number }[];
+  /** Departures in the next 7 days with confirmed cabins not yet assigned a cabin number. */
+  unassignedDepartures: {
+    sailingId: string;
+    embarkDate: string;
+    patternCode: string | null;
+    unassigned: number;
+  }[];
 }
 
 /** What needs doing today, by urgency. Cairo dates from the database clock. */
@@ -648,8 +657,33 @@ export async function getActionList(db: VsDatabase, ctx: EngineContext): Promise
       order by case severity when 'critical' then 0 when 'warning' then 1 else 2 end, created_at`.execute(
       tx,
     );
+    const missing = await sql<ActionList['missingGuests'][number]>`
+      select b.id as "bookingId", b.ref, s.embark_date::text as "embarkDate",
+             (sum(bc.adults + coalesce(array_length(bc.child_ages, 1), 0))
+               - coalesce((select count(*) from vs.guest g where g.booking_id = b.id and g.passport_ciphertext is not null), 0))::int as missing
+      from vs.booking b
+      join vs.sailing s on s.id = b.sailing_id
+      join vs.booking_cabin bc on bc.booking_id = b.id and bc.status = 'active'
+      cross join vs.operator_setting st
+      where b.status = 'confirmed'
+        and s.embark_date between ${today}::date and ${today}::date + st.assignment_cutoff_days + 7
+      group by b.id, b.ref, s.embark_date
+      having sum(bc.adults + coalesce(array_length(bc.child_ages, 1), 0))
+             > coalesce((select count(*) from vs.guest g where g.booking_id = b.id and g.passport_ciphertext is not null), 0)
+      order by s.embark_date`.execute(tx);
+    const unassigned = await sql<ActionList['unassignedDepartures'][number]>`
+      select s.id as "sailingId", s.embark_date::text as "embarkDate", sp.code as "patternCode", count(*)::int as unassigned
+      from vs.booking b
+      join vs.sailing s on s.id = b.sailing_id
+      left join vs.sailing_pattern sp on sp.id = s.pattern_id
+      join vs.booking_cabin bc on bc.booking_id = b.id and bc.status = 'active' and bc.assigned_cabin_id is null
+      where b.status = 'confirmed' and s.embark_date between ${today}::date and ${today}::date + 7
+      group by s.id, s.embark_date, sp.code
+      order by s.embark_date`.execute(tx);
     return {
       today,
+      missingGuests: missing.rows,
+      unassignedDepartures: unassigned.rows,
       holdsExpiringToday: holds.rows,
       requests: requests.rows,
       depositsDue: deposits.rows,

@@ -1,4 +1,7 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const config: NextConfig = {
   // Workspace packages ship TypeScript source.
@@ -7,4 +10,4 @@ const config: NextConfig = {
   poweredByHeader: false,
 };
 
-export default config;
+export default withNextIntl(config);

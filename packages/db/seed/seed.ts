@@ -23,7 +23,24 @@ export const DEMO_STAFF = [
     name: 'Demo Reservations',
     role: 'reservations',
   },
+  {
+    authUserId: '019a0000-0000-7000-8000-0000000000a3',
+    staffUserId: '019a0000-0000-7000-8000-0000000000b3',
+    email: 'finance@demo.local',
+    name: 'Demo Finance',
+    role: 'finance',
+  },
+  {
+    authUserId: '019a0000-0000-7000-8000-0000000000a4',
+    staffUserId: '019a0000-0000-7000-8000-0000000000b4',
+    email: 'viewer@demo.local',
+    name: 'Demo Viewer',
+    role: 'read_only',
+  },
 ] as const;
+
+/** Roles that must use MFA get a verified TOTP factor with SEED_TOTP_SECRET (local only). */
+const MFA_ROLES = new Set(['owner', 'finance']);
 
 const { config, adminUrl } = adminOptions();
 assertLocal(adminUrl);
@@ -52,6 +69,14 @@ try {
        on conflict (provider_id, provider) do nothing`,
       [staff.authUserId, staff.email],
     );
+    if (MFA_ROLES.has(staff.role) && config.SEED_TOTP_SECRET) {
+      await client.query(
+        `insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, secret, created_at, updated_at)
+         values ($1, $2, 'demo authenticator', 'totp', 'verified', $3, now(), now())
+         on conflict (id) do nothing`,
+        [staff.authUserId.replace(/a(\d)$/, 'f$1'), staff.authUserId, config.SEED_TOTP_SECRET],
+      );
+    }
   }
 
   await client.query('set local role vs_owner');

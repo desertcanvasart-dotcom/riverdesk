@@ -39,6 +39,11 @@ export const envSchema = z.object({
   PASSPORT_PREVIOUS_KEYS: z.string().optional(),
 
   SEED_STAFF_PASSWORD: z.string().min(8).optional(),
+  /** Base32 TOTP secret for the seeded owner and finance users (local only). */
+  SEED_TOTP_SECRET: z
+    .string()
+    .regex(/^[A-Z2-7]{16,64}$/)
+    .optional(),
 
   /** HS256 key for channel API access tokens (32+ random bytes, base64). */
   API_TOKEN_SECRET: z
