@@ -452,6 +452,8 @@ export async function getBookingView(
     const b = await tx
       .selectFrom('booking')
       .selectAll()
+      // The booking date is a Cairo calendar date (the deposit is due on it), not the UTC one.
+      .select(sql<string>`(created_at at time zone 'Africa/Cairo')::date::text`.as('booked_on'))
       .where('id', '=', bookingId)
       .executeTakeFirstOrThrow();
     const [sailing] = await sailingViews(tx, { ids: [b.sailing_id] });
@@ -493,7 +495,7 @@ export async function getBookingView(
         paymentsDue.push({
           kind: 'deposit',
           amount: depositLeft,
-          dueDate: b.created_at.toISOString().slice(0, 10),
+          dueDate: b.booked_on,
         });
       const paidTowardsBalance =
         b.amount_paid > b.deposit_amount ? b.amount_paid : b.deposit_amount;

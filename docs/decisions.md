@@ -496,3 +496,15 @@ Reason: TTLs come only from the contract, never from the caller.
 **2026-10-24 · The sandbox is a company created with the platform command.**
 "Sandbox Nile Cruises" runs the demo vessel, pricing and schedule, plus a nilecrz client (`pnpm sandbox:setup`). On the hosted project it needs `--confirm-hosted`.
 Reason: the sandbox behaves exactly like a real company, and its data stays isolated by RLS.
+
+**2026-10-24 · The fast phone booking is one engine call over the existing steps.**
+`staffBook` runs quote → option hold → confirm (or quote → request on an on-request contract). Each step keeps its own transaction and derives its request key from one key per form submission (`<key>:quote`, `<key>:hold`, `<key>:confirm`). A double click or a retry returns the same booking. When the confirmation is refused, the option hold is released at once rather than left to expire.
+Reason: no second write path for bookings, and the screen stays a single click.
+
+**2026-10-24 · Staff edit guests without seeing passport numbers.**
+Passport numbers are write-only in the back office: staff see "on file", never the number. A guest edit can name an existing guest (`keepPassportOf`) to keep their encrypted passport when no new number is typed. Otherwise replacing the guest list would silently drop it. The audit log records counts only.
+Reason: rule 9 (passports encrypted, never shown or logged), without forcing staff to retype passports.
+
+**2026-10-24 · The deposit is due on the Cairo booking date (bug fix).**
+The booking view took the deposit date from the UTC day of `created_at`. Between midnight and 02:00/03:00 Cairo time it therefore showed the deposit as due "yesterday". It now uses the Cairo calendar date, and a regression test covers it.
+Reason: business dates are Cairo dates (spec § Time).

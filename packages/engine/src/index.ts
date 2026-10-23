@@ -26,3 +26,5 @@ export * from './booking/payments';
 export * from './channel/clients';
 export * from './channel/reads';
 export * from './channel/webhooks';
+export * from './backoffice/reads';
+export * from './backoffice/book';

@@ -46,4 +46,30 @@ describe('back-office authorization (server side)', () => {
     expect(can('reservations', 'rates.write')).toBe(false);
     expect(can('owner', 'settings.write')).toBe(true);
   });
+
+  it('every mutation refuses a read-only user before touching its input', async () => {
+    const session = {
+      authUserId: crypto.randomUUID(),
+      email: null,
+      aal: 'aal1' as const,
+      staff: staff('read_only'),
+      needsMfa: false,
+    };
+    const caller = appRouter.createCaller({ session }) as unknown as Record<
+      string,
+      Record<string, (input: unknown) => Promise<unknown>>
+    >;
+    const mutations = Object.entries(appRouter._def.procedures)
+      .filter(([, procedure]) => (procedure as { _def: { type: string } })._def.type === 'mutation')
+      .map(([path]) => path)
+      // Changing one's own language is allowed to everyone.
+      .filter((path) => path !== 'me.setLocale');
+    expect(mutations).toEqual(
+      expect.arrayContaining(['book.create', 'bookings.cancel', 'requests.accept']),
+    );
+    for (const path of mutations) {
+      const [group, name] = path.split('.') as [string, string];
+      await expect(caller[group]![name]!({}), path).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+  });
 });

@@ -363,6 +363,8 @@ export const guestSchema = z.object({
     .optional(),
   dateOfBirth: dateSchema.optional(),
   passportNumber: z.string().trim().min(3).max(30).optional(),
+  /** An existing guest of this booking: keeps their passport on file when no new number is given. */
+  keepPassportOf: z.uuid().optional(),
   lead: z.boolean().default(false),
 });
 export type GuestInput = z.infer<typeof guestSchema>;
@@ -402,26 +404,42 @@ export async function replaceGuests(
   }
   const before = await tx
     .selectFrom('guest')
-    .select(['id', 'first_name', 'last_name', 'nationality', 'date_of_birth', 'lead'])
+    .select([
+      'id',
+      'first_name',
+      'last_name',
+      'nationality',
+      'date_of_birth',
+      'lead',
+      'passport_ciphertext',
+      'passport_key_id',
+    ])
     .where('booking_id', '=', bookingId)
     .execute();
+  const kept = new Map(before.filter((g) => g.passport_ciphertext).map((g) => [g.id, g]));
   await tx.deleteFrom('guest').where('booking_id', '=', bookingId).execute();
   const keys = passportKeys();
   await tx
     .insertInto('guest')
     .values(
-      guests.map((g) => ({
-        operator_id: ctx.operatorId,
-        booking_id: bookingId,
-        booking_cabin_id: bySeq.get(g.cabin)!.id,
-        first_name: g.firstName,
-        last_name: g.lastName,
-        nationality: g.nationality ?? null,
-        date_of_birth: g.dateOfBirth ?? null,
-        passport_ciphertext: g.passportNumber ? encryptField(g.passportNumber, keys.current) : null,
-        passport_key_id: g.passportNumber ? keys.current.id : null,
-        lead: g.lead,
-      })),
+      guests.map((g) => {
+        const previous =
+          !g.passportNumber && g.keepPassportOf ? kept.get(g.keepPassportOf) : undefined;
+        return {
+          operator_id: ctx.operatorId,
+          booking_id: bookingId,
+          booking_cabin_id: bySeq.get(g.cabin)!.id,
+          first_name: g.firstName,
+          last_name: g.lastName,
+          nationality: g.nationality ?? null,
+          date_of_birth: g.dateOfBirth ?? null,
+          passport_ciphertext: g.passportNumber
+            ? encryptField(g.passportNumber, keys.current)
+            : (previous?.passport_ciphertext ?? null),
+          passport_key_id: g.passportNumber ? keys.current.id : (previous?.passport_key_id ?? null),
+          lead: g.lead,
+        };
+      }),
     )
     .execute();
 
@@ -430,9 +448,14 @@ export async function replaceGuests(
     action: 'guests.replaced',
     entity: 'booking',
     entityId: bookingId,
-    before: { guests: before.length },
+    before: { guests: before.length, passports: kept.size },
     // Counts only: passport numbers never reach the audit log (rule 9).
-    after: { guests: guests.length, passports: guests.filter((g) => g.passportNumber).length },
+    after: {
+      guests: guests.length,
+      passports: guests.filter(
+        (g) => g.passportNumber || (g.keepPassportOf && kept.has(g.keepPassportOf)),
+      ).length,
+    },
   });
 }
 

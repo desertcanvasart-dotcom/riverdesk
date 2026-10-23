@@ -45,7 +45,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={cx('rounded-xl border border-line bg-surface p-4', className)}>
+    <section className={cx('min-w-0 rounded-xl border border-line bg-surface p-4', className)}>
       {(title || actions) && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="text-base font-semibold">{title}</h2>}
