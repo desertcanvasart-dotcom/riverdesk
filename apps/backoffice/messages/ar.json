@@ -539,6 +539,57 @@
     "expires": "تنتهي {date}",
     "revoke": "إلغاء",
     "invited": "تم إنشاء الدعوة. يسجّل الدخول بهذا البريد للانضمام.",
-    "you": "أنت"
+    "you": "أنت",
+    "emergencyPhone": "رقم الطوارئ (يظهر في القسائم)",
+    "voucherNoteEn": "ملاحظة القسيمة (بالإنجليزية): نقطة الصعود والتعليمات",
+    "voucherNoteAr": "ملاحظة القسيمة (بالعربية)",
+    "voucherSection": "في كل قسيمة"
+  },
+  "documents": {
+    "title": "المستندات",
+    "voucher": "قسيمة الحجز",
+    "voucherAgent": "قسيمة الحجز (نسخة الوكالة بدون أسعار)",
+    "itinerary": "برنامج الرحلة",
+    "payment_schedule": "جدول الدفع",
+    "cancellation_terms": "شروط الإلغاء",
+    "manifest": "كشف الركاب (مع الجوازات)",
+    "rooming_list": "كشف توزيع الكبائن",
+    "vacancy_sheet": "كشف الأماكن المتاحة",
+    "preparing": "جارٍ التجهيز…",
+    "failed": "تعذر تجهيز المستند.",
+    "download": "تنزيل",
+    "language": "اللغة",
+    "recent": "الأحدث",
+    "expires": "متاح حتى {when}"
+  },
+  "guests": {
+    "title": "الضيوف والكشوف",
+    "subtitle": "من على متن كل رحلة، وكبائنهم، وكشف الركاب.",
+    "departures": "الرحلات",
+    "parties": "{n, plural, zero {لا كبائن محجوزة} one {كابينة محجوزة واحدة} two {كابينتان محجوزتان} few {# كبائن محجوزة} many {# كابينة محجوزة} other {# كابينة محجوزة}}",
+    "unassigned": "{n} بدون كابينة",
+    "guestsCount": "{n, plural, zero {لا ضيوف} one {ضيف واحد} two {ضيفان} few {# ضيوف} many {# ضيفًا} other {# ضيف}}",
+    "pick": "اختر رحلة.",
+    "autoAssign": "تخصيص الكبائن الآن",
+    "assigned": "تم تخصيص {assigned} كابينة{split, select, 0 {} other { ({split} مع تغيير الكابينة أثناء الرحلة)}}{unplaced, select, 0 {} other {؛ تعذر تخصيص {unplaced}}}.",
+    "cabin": "الكابينة",
+    "change": "تغيير",
+    "unassign": "إلغاء التخصيص",
+    "choose": "اختر كابينة",
+    "noGuests": "أسماء الضيوف ناقصة",
+    "passportOnFile": "جواز السفر مسجل",
+    "noPassport": "لا يوجد جواز",
+    "exports": "التصدير",
+    "boards": "الصعود {date} من {port}",
+    "leaves": "النزول {date} في {port}",
+    "pdf": "PDF",
+    "xlsx": "Excel"
+  },
+  "vacancy": {
+    "title": "كشف الأماكن المتاحة",
+    "subtitle": "الكبائن المتاحة لكل رحلة للوكلاء غير المتصلين بالبوابة بعد. صدّره وأرسله.",
+    "from": "من",
+    "weeks": "الأسابيع",
+    "png": "صورة (واتساب)"
   }
 }

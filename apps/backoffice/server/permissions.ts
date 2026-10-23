@@ -10,6 +10,9 @@ export const PERMISSIONS = {
   'inventory.write': ['owner', 'reservations'],
   'payments.write': ['owner', 'finance'],
   'documents.create': ['owner', 'reservations', 'finance'],
+  /** Manifests carry passport numbers: only the people who board guests. */
+  manifests: ['owner', 'reservations'],
+  'guests.assign': ['owner', 'reservations'],
   'schedule.write': ['owner'],
   'rates.write': ['owner'],
   'channels.write': ['owner'],

@@ -539,6 +539,57 @@
     "expires": "Expires {date}",
     "revoke": "Revoke",
     "invited": "Invitation created. They sign in with this email to join.",
-    "you": "you"
+    "you": "you",
+    "emergencyPhone": "Emergency phone (on vouchers)",
+    "voucherNoteEn": "Voucher note (English): boarding point, instructions",
+    "voucherNoteAr": "Voucher note (Arabic)",
+    "voucherSection": "On every voucher"
+  },
+  "documents": {
+    "title": "Documents",
+    "voucher": "Voucher",
+    "voucherAgent": "Voucher (agency copy, no prices)",
+    "itinerary": "Itinerary",
+    "payment_schedule": "Payment schedule",
+    "cancellation_terms": "Cancellation terms",
+    "manifest": "Manifest (with passports)",
+    "rooming_list": "Rooming list",
+    "vacancy_sheet": "Vacancy sheet",
+    "preparing": "Preparing…",
+    "failed": "Could not prepare the document.",
+    "download": "Download",
+    "language": "Language",
+    "recent": "Recent",
+    "expires": "Kept until {when}"
+  },
+  "guests": {
+    "title": "Guests & manifests",
+    "subtitle": "Who is aboard each departure, their cabins and the manifest.",
+    "departures": "Departures",
+    "parties": "{n, plural, one {# booked cabin} other {# booked cabins}}",
+    "unassigned": "{n} without a cabin",
+    "guestsCount": "{n, plural, one {# guest} other {# guests}}",
+    "pick": "Pick a departure.",
+    "autoAssign": "Assign cabins now",
+    "assigned": "Assigned {assigned} cabins{split, select, 0 {} other { ({split} change cabin mid-cruise)}}{unplaced, select, 0 {} other {; {unplaced} could not be placed}}.",
+    "cabin": "Cabin",
+    "change": "Change",
+    "unassign": "Take off",
+    "choose": "Choose a cabin",
+    "noGuests": "Guest names missing",
+    "passportOnFile": "Passport on file",
+    "noPassport": "No passport",
+    "exports": "Exports",
+    "boards": "Boards {date} at {port}",
+    "leaves": "leaves {date} at {port}",
+    "pdf": "PDF",
+    "xlsx": "Excel"
+  },
+  "vacancy": {
+    "title": "Vacancy sheet",
+    "subtitle": "Free cabins per sailing for agents who are not on the portal yet. Export and send.",
+    "from": "From",
+    "weeks": "Weeks",
+    "png": "Image (WhatsApp)"
   }
 }

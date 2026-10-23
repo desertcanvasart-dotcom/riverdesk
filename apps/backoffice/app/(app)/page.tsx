@@ -94,9 +94,9 @@ export default async function HomePage() {
     {
       key: 'unassigned',
       items: list.unassignedDepartures.map((d) => ({
-        id: d.sailingId,
-        href: `/guests?sailing=${d.sailingId}`,
-        text: `${formatDate(d.embarkDate, locale)} · ${d.patternCode ?? ''}`,
+        id: d.legId,
+        href: `/guests?leg=${d.legId}`,
+        text: `${formatDate(d.departDate, locale)} · ${d.from} – ${d.to}`,
         badge: <Badge tone="warn">{d.unassigned}</Badge>,
       })),
     },

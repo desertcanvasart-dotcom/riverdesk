@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { TRPCError } from '@trpc/server';
+import { DocumentButtons } from '../../../../components/documents';
 import { Alert, Badge, Card, PageHeader, Table, Td } from '../../../../components/ui';
 import { formatDate, formatDateTime, formatMoney } from '../../../../lib/format';
 import { statusTone } from '../../../../lib/status';
@@ -22,6 +23,8 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
   const [profile, vessels] = await Promise.all([caller.me.profile(), caller.book.vessels()]);
   const canWrite = profile.permissions.includes('bookings.write');
   const canPay = profile.permissions.includes('payments.write');
+  const canDocuments = profile.permissions.includes('documents.create');
+  const td = await getTranslations('documents');
   const t = await getTranslations('bookings');
   const tc = await getTranslations('common');
   const ts = await getTranslations('status');
@@ -194,6 +197,40 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
             </Table>
           )}
         </Card>
+
+        {canDocuments && ['confirmed', 'held', 'completed'].includes(booking.status) && (
+          <Card title={td('title')} className="lg:col-span-2">
+            <DocumentButtons
+              items={[
+                {
+                  key: 'voucher',
+                  label: td('voucher'),
+                  input: { kind: 'voucher', bookingId: booking.id },
+                },
+                {
+                  key: 'voucher-agent',
+                  label: td('voucherAgent'),
+                  input: { kind: 'voucher', bookingId: booking.id, variant: 'agent' },
+                },
+                {
+                  key: 'itinerary',
+                  label: td('itinerary'),
+                  input: { kind: 'itinerary', bookingId: booking.id },
+                },
+                {
+                  key: 'payment_schedule',
+                  label: td('payment_schedule'),
+                  input: { kind: 'payment_schedule', bookingId: booking.id },
+                },
+                {
+                  key: 'cancellation_terms',
+                  label: td('cancellation_terms'),
+                  input: { kind: 'cancellation_terms', bookingId: booking.id },
+                },
+              ]}
+            />
+          </Card>
+        )}
 
         <Card title={t('revisions')}>
           <Table head={[t('rev', { n: '#' }), t('reasonLabel'), tc('total'), t('by'), t('when')]}>

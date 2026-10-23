@@ -528,3 +528,24 @@ Reason: spec § Settings. Defaults apply to new holds, requests and contracts on
 **2026-10-24 · Secrets are shown once, in a modal.**
 New API client secrets, rotated secrets and webhook signing secrets appear once, in a dialog with a copy button. Lists show only the last four characters and when each secret was last used.
 Reason: rule 9. A banner at the top of a long page scrolls out of view on a phone.
+
+**2026-10-24 · Physical cabins are assigned per leg, on the booking line.**
+`booking_line.assigned_cabin_id` has a unique index per leg (confirmed lines only), so the database itself prevents two parties in one cabin on one leg. A released line (cancellation or amendment) frees its cabin. A party keeps one cabin for its whole cruise when one is free on all its legs. Otherwise it gets a cabin per leg, reported as "split". Only cabins of the booked category qualify; an upgrade is an amendment. Assignment takes the vessel lock, like schedule changes. The `assign_cabins` job runs daily for departures inside the cut-off, and staff can override any assignment.
+Reason: spec § Guests, assignment and manifests. A per-booking assignment could not stop two parties sharing a cabin on an overlapping leg.
+
+**2026-10-24 · Manifests and rooming lists are per departure (leg).**
+They list who is aboard while the vessel sails from one port to the next, including guests whose cruise started earlier or ends later.
+Reason: that is the list port authorities and the crew work from.
+
+**2026-10-24 · Documents are rendered by the worker and stored for a short time.**
+Staff request a document, and the back office queues `render_document` through `vs.enqueue_document`. That SECURITY DEFINER function accepts one task, only for a pending document of the caller's own company, and the back office has no other access to the queue. The worker renders PDFs and PNGs with headless Chromium (fonts embedded, no network) and spreadsheets with ExcelJS, then stores the file in `vs.document`. The screen polls the status, then downloads through `/api/documents/[id]`, which runs the same session, MFA and permission checks.
+Manifests are the only export with passport numbers. Only owner and reservations may request them, each download is audited, and they are deleted after a day. Other documents are kept for a week.
+Reason: spec § Documents and § Sensitive data. Chromium shapes Arabic correctly, which PDF libraries do not reliably do.
+
+**2026-10-24 · Passport numbers and dates of birth are erased after the retention period.**
+The daily `erase_passports` job clears them the configured number of days after disembarkation (90 by default). Names stay, and the run is audited (counts only).
+Reason: spec § Sensitive data. It is a hard requirement once manifests export passports.
+
+**2026-10-24 · The itinerary is built day by day from the schedule template.**
+It walks the template stops from embarkation to disembarkation, into the next cycle when the cruise wraps round, and groups the calls by cruise day. The emergency phone and the voucher note (boarding point, instructions) are company settings shown on every voucher. Resident and Egyptian rates add the ID-at-embarkation note.
+Reason: spec § Documents (voucher contents).

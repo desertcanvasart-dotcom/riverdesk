@@ -30,6 +30,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The worker renders PDFs and PNGs with headless Chromium; its tests render real documents.
+      - name: Install Chromium for document rendering
+        run: pnpm --filter @vs/worker exec playwright install --with-deps chromium
+
       - uses: supabase/setup-cli@v1
         with:
           version: 2.111.0

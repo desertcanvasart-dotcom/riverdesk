@@ -136,6 +136,7 @@ export interface BookingCabin {
 }
 
 export interface BookingLine {
+  assigned_cabin_id: string | null;
   booking_cabin_id: string;
   booking_id: string;
   bucket_id: string;
@@ -317,6 +318,27 @@ export interface ChildPolicyBand {
   updated_at: Generated<Timestamp>;
 }
 
+export interface Document {
+  content: Buffer | null;
+  content_type: string | null;
+  created_at: Generated<Timestamp>;
+  entity: string;
+  entity_id: string;
+  error: string | null;
+  expires_at: Timestamp;
+  filename: string | null;
+  format: string;
+  id: Generated<string>;
+  kind: string;
+  locale: string;
+  operator_id: string;
+  params: Generated<Json>;
+  requested_by: string | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  variant: Generated<string>;
+}
+
 export interface Event {
   id: Generated<string>;
   occurred_at: Generated<Timestamp>;
@@ -489,6 +511,7 @@ export interface OperatorSetting {
   booking_ref_prefix: Generated<string>;
   checkout_hold_minutes: Generated<number>;
   created_at: Generated<Timestamp>;
+  emergency_phone: string | null;
   offer_hold_hours: Generated<number>;
   operator_id: string;
   option_hold_hours: Generated<number>;
@@ -497,6 +520,8 @@ export interface OperatorSetting {
   request_grace_hours: Generated<number>;
   request_sla_hours: Generated<number>;
   updated_at: Generated<Timestamp>;
+  voucher_note_ar: string | null;
+  voucher_note_en: string | null;
 }
 
 export interface Payment {
@@ -835,6 +860,7 @@ export interface DB {
   channel_contract_rate_plan: ChannelContractRatePlan;
   child_policy: ChildPolicy;
   child_policy_band: ChildPolicyBand;
+  document: Document;
   event: Event;
   exception: Exception;
   guest: Guest;

@@ -3,6 +3,8 @@ import { backofficeDb } from './db';
 import { bookRouter } from './routers/book';
 import { bookingsRouter } from './routers/bookings';
 import { channelsRouter } from './routers/channels';
+import { documentsRouter } from './routers/documents';
+import { guestsRouter } from './routers/guests';
 import { homeRouter } from './routers/home';
 import { inventoryRouter } from './routers/inventory';
 import { meRouter } from './routers/me';
@@ -26,6 +28,8 @@ export const appRouter = router({
   channels: channelsRouter,
   payments: paymentsRouter,
   settings: settingsRouter,
+  documents: documentsRouter,
+  guests: guestsRouter,
 });
 
 export type AppRouter = typeof appRouter;

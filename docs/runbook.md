@@ -29,13 +29,36 @@ Demo logins (local Auth only): `owner@demo.local` and `reservations@demo.local`,
 
 ## Worker jobs
 
+Start it with `pnpm --filter @vs/worker start` (or `dev` to restart on changes). It renders documents too, so the back office's PDF and Excel buttons need it running.
+
 | Job                  | Schedule (UTC)   | Does                                                                          |
 | -------------------- | ---------------- | ----------------------------------------------------------------------------- |
 | `expire_holds`       | every minute     | Expires holds past `expires_at` (database time), 500 per batch, `SKIP LOCKED` |
 | `expire_requests`    | every 5 minutes  | Requests past SLA + grace → expired                                           |
 | `release_allotments` | every 15 minutes | Releases allotment legs due by Cairo date                                     |
 | `complete_bookings`  | hourly           | Confirmed bookings after their last night → completed                         |
+| `overdue_balances`   | 05:00            | Overdue balance notices (and auto-cancel where the policy says so)            |
+| `webhooks`           | every minute     | Fans events out to endpoints and delivers them (signed, in order, retried)    |
+| `prune_rate_limits`  | hourly           | Drops rate-limit windows older than an hour                                   |
 | `nightly_invariants` | 00:00            | `check_invariants()` per operator; violations open exceptions and stop sales  |
+| `assign_cabins`      | 01:00            | Departures inside the assignment cut-off get physical cabins                  |
+| `erase_passports`    | 01:30            | Passport numbers and dates of birth erased after the retention period         |
+| `prune_documents`    | hourly           | Deletes expired documents (manifests after a day, others after a week)        |
+| `render_document`    | on request       | Renders a requested PDF, Excel or PNG (queued by `vs.enqueue_document`)       |
+
+## Documents
+
+Rendered by the worker with headless Chromium (Playwright) and ExcelJS; fonts (Noto Sans, Noto Sans Arabic) are embedded, so output is the same on any server. Install Chromium once where the worker runs:
+
+```bash
+pnpm --filter @vs/worker exec playwright install chromium
+```
+
+To check layouts by eye, render one demo booking's documents (both languages, full and agency copy) to a folder:
+
+```bash
+pnpm --filter @vs/worker render-sample VS-26-00001 /tmp/vs-docs
+```
 
 ## Look at availability
 
@@ -49,7 +72,9 @@ pnpm --filter @vs/engine availability-grid 4   # demo vessel, next 4 weeks, Mark
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-`pnpm test` runs packages one at a time against the local database. After every integration test file, `vs.check_invariants()` must return no rows, or the file fails.
+`pnpm test` runs packages one at a time against the local database. After every integration test file, `vs.check_invariants()` must return no rows for the operators that file created, or the file fails.
+
+Stop a locally running worker before `pnpm test`: it shares the job queue with the worker tests and would take their jobs.
 
 ## Migrations
 

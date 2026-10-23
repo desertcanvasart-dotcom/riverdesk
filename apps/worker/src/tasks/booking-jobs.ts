@@ -1,6 +1,8 @@
 import type { Task } from 'graphile-worker';
 import {
+  assignDueCabins,
   completeBookings,
+  erasePassports,
   expireHolds,
   expireRequests,
   listOperatorIds,
@@ -12,7 +14,7 @@ import {
 import { systemActor, type Logger } from '@vs/shared';
 
 /** Runs `fn` for every operator, each in its own tenant transaction(s); one failure does not stop the rest. */
-async function forEachOperator(
+export async function forEachOperator(
   db: VsDatabase,
   logger: Logger,
   job: string,
@@ -70,4 +72,14 @@ export function completeBookingsTask(db: VsDatabase, logger: Logger): Task {
 export function overdueBalancesTask(db: VsDatabase, logger: Logger): Task {
   return () =>
     forEachOperator(db, logger, 'overdue_balances', (ctx) => processOverdueBalances(db, ctx));
+}
+
+/** Daily: departures inside the assignment cut-off get their physical cabins. */
+export function assignCabinsTask(db: VsDatabase, logger: Logger): Task {
+  return () => forEachOperator(db, logger, 'assign_cabins', (ctx) => assignDueCabins(db, ctx));
+}
+
+/** Daily: passport numbers and dates of birth go after the retention period. */
+export function erasePassportsTask(db: VsDatabase, logger: Logger): Task {
+  return () => forEachOperator(db, logger, 'erase_passports', (ctx) => erasePassports(db, ctx));
 }

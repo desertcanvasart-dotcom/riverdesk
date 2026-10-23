@@ -7,13 +7,17 @@ import {
   type Config,
   type Logger,
 } from '@vs/shared';
+import { closeRenderer } from './documents/render';
 import {
+  assignCabinsTask,
   completeBookingsTask,
+  erasePassportsTask,
   overdueBalancesTask,
   expireHoldsTask,
   expireRequestsTask,
   releaseAllotmentsTask,
 } from './tasks/booking-jobs';
+import { pruneDocumentsTask, renderDocumentTask } from './tasks/document-jobs';
 import { nightlyInvariants } from './tasks/nightly-invariants';
 import { pruneRateLimitsTask, webhooksTask } from './tasks/webhook-jobs';
 
@@ -33,6 +37,10 @@ export const CRONTAB = [
   '* * * * * webhooks ?max=1',
   '23 * * * * prune_rate_limits ?max=1',
   '0 0 * * * nightly_invariants ?max=1',
+  // 01:00 UTC is 03:00–04:00 in Cairo: cabins are assigned before the working day.
+  '0 1 * * * assign_cabins ?max=1',
+  '30 1 * * * erase_passports ?max=1',
+  '41 * * * * prune_documents ?max=1',
 ].join('\n');
 
 export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
@@ -45,6 +53,10 @@ export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
     webhooks: webhooksTask(db, logger),
     prune_rate_limits: pruneRateLimitsTask(db, logger),
     nightly_invariants: nightlyInvariants(db, logger),
+    assign_cabins: assignCabinsTask(db, logger),
+    erase_passports: erasePassportsTask(db, logger),
+    prune_documents: pruneDocumentsTask(db, logger),
+    render_document: renderDocumentTask(db, logger),
   };
 }
 
@@ -78,6 +90,7 @@ export async function startWorker(
     db,
     async stop() {
       await runner.stop();
+      await closeRenderer();
       await db.close();
     },
   };

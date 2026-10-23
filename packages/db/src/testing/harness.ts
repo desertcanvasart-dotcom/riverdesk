@@ -14,6 +14,7 @@ export const SECURITY_DEFINER_ALLOWLIST: Record<string, RuntimeRoleName[]> = {
   resolve_staff: ['vs_backoffice'],
   claim_staff_invitation: ['vs_backoffice'],
   resolve_api_client: ['vs_api'],
+  enqueue_document: ['vs_backoffice'],
 };
 
 export interface TenantTable {

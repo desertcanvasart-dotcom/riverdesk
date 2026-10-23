@@ -56,6 +56,9 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
         name: operator.data.name,
         defaultLocale: operator.data.defaultLocale,
         ...Object.fromEntries(NUMBERS.map((k) => [k, String(operator.data[k])])),
+        emergencyPhone: operator.data.emergencyPhone ?? '',
+        voucherNoteEn: operator.data.voucherNoteEn ?? '',
+        voucherNoteAr: operator.data.voucherNoteAr ?? '',
       });
   }, [operator.data]);
   const refreshStaff = () =>
@@ -225,6 +228,9 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
               name: form.name,
               defaultLocale: form.defaultLocale === 'en' ? 'en' : 'ar',
               ...numbers,
+              emergencyPhone: form.emergencyPhone || null,
+              voucherNoteEn: form.voucherNoteEn || null,
+              voucherNoteAr: form.voucherNoteAr || null,
             });
           }}
         >
@@ -267,6 +273,39 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
                   />
                 </Field>
               ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-2 text-sm font-medium">{t('voucherSection')}</h3>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label={t('emergencyPhone')}>
+                <Input
+                  dir="ltr"
+                  disabled={!canWrite}
+                  value={form.emergencyPhone ?? ''}
+                  onChange={(e) => setForm({ ...form, emergencyPhone: e.target.value })}
+                />
+              </Field>
+              <Field label={t('voucherNoteEn')}>
+                <textarea
+                  dir="ltr"
+                  rows={3}
+                  disabled={!canWrite}
+                  className="w-full rounded-lg border border-line bg-surface p-2 text-sm"
+                  value={form.voucherNoteEn ?? ''}
+                  onChange={(e) => setForm({ ...form, voucherNoteEn: e.target.value })}
+                />
+              </Field>
+              <Field label={t('voucherNoteAr')}>
+                <textarea
+                  dir="rtl"
+                  rows={3}
+                  disabled={!canWrite}
+                  className="w-full rounded-lg border border-line bg-surface p-2 text-sm"
+                  value={form.voucherNoteAr ?? ''}
+                  onChange={(e) => setForm({ ...form, voucherNoteAr: e.target.value })}
+                />
+              </Field>
             </div>
           </div>
           {canWrite && (

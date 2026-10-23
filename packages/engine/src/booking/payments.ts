@@ -606,11 +606,12 @@ export interface ActionList {
   exceptions: { id: string; kind: string; severity: string; summary: string }[];
   /** Confirmed bookings near the manifest cut-off with guests or passports missing. */
   missingGuests: { bookingId: string; ref: string; embarkDate: string; missing: number }[];
-  /** Departures in the next 7 days with confirmed cabins not yet assigned a cabin number. */
+  /** Departures in the next 7 days with booked cabins that have no physical cabin yet. */
   unassignedDepartures: {
-    sailingId: string;
-    embarkDate: string;
-    patternCode: string | null;
+    legId: string;
+    departDate: string;
+    from: string;
+    to: string;
     unassigned: number;
   }[];
 }
@@ -672,14 +673,17 @@ export async function getActionList(db: VsDatabase, ctx: EngineContext): Promise
              > coalesce((select count(*) from vs.guest g where g.booking_id = b.id and g.passport_ciphertext is not null), 0)
       order by s.embark_date`.execute(tx);
     const unassigned = await sql<ActionList['unassignedDepartures'][number]>`
-      select s.id as "sailingId", s.embark_date::text as "embarkDate", sp.code as "patternCode", count(*)::int as unassigned
-      from vs.booking b
-      join vs.sailing s on s.id = b.sailing_id
-      left join vs.sailing_pattern sp on sp.id = s.pattern_id
-      join vs.booking_cabin bc on bc.booking_id = b.id and bc.status = 'active' and bc.assigned_cabin_id is null
-      where b.status = 'confirmed' and s.embark_date between ${today}::date and ${today}::date + 7
-      group by s.id, s.embark_date, sp.code
-      order by s.embark_date`.execute(tx);
+      select l.id as "legId", l.depart_date::text as "departDate", fp.code as from, tp.code as to,
+             count(distinct bl.booking_cabin_id)::int as unassigned
+      from vs.booking_line bl
+      join vs.booking b on b.id = bl.booking_id and b.status = 'confirmed'
+      join vs.leg l on l.id = bl.leg_id
+      join vs.port fp on fp.id = l.from_port_id
+      join vs.port tp on tp.id = l.to_port_id
+      where bl.status = 'confirmed' and bl.assigned_cabin_id is null
+        and l.depart_date between ${today}::date and ${today}::date + 7
+      group by l.id, fp.code, tp.code
+      order by l.depart_date`.execute(tx);
     return {
       today,
       missingGuests: missing.rows,

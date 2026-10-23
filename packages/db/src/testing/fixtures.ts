@@ -105,6 +105,13 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   webhook_endpoint: apiFixture,
   webhook_delivery: apiFixture,
   webhook_attempt: apiFixture,
+  document: async (db, operatorId) => {
+    await db.query(
+      `insert into vs.document (operator_id, kind, format, locale, entity, entity_id, expires_at)
+       values ($1, 'vacancy_sheet', 'pdf', 'en', 'vessel', $2, now() + interval '1 day')`,
+      [operatorId, randomUUID()],
+    );
+  },
   staff_invitation: async (db, operatorId) => {
     await db.query(
       `insert into vs.staff_invitation (operator_id, email, display_name, role) values ($1, $2, 'Fixture', 'read_only')`,

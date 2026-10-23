@@ -176,6 +176,9 @@ export async function getOperatorSettings(db: VsDatabase, ctx: EngineContext) {
         'assignment_cutoff_days as assignmentCutoffDays',
         'allotment_release_days as allotmentReleaseDays',
         'passport_retention_days as passportRetentionDays',
+        'emergency_phone as emergencyPhone',
+        'voucher_note_en as voucherNoteEn',
+        'voucher_note_ar as voucherNoteAr',
       ])
       .executeTakeFirstOrThrow();
     return { ...operator, ...settings };
@@ -196,6 +199,9 @@ export const updateOperatorSettingsInput = z
     assignmentCutoffDays: z.number().int().min(0).max(60),
     allotmentReleaseDays: z.number().int().min(0).max(365),
     passportRetentionDays: z.number().int().min(1).max(3650),
+    emergencyPhone: z.string().trim().max(50).nullable(),
+    voucherNoteEn: z.string().trim().max(2000).nullable(),
+    voucherNoteAr: z.string().trim().max(2000).nullable(),
   })
   .partial();
 
@@ -228,6 +234,9 @@ export async function updateOperatorSettings(
       assignment_cutoff_days: data.assignmentCutoffDays,
       allotment_release_days: data.allotmentReleaseDays,
       passport_retention_days: data.passportRetentionDays,
+      emergency_phone: data.emergencyPhone === '' ? null : data.emergencyPhone,
+      voucher_note_en: data.voucherNoteEn === '' ? null : data.voucherNoteEn,
+      voucher_note_ar: data.voucherNoteAr === '' ? null : data.voucherNoteAr,
     };
     const set = Object.fromEntries(Object.entries(columns).filter(([, v]) => v !== undefined));
     if (Object.keys(set).length > 0) {

@@ -31,3 +31,7 @@ export * from './backoffice/book';
 export * from './backoffice/setup-reads';
 export * from './backoffice/channels';
 export * from './backoffice/settings';
+export * from './backoffice/assignment';
+export * from './backoffice/manifest';
+export * from './documents/requests';
+export * from './documents/data';
