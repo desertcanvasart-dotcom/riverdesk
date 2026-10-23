@@ -35,6 +35,8 @@ export const envSchema = z.object({
 
   PASSPORT_KEY_ID: z.string().min(1).optional(),
   PASSPORT_KEY: base64Key32.optional(),
+  /** Earlier keys still needed to decrypt: "id:base64,id:base64". */
+  PASSPORT_PREVIOUS_KEYS: z.string().optional(),
 
   SEED_STAFF_PASSWORD: z.string().min(8).optional(),
 });

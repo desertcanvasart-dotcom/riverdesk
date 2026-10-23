@@ -1,5 +1,6 @@
 export * from './actor';
 export * from './config';
+export * from './crypto';
 export * from './db';
 export * from './ids';
 export * from './logger';
