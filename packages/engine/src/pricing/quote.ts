@@ -372,6 +372,7 @@ function storedLines(lines: PriceLine[]) {
 export interface Quote {
   id: string;
   channelId: string;
+  contractId: string;
   sailingId: string;
   ratePlanId: string;
   currency: string;
@@ -423,10 +424,11 @@ export async function createQuote(
   });
 }
 
-async function loadQuote(tx: Tx, quoteId: string): Promise<Quote> {
+export async function loadQuote(tx: Tx, quoteId: string): Promise<Quote> {
   const { rows } = await sql<{
     id: string;
     channel_id: string;
+    contract_id: string;
     sailing_id: string;
     rate_plan_id: string;
     currency: string;
@@ -445,6 +447,7 @@ async function loadQuote(tx: Tx, quoteId: string): Promise<Quote> {
   return {
     id: row.id,
     channelId: row.channel_id,
+    contractId: row.contract_id,
     sailingId: row.sailing_id,
     ratePlanId: row.rate_plan_id,
     currency: row.currency,
