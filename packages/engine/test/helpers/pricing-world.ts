@@ -31,7 +31,7 @@ import { demoWorld, type World } from './world';
  *
  * Child policy (pilot): 0–1 free · 2–5 25% · 6–11 50% (both need two adults) · 12+ adult.
  */
-export interface PricingWorld extends World {
+export interface PricingWorld extends Omit<World, 'channels'> {
   M: BusinessDate;
   channels: Record<'nilecrz' | 'markup' | 'commission' | 'limited' | 'stopped', string>;
   plans: Record<'NIGHT' | 'PKG' | 'CABIN', string>;
@@ -39,7 +39,7 @@ export interface PricingWorld extends World {
 }
 
 export async function pricingWorld(): Promise<PricingWorld> {
-  const world = await demoWorld();
+  const world = await demoWorld({ pricing: false });
   const { db, ctx, demo } = world;
   const M = demo.validFrom;
   await generateSchedule(db, ctx, { vesselId: demo.vesselId, until: addDays(M, 41) });

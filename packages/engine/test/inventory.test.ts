@@ -10,7 +10,7 @@ import {
   releaseBlock,
   setStopSale,
 } from '../src/index';
-import { buckets, demoWorld, legs, simulateCommitment, type World } from './helpers/world';
+import { buckets, demoWorld, legs, commit, releaseAll, type World } from './helpers/world';
 
 describe('availability, blocks and stop sale', () => {
   let world: World;
@@ -48,18 +48,18 @@ describe('availability, blocks and stop sale', () => {
   };
 
   it('gives every sailing the minimum free count across its legs', async () => {
-    await simulateCommitment(legB, std, 5);
+    const sold = await commit(world, legB, std, 5);
     const { availability, free } = await firstWeek();
     expect(availability.asOf).toBeInstanceOf(Date);
     expect(free('LXR-4')).toBe(12); // leg A only
     expect(free('ASW-3')).toBe(7); // leg B only
     expect(free('LXR-7')).toBe(7); // min(A 12, B 7)
     expect(free('ASW-7')).toBe(7); // min(B 7, next A 12)
-    await simulateCommitment(legB, std, 0);
+    await releaseAll(sold);
   });
 
   it('refuses a normal block beyond free, and changes nothing', async () => {
-    await simulateCommitment(legA, std, 10);
+    const sold = await commit(world, legA, std, 10);
     const before = await buckets(world.demo.vesselId);
     const error = await blockCabins(world.db, world.ctx, {
       legIds: [legA, legB],
@@ -73,7 +73,7 @@ describe('availability, blocks and stop sale', () => {
       world.ctx.operatorId,
     ]);
     expect(blocks.rowCount).toBe(0);
-    await simulateCommitment(legA, std, 0);
+    await releaseAll(sold);
   });
 
   it('blocks from free on every leg, then release restores the counts', async () => {
@@ -107,7 +107,7 @@ describe('availability, blocks and stop sale', () => {
   });
 
   it('emergency block may exceed free: exception, overcommit and stop sale until released', async () => {
-    await simulateCommitment(legA, std, 11); // 1 free
+    const sold = await commit(world, legA, std, 11); // 1 free
     const block = await emergencyBlock(world.db, world.ctx, {
       legIds: [legA],
       categoryId: std,
@@ -159,7 +159,7 @@ describe('availability, blocks and stop sale', () => {
       block.exception_id,
     ]);
     expect(resolved.rows[0].status).toBe('resolved');
-    await simulateCommitment(legA, std, 0);
+    await releaseAll(sold);
   });
 
   it('a stop sale gives 0 for every sailing on that leg', async () => {

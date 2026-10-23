@@ -293,3 +293,52 @@ Reason: charters are not in the MVP (see backlog).
 **2026-10-23 · Runtime role passwords are set only when login fails.**
 The bootstrap no longer re-sets an unchanged password on every migration run.
 Reason: re-setting a password, even unchanged, makes the Supabase pooler drop its cached credentials, so the apps' logins would fail for a few seconds after every deploy.
+
+## Batch 3
+
+**2026-10-23 · Booking references are `PREFIX-YY-NNNNN`.**
+The prefix is per operator (`operator_setting.booking_ref_prefix`, default `VS`). The year is taken from the Cairo date. The number comes from one global Postgres sequence, so numbers have gaps and are not consecutive per operator.
+Reason: the operator chose this format. A sequence never blocks, while a counter row would make every confirmation queue behind the others.
+
+**2026-10-23 · Cancellation penalties are a percentage of the full booking total, supplements included.**
+The percentage comes from the booking's latest revision snapshot. Days before embarkation are counted on the Cairo date from the database clock. On or after the embark date, the 0-day rule applies.
+Reason: the operator chose this.
+
+**2026-10-23 · Bucket choice per leg × category.**
+All n cabins come from one bucket: the channel's active, unreleased allotment if it has n free, otherwise the pool, unless the contract is allotment-only. A stopped pool bucket refuses every channel on that leg × category, including allotments.
+Reason: the spec's rule. Taking all cabins from one bucket means each booking line has one clear source to return to.
+
+**2026-10-23 · Prepaid (`vessel_prepaid`) bookings wait in `held`.**
+Confirming a checkout or option hold for a prepaid contract turns that hold into the booking's payment hold, with the TTL from the payment policy snapshot (default 24 hours). The booking status is `held`. `confirmPaymentHold` moves the cabins from held to booked; Batch 4 calls it when a payment is recorded.
+Reason: spec § Payments: a payment confirms a booking only while it still holds its cabins.
+
+**2026-10-23 · Requests are allowed on every contract; holds are refused on on-request contracts.**
+Reason: staff and agents may ask for an instant sailing, but an on-request channel must never take cabins directly.
+
+**2026-10-23 · Lock order beyond rule 5.**
+
+- Hold row first, then the offer, then the booking, then buckets, for every hold-based transition, including expiry and accepting an offer.
+- Cancelling an unpaid prepaid booking releases its payment hold before updating the booking.
+- The expiry job takes hold rows with `FOR UPDATE SKIP LOCKED`, so it never waits on a confirmation.
+
+Reason: the same order everywhere means no lock cycles.
+
+**2026-10-23 · Request keys run in the same transaction as the write.**
+The key row in `idempotency_key` (scoped to the channel) is inserted in the same transaction. A concurrent duplicate waits on the unique index and then returns the committed result; bigint and Date values survive the round trip. The same key with a different body is refused with `IDEMPOTENCY_KEY_REUSED`.
+Reason: back-office double-click protection. API idempotency, where the key is committed as `in_progress` before the work starts, comes in Batch 5.
+
+**2026-10-23 · How amendments are applied.**
+The engine compares required cabins per leg × category with the current confirmed lines. It acquires every increase first, then releases every decrease. Kept lines keep their bucket and move to the new cabin rows. Cabins are updated in place by index, new ones are added, and the rest are cancelled; guests of a cancelled cabin move to cabin 0. The fee is the highest matching amendment-fee rule, plus the cancellation penalty on any reduction in the total within a penalty window.
+Reason: spec § Amendments ("removed nights inside the penalty window are charged as a cancellation").
+
+**2026-10-23 · Guest age mismatches are compared by price band.**
+Each child guest with a date of birth must match a quoted child in the same price band from the booking's child policy. Otherwise a `guest_age_mismatch` exception is opened (once per booking). Nothing is repriced.
+Reason: the Part 0 decision. Comparing bands, not exact ages, avoids flagging a child who simply had a birthday after the quote.
+
+**2026-10-23 · Passport encryption details.**
+AES-256-GCM, with a fresh IV per value and the key id as additional authenticated data; the key id is stored with the ciphertext. Old keys stay readable through `PASSPORT_PREVIOUS_KEYS`. Guest audits record counts only, never names or passport numbers.
+Reason: rule 9.
+
+**2026-10-23 · When the booking jobs run.**
+`expire_holds` runs every minute, `expire_requests` every 5 minutes, `release_allotments` every 15 minutes and `complete_bookings` hourly. A release is due when `depart_date − release_days ≤ today (Cairo)`, compared in Postgres, which also covers the prompt's daily 00:05 run and its hourly catch-up.
+Reason: the Batch 0 decision on Cairo-time jobs; Egypt's DST would make a fixed cron time drift.

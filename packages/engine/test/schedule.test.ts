@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner } from '@vs/db/testing';
 import { addDays, daysBetween } from '@vs/shared';
 import { generateSchedule, todayInCairo } from '../src/index';
-import { buckets, demoWorld, legs, simulateCommitment, type World } from './helpers/world';
+import { buckets, demoWorld, legs, commit, releaseAll, type World } from './helpers/world';
 
 describe('generateSchedule', () => {
   let world: World;
@@ -106,7 +106,7 @@ describe('generateSchedule', () => {
 
   it('is idempotent and never changes legs that have commitments', async () => {
     const [first] = await legs(world.demo.vesselId);
-    await simulateCommitment(first!.id, world.demo.categories.STD, 3, 1);
+    const taken = await commit(world, first!.id, world.demo.categories.STD, 3, 1);
     const before = await buckets(world.demo.vesselId);
     const again = await generateSchedule(world.db, world.ctx, { vesselId: world.demo.vesselId });
     expect(again).toMatchObject({
@@ -116,7 +116,7 @@ describe('generateSchedule', () => {
       conflicts: [],
     });
     expect(await buckets(world.demo.vesselId)).toEqual(before);
-    await simulateCommitment(first!.id, world.demo.categories.STD, 0, 0);
+    await releaseAll(taken);
   });
 
   it('extends the horizon later without touching earlier legs', async () => {

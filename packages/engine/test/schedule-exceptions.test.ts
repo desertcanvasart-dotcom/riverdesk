@@ -3,7 +3,7 @@ import { owner } from '@vs/db/testing';
 import { isDomainError } from '@vs/contracts';
 import { addDays } from '@vs/shared';
 import { applyScheduleException, generateSchedule, getAvailability } from '../src/index';
-import { demoWorld, legs, simulateCommitment, type World } from './helpers/world';
+import { demoWorld, legs, commit, releaseAll, type World } from './helpers/world';
 
 async function sailingsOf(vesselId: string) {
   const { rows } = await owner().query<{
@@ -40,7 +40,7 @@ describe('applyScheduleException', () => {
   it('cancels a departure: legs and sailings cancelled, commitments flagged, sailing.changed emitted', async () => {
     const all = await legs(world.demo.vesselId);
     const legA2 = all[2]!; // week 2, leg A
-    await simulateCommitment(legA2.id, world.demo.categories.STD, 4);
+    const sold = await commit(world, legA2.id, world.demo.categories.STD, 4);
     const result = await applyScheduleException(world.db, world.ctx, {
       vesselId: world.demo.vesselId,
       kind: 'cancel',
@@ -75,7 +75,7 @@ describe('applyScheduleException', () => {
       [legA2.id, world.demo.categories.STD],
     );
     expect(pool.rows[0].booked).toBe(4);
-    await simulateCommitment(legA2.id, world.demo.categories.STD, 0);
+    await releaseAll(sold);
   });
 
   it('shifts a leg by a day: its own sailing moves, a sailing that no longer joins up is closed', async () => {

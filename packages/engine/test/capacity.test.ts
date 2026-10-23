@@ -3,7 +3,7 @@ import { owner } from '@vs/db/testing';
 import { isDomainError } from '@vs/contracts';
 import { addDays } from '@vs/shared';
 import { changeCapacity, generateSchedule } from '../src/index';
-import { buckets, demoWorld, legs, simulateCommitment, type World } from './helpers/world';
+import { buckets, demoWorld, legs, commit, releaseAll, type World } from './helpers/world';
 
 describe('changeCapacity', () => {
   let world: World;
@@ -61,8 +61,8 @@ describe('changeCapacity', () => {
 
   it('refuses a removal below commitments, lists the conflicts and changes nothing', async () => {
     const rs = world.demo.categories.RS; // 2 royal suites
-    await simulateCommitment(allLegs[1]!.id, rs, 2); // both sold on leg B week 1
-    await simulateCommitment(allLegs[5]!.id, rs, 1, 1); // both taken on leg B week 3
+    const week1 = await commit(world, allLegs[1]!.id, rs, 2); // both sold on leg B week 1
+    const week3 = await commit(world, allLegs[5]!.id, rs, 1, 1); // both taken on leg B week 3
     const before = await buckets(world.demo.vesselId);
     const error = await changeCapacity(world.db, world.ctx, {
       vesselId: world.demo.vesselId,
@@ -78,8 +78,7 @@ describe('changeCapacity', () => {
       [allLegs[5]!.id, 0],
     ]);
     expect(await buckets(world.demo.vesselId)).toEqual(before);
-    await simulateCommitment(allLegs[1]!.id, rs, 0);
-    await simulateCommitment(allLegs[5]!.id, rs, 0);
+    await releaseAll([...week1, ...week3]);
   });
 
   it('removes a cabin once its legs are free', async () => {

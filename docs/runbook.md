@@ -25,6 +25,16 @@ pnpm --filter @vs/worker dev       # Graphile Worker + cron
 
 Demo logins (local Auth only): `owner@demo.local` and `reservations@demo.local`, password `SEED_STAFF_PASSWORD` from `.env`.
 
+## Worker jobs
+
+| Job                  | Schedule (UTC)   | Does                                                                          |
+| -------------------- | ---------------- | ----------------------------------------------------------------------------- |
+| `expire_holds`       | every minute     | Expires holds past `expires_at` (database time), 500 per batch, `SKIP LOCKED` |
+| `expire_requests`    | every 5 minutes  | Requests past SLA + grace → expired                                           |
+| `release_allotments` | every 15 minutes | Releases allotment legs due by Cairo date                                     |
+| `complete_bookings`  | hourly           | Confirmed bookings after their last night → completed                         |
+| `nightly_invariants` | 00:00            | `check_invariants()` per operator; violations open exceptions and stop sales  |
+
 ## Look at availability
 
 ```bash

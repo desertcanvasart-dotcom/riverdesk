@@ -4,10 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual runs, e.g. the 10-consecutive-runs flake check for concurrency tests.
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'push' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   ci:

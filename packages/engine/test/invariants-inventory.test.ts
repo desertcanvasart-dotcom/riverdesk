@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner, testConfig } from '@vs/db/testing';
 import { addDays, systemActor } from '@vs/shared';
 import {
+  releaseBlock,
+  emergencyBlock,
   generateSchedule,
   getAvailability,
   openDatabase,
@@ -9,7 +11,7 @@ import {
   setStopSale,
   type VsDatabase,
 } from '../src/index';
-import { buckets, demoWorld, legs, type World } from './helpers/world';
+import { buckets, commit, demoWorld, legs, releaseAll, type World } from './helpers/world';
 
 async function violationsFor(operatorId: string) {
   const { rows } = await owner().query<{
@@ -68,7 +70,8 @@ describe('check_invariants() on inventory (invariants 1 and 3)', () => {
     ]);
 
     const found = await violationsFor(world.ctx.operatorId);
-    expect(found).toHaveLength(3);
+    // held = total + 1 breaks invariant 2 (no hold lines) and invariant 3 (held > total).
+    expect(found).toHaveLength(4);
     expect(found).toContainEqual({
       invariant: 1,
       entity: 'leg',
@@ -84,6 +87,9 @@ describe('check_invariants() on inventory (invariants 1 and 3)', () => {
       expect.objectContaining({ invariant: 3, entity: 'inventory_bucket', entity_id: overHeld.id }),
     );
     expect(found).toContainEqual(
+      expect.objectContaining({ invariant: 2, entity: 'inventory_bucket', entity_id: overHeld.id }),
+    );
+    expect(found).toContainEqual(
       expect.objectContaining({
         invariant: 3,
         entity: 'inventory_bucket',
@@ -94,8 +100,8 @@ describe('check_invariants() on inventory (invariants 1 and 3)', () => {
     const results = await runInvariantChecks(worker, systemActor('nightly_invariants'));
     expect(results.find((r) => r.operatorId === world.ctx.operatorId)).toEqual({
       operatorId: world.ctx.operatorId,
-      violations: 3,
-      opened: 3,
+      violations: 4,
+      opened: 4,
     });
     const stopped = (await buckets(world.demo.vesselId)).filter((b) => b.stop_sale);
     expect(stopped.map((b) => b.id).sort()).toEqual(
@@ -136,23 +142,32 @@ describe('check_invariants() on inventory (invariants 1 and 3)', () => {
   });
 
   it('accepts overcommit only on a stopped pool bucket with an open oversubscription exception', async () => {
-    const [bucket] = (await buckets(world.demo.vesselId)).filter((b) => b.kind === 'pool');
-    await owner().query(
-      `update vs.inventory_bucket set overcommit = 1, booked = total + 1, stop_sale = true, stop_reason = 'emergency_block' where id = $1`,
-      [bucket!.id],
-    );
-    const { rows } = await owner().query<{ id: string }>(
-      `insert into vs.exception (operator_id, kind, summary, refs) values ($1, 'oversubscription', 'test', $2) returning id`,
-      [world.ctx.operatorId, JSON.stringify([{ entity: 'inventory_bucket', id: bucket!.id }])],
-    );
+    const [legA] = await legs(world.demo.vesselId);
+    const std = world.demo.categories.STD;
+    const sold = await commit(world, legA!.id, std, 12); // the whole category
+    const block = await emergencyBlock(world.db, world.ctx, {
+      legIds: [legA!.id],
+      categoryId: std,
+      count: 1,
+      reason: 'Leak',
+    });
     expect(await violationsFor(world.ctx.operatorId)).toEqual([]);
-    await owner().query(`update vs.exception set status = 'resolved' where id = $1`, [rows[0]!.id]);
-    expect((await violationsFor(world.ctx.operatorId)).map((v) => v.entity_id)).toEqual([
-      bucket!.id,
+
+    await owner().query(`update vs.exception set status = 'resolved' where id = $1`, [
+      block.exception_id,
     ]);
-    await owner().query(
-      `update vs.inventory_bucket set overcommit = 0, booked = 0, stop_sale = false, stop_reason = null where id = $1`,
-      [bucket!.id],
-    );
+    const pool = (await buckets(world.demo.vesselId)).find(
+      (b) => b.leg_id === legA!.id && b.category_id === std && b.kind === 'pool',
+    )!;
+    expect(
+      (await violationsFor(world.ctx.operatorId)).map((v) => [v.invariant, v.entity_id]),
+    ).toEqual([[3, pool.id]]);
+
+    await owner().query(`update vs.exception set status = 'open' where id = $1`, [
+      block.exception_id,
+    ]);
+    await releaseBlock(world.db, world.ctx, { blockId: block.id });
+    await releaseAll(sold);
+    expect(await violationsFor(world.ctx.operatorId)).toEqual([]);
   });
 });

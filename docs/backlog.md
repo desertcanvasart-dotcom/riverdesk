@@ -34,3 +34,10 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - Pricing by the lead guest's nationality and residency (spec § Market). The MVP takes the market as a quote input; staff reprice if the guest cannot show ID.
 - Child band amounts in another currency than the rate plan are refused; add per-currency fixed child amounts if a plan ever needs them.
 - Extra-bed pricing (`extra_bed_allowed` on categories is stored but not priced).
+
+## Noted during Batch 3
+
+- Credit limit check at confirmation (Batch 4): a credit booking over the limit becomes a request.
+- Emergency-block exceptions: list the affected bookings, not only the counts.
+- A quote can back several holds; make quotes single-use per hold if channels misuse them.
+- Charters (spec test 9) remain out of the MVP.
