@@ -40,4 +40,14 @@ describe('api', () => {
     expect(bug.statusCode).toBe(500);
     expect(bug.body).not.toContain('secret internals');
   });
+
+  it('serves the OpenAPI contract and the interactive docs', async () => {
+    const app = buildApp({ db, logger });
+    const yaml = await app.inject({ method: 'GET', url: '/openapi.yaml' });
+    expect(yaml.statusCode).toBe(200);
+    expect(yaml.body).toContain('openapi: 3.1.0');
+    const docs = await app.inject({ method: 'GET', url: '/docs/' });
+    expect(docs.statusCode).toBe(200);
+    expect(docs.body).toContain('vessel-system Channel API');
+  });
 });

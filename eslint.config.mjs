@@ -25,6 +25,7 @@ export default tseslint.config(
       '**/.turbo/**',
       '**/next-env.d.ts',
       'packages/db/src/generated/**',
+      'packages/contracts/src/generated/**',
     ],
   },
   js.configs.recommended,

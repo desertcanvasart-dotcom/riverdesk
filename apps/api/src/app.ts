@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
-import { DomainError, isDomainError } from '@vs/contracts';
+import ScalarApiReference from '@scalar/fastify-api-reference';
+import { DomainError, isDomainError, openApiDocument, openApiText } from '@vs/contracts';
 import { pingDatabase, type VsDatabase } from '@vs/engine';
 import { createLogger, type Logger } from '@vs/shared';
 
@@ -23,6 +24,15 @@ export function buildApp(options: { db: VsDatabase; logger?: Logger }) {
     }
     request.log.error({ err: error }, 'unhandled error');
     return reply.status(500).send({ error: new DomainError('INTERNAL').toJSON() });
+  });
+
+  // The contract, and interactive docs rendered from it.
+  app.get('/openapi.yaml', async (_request, reply) =>
+    reply.type('application/yaml').send(openApiText()),
+  );
+  void app.register(ScalarApiReference, {
+    routePrefix: '/docs',
+    configuration: { title: 'vessel-system Channel API', content: openApiDocument() },
   });
 
   app.get('/health', async (_request, reply) => {

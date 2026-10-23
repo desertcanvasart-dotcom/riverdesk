@@ -1,0 +1,1138 @@
+openapi: 3.1.0
+info:
+  title: vessel-system Channel API
+  version: 1.0.0
+  summary: Book Nile cruise cabins on one live inventory.
+  description: |
+    The channel API lets a portal (nilecrz first) search, price, hold, confirm, request, amend
+    and cancel cabins on the vessels a cruise company has contracted with it, and stay in sync
+    through events and webhooks.
+
+    ## Conventions
+    - **One company per client.** API credentials belong to one channel of one cruise company.
+      A portal that sells for several companies holds one client per company.
+    - **Contract enforcement.** Every call is checked against the channel's contract: vessels,
+      categories, rate plans, allocation (pool, allotment or on request), visible-free cap, hold
+      and option TTLs, and stop-sell. A channel never sees another channel's allotments, holds or
+      bookings.
+    - **Money** is an integer amount of minor units plus an ISO 4217 currency
+      (`{"amount": 117000, "currency": "USD"}` is 1,170.00 USD). There are no decimals.
+    - **Dates** are calendar dates in Africa/Cairo (`2026-11-16`); timestamps are UTC (RFC 3339).
+    - **Field names** are snake_case. Unknown fields in requests are rejected.
+    - **Personal data.** Passport numbers and dates of birth are accepted in guest details but
+      are never returned by the API, in events or in webhooks.
+
+    ## Writes, idempotency and duplicates
+    - Every POST, PATCH and DELETE requires an `Idempotency-Key` header (1–255 characters,
+      e.g. a UUID). Repeating a request with the same key returns the first response for 7 days.
+    - A concurrent duplicate gets `409 IN_PROGRESS`; retry after a short pause. The same key with
+      a different body gets `422 IDEMPOTENCY_KEY_REUSED`.
+    - `channel_ref` (your own booking reference) is unique per channel forever: confirming or
+      requesting with an existing `channel_ref` returns that booking instead of creating another,
+      even after the idempotency key has expired.
+
+    ## Booking flow
+    1. `GET /v1/availability` (or `/v1/sailings`) to find sailings and free cabins.
+    2. `POST /v1/quotes` to price cabins, adults and child ages. The quote freezes the price and
+       policies until `expires_at`.
+    3. `POST /v1/holds` with `kind: checkout` (short) or `option` (longer) to hold the cabins.
+    4. `POST /v1/holds/{id}/confirm` with guest details to confirm. Or `DELETE /v1/holds/{id}` to
+       release.
+    5. On-request contracts use `POST /v1/requests` instead; the cruise company accepts, declines
+       or offers an alternative (`offer.created`, accepted with `POST /v1/offers/{id}/accept`).
+    6. Later: amendment quotes and amendments (with `If-Match`), cancellation, guest details.
+
+    ## Events
+    Every change you may care about is an event with a monotonic `resource_version` per resource.
+    Delivery by webhook is at least once and may be duplicated or out of order: ignore a
+    version you have already seen. `GET /v1/events` lets you catch up after downtime.
+    `GET /v1/availability` is always the source of truth for free cabins.
+
+    ## Limits and errors
+    600 requests per minute per client by default (`429` with `Retry-After`). During an outage
+    the API returns `503` with `Retry-After`; show sailings as on request. Errors share one shape
+    with a stable `code` (see `Error`). Breaking changes only come in a new version (`/v2`), with
+    6 months' overlap.
+  contact:
+    name: vessel-system
+servers:
+  - url: '{baseUrl}'
+    description: Production or sandbox (the sandbox has a demo company and vessel).
+    variables:
+      baseUrl:
+        default: https://api.example.com
+  - url: http://localhost:4000
+    description: Local development
+security:
+  - bearer: []
+tags:
+  - name: Auth
+  - name: Catalogue
+  - name: Availability
+  - name: Quotes
+  - name: Holds
+  - name: Requests and offers
+  - name: Bookings
+  - name: Events
+
+paths:
+  /oauth/token:
+    post:
+      tags: [Auth]
+      operationId: createToken
+      summary: Get an access token (OAuth 2.0 client credentials)
+      description: |
+        Exchange the client id and secret for a bearer token valid for 15 minutes. Send the
+        credentials as HTTP Basic or in the form body. Two secrets can be active at once so they
+        can be rotated without downtime.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type]
+              properties:
+                grant_type: { type: string, const: client_credentials }
+                client_id: { type: string }
+                client_secret: { type: string }
+            example:
+              grant_type: client_credentials
+              client_id: vsc_7f3c2a9e
+              client_secret: vss_live_xxxxxxxxxxxxxxxxxxxxxxxx
+      responses:
+        '200':
+          description: A bearer token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Token' }
+              example:
+                { access_token: eyJhbGciOiJIUzI1NiJ9.e30.x, token_type: Bearer, expires_in: 900 }
+        '400':
+          description: Malformed request (OAuth error format).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+        '401':
+          description: Unknown client or wrong secret (OAuth error format).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OAuthError' }
+              example: { error: invalid_client }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /v1/vessels:
+    get:
+      tags: [Catalogue]
+      operationId: listVessels
+      summary: Vessels, categories and occupancy rules this channel may sell
+      responses:
+        '200':
+          description: Contracted vessels with their contracted categories and rate plans.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [vessels]
+                properties:
+                  vessels:
+                    type: array
+                    items: { $ref: '#/components/schemas/Vessel' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/sailings:
+    get:
+      tags: [Catalogue]
+      operationId: listSailings
+      summary: Sailings with their legs
+      parameters:
+        - { $ref: '#/components/parameters/VesselQuery' }
+        - { $ref: '#/components/parameters/FromQuery' }
+        - { $ref: '#/components/parameters/ToQuery' }
+        - name: nights
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Open sailings embarking between `from` and `to` (at most 400 days).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sailings]
+                properties:
+                  sailings:
+                    type: array
+                    items: { $ref: '#/components/schemas/Sailing' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/availability:
+    get:
+      tags: [Availability]
+      operationId: getAvailability
+      summary: Free cabins per sailing and category
+      description: |
+        Per sailing × category: `instant` (can be held now), `on_request` (contract or category on
+        request) or `sold_out`; free cabins (the minimum across the sailing's legs, including this
+        channel's allotment, capped by the contract's visible-free cap); a from-price per person
+        (double occupancy, the cheapest contracted rate plan); and `as_of`. At most 120 days per call.
+      parameters:
+        - { $ref: '#/components/parameters/VesselQuery' }
+        - { $ref: '#/components/parameters/FromQuery' }
+        - { $ref: '#/components/parameters/ToQuery' }
+      responses:
+        '200':
+          description: Availability.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Availability' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/quotes:
+    post:
+      tags: [Quotes]
+      operationId: createQuote
+      summary: Price one sailing for cabins, adults and child ages
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuoteRequest' }
+            example:
+              sailing_id: 01a16a6c-e739-7b05-990b-3929fb78c8b4
+              market: international
+              cabins:
+                - { category_id: 01a16a6c-2c89-7523-938d-d5c78f3c0b17, adults: 2, child_ages: [7] }
+      responses:
+        '201':
+          description: The stored quote.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Quote' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/holds:
+    post:
+      tags: [Holds]
+      operationId: createHold
+      summary: Hold cabins from a quote
+      description: |
+        Takes the quoted cabins on every leg of the sailing, or none. `checkout` lasts the
+        contract's checkout TTL (default 30 minutes), `option` the option TTL (default 72 hours),
+        never beyond the quote's expiry. Refused on on-request contracts.
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HoldRequest' }
+      responses:
+        '201':
+          description: The hold.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hold' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/holds/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/IdPath' }
+    delete:
+      tags: [Holds]
+      operationId: releaseHold
+      summary: Release a hold
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '200':
+          description: Released.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hold' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/holds/{id}/confirm:
+    parameters:
+      - { $ref: '#/components/parameters/IdPath' }
+    post:
+      tags: [Holds]
+      operationId: confirmHold
+      summary: Confirm a hold with guest details
+      description: |
+        Succeeds only while the hold is active and unexpired (`HOLD_EXPIRED` otherwise). Channels
+        that collect payment are confirmed at once. An agent over its credit limit gets a booking
+        with status `requested` (reason `credit_limit`) instead. A repeated `channel_ref` returns
+        the existing booking.
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmRequest' }
+      responses:
+        '201':
+          description: The booking.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/requests:
+    post:
+      tags: [Requests and offers]
+      operationId: createRequest
+      summary: Create an on-request booking from a quote
+      description: |
+        No cabins are taken until the cruise company accepts. The request times out after the
+        contract's SLA plus a grace period (`request.decided` with decision `timed_out`).
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestCreate' }
+      responses:
+        '201':
+          description: The requested booking.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/offers/{id}/accept:
+    parameters:
+      - { $ref: '#/components/parameters/IdPath' }
+    post:
+      tags: [Requests and offers]
+      operationId: acceptOffer
+      summary: Accept an alternative offered by the cruise company
+      description: The offer carries its own hold; accepting it moves the booking to the alternative.
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '200':
+          description: The booking, now on the alternative.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/bookings/{ref}:
+    parameters:
+      - { $ref: '#/components/parameters/RefPath' }
+    get:
+      tags: [Bookings]
+      operationId: getBooking
+      summary: Booking, current revision, status and payments due
+      responses:
+        '200':
+          description: The booking.
+          headers:
+            ETag:
+              description: The current revision, for `If-Match` on amendments.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/bookings/{ref}/amendment-quotes:
+    parameters:
+      - { $ref: '#/components/parameters/RefPath' }
+    post:
+      tags: [Bookings]
+      operationId: createAmendmentQuote
+      summary: Price a proposed change
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AmendmentQuoteRequest' }
+      responses:
+        '201':
+          description: The new price, the fee and the difference.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AmendmentQuote' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/bookings/{ref}/amendments:
+    parameters:
+      - { $ref: '#/components/parameters/RefPath' }
+    post:
+      tags: [Bookings]
+      operationId: applyAmendment
+      summary: Apply an amendment quote
+      description: |
+        Send the revision you are amending as `If-Match`. A stale revision returns
+        `409 REVISION_CHANGED`. If any new cabin cannot be taken, nothing changes
+        (`409 NOT_AVAILABLE`).
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+        - name: If-Match
+          in: header
+          required: true
+          description: The booking revision, e.g. `"2"`.
+          schema: { type: string, pattern: '^"?[0-9]+"?$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amendment_quote_id]
+              properties:
+                amendment_quote_id: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: The amended booking (new revision).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/bookings/{ref}/cancel:
+    parameters:
+      - { $ref: '#/components/parameters/RefPath' }
+    post:
+      tags: [Bookings]
+      operationId: cancelBooking
+      summary: Cancel; returns the penalty applied
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200':
+          description: The cancelled booking with its penalty.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/bookings/{ref}/guests:
+    parameters:
+      - { $ref: '#/components/parameters/RefPath' }
+    patch:
+      tags: [Bookings]
+      operationId: replaceGuests
+      summary: Guest details (until the manifest cut-off)
+      description: |
+        Replaces the guest list. Exactly one lead guest. Accepted until the manifest cut-off
+        (default 7 days before embarkation). A child whose date of birth falls in another price
+        band than quoted is flagged to the cruise company, not repriced.
+      parameters:
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [guests]
+              properties:
+                guests:
+                  type: array
+                  minItems: 1
+                  items: { $ref: '#/components/schemas/GuestInput' }
+      responses:
+        '200':
+          description: The booking.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        default: { $ref: '#/components/responses/Error' }
+
+  /v1/events:
+    get:
+      tags: [Events]
+      operationId: listEvents
+      summary: Event feed for catch-up and resynchronisation
+      description: |
+        Events for this channel in commit order, after the cursor. Start without `after`; keep
+        the returned `next_cursor`. An empty page means you are up to date.
+      parameters:
+        - name: after
+          in: query
+          required: false
+          description: The `next_cursor` of the previous page.
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+      responses:
+        '200':
+          description: A page of events.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [events, next_cursor]
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: '#/components/schemas/Event' }
+                  next_cursor: { type: string }
+        default: { $ref: '#/components/responses/Error' }
+
+webhooks:
+  event:
+    post:
+      summary: An event, delivered to your webhook endpoint
+      description: |
+        Delivered at least once, possibly duplicated or out of order, retried with backoff for 24
+        hours. Verify the signature before trusting the body:
+        `X-VS-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "<t>.<raw body>")>`.
+        Reject timestamps older than 5 minutes. Respond with 2xx within 10 seconds.
+      parameters:
+        - name: X-VS-Signature
+          in: header
+          required: true
+          schema: { type: string, example: 't=1792788000,v1=5d41402abc4b2a76b9719d911017c592' }
+        - name: X-VS-Event-Id
+          in: header
+          required: true
+          schema: { $ref: '#/components/schemas/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Event' }
+      responses:
+        '2XX':
+          description: Received.
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: An access token from `POST /oauth/token`.
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 255 }
+      example: 6f1c8a2e-6a1b-4c1e-9f3e-2b7f1c0d9a11
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    RefPath:
+      name: ref
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Z]{2,5}-[0-9]{2}-[0-9]{5,}$', example: VS-26-00447 }
+    VesselQuery:
+      name: vessel
+      in: query
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    FromQuery:
+      name: from
+      in: query
+      required: true
+      schema: { $ref: '#/components/schemas/Date' }
+    ToQuery:
+      name: to
+      in: query
+      required: true
+      schema: { $ref: '#/components/schemas/Date' }
+
+  responses:
+    Error:
+      description: An error with a stable code.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            notAvailable:
+              value: { error: { code: NOT_AVAILABLE, message: Not enough free cabins } }
+            revisionChanged:
+              value:
+                {
+                  error:
+                    {
+                      code: REVISION_CHANGED,
+                      message: The booking revision has changed,
+                      details: { revision: 3 },
+                    },
+                }
+    RateLimited:
+      description: Too many requests.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Id:
+      type: string
+      format: uuid
+      example: 01a16a6c-2c89-7523-938d-d5c78f3c0b17
+    Date:
+      type: string
+      format: date
+      example: '2026-11-16'
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amount, currency]
+      properties:
+        amount: { type: integer, description: 'Minor units (cents, piastres).' }
+        currency: { type: string, pattern: '^[A-Z]{3}$', example: USD }
+      example: { amount: 117000, currency: USD }
+    Bilingual:
+      type: object
+      required: [en, ar]
+      properties:
+        en: { type: string }
+        ar: { type: string }
+    Port:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, example: LXR }
+        name: { $ref: '#/components/schemas/Bilingual' }
+
+    Token:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, const: Bearer }
+        expires_in: { type: integer, description: Seconds. }
+    OAuthError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, enum: [invalid_request, invalid_client, unsupported_grant_type] }
+        error_description: { type: string }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable; branch on it, not on the message.
+              enum:
+                - NOT_AVAILABLE
+                - HOLD_EXPIRED
+                - HOLD_NOT_ACTIVE
+                - REVISION_CHANGED
+                - STOP_SALE
+                - SAILING_CLOSED
+                - INVALID_STATE
+                - CAPACITY_CONFLICT
+                - SCHEDULE_CONFLICT
+                - INVALID_OCCUPANCY
+                - NO_RATE_FOR_SEASON
+                - CONTRACT_FORBIDS
+                - QUOTE_EXPIRED
+                - RETRY_LATER
+                - IN_PROGRESS
+                - IDEMPOTENCY_KEY_REUSED
+                - UNAUTHENTICATED
+                - FORBIDDEN
+                - NOT_FOUND
+                - VALIDATION_FAILED
+                - RATE_LIMITED
+                - INVARIANT_VIOLATION
+                - SERVICE_UNAVAILABLE
+                - INTERNAL
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+
+    Category:
+      type: object
+      required: [id, code, name, max_adults, max_occupancy]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        code: { type: string, example: STD }
+        name: { $ref: '#/components/schemas/Bilingual' }
+        deck: { type: [string, 'null'] }
+        bed_config: { type: [string, 'null'] }
+        max_adults: { type: integer }
+        max_occupancy: { type: integer, description: Adults and children together. }
+    RatePlan:
+      type: object
+      required: [id, code, name, market, currency, pricing_unit, pricing_period]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        code: { type: string, example: INTL }
+        name: { type: string }
+        market: { type: string, example: international }
+        currency: { type: string, example: USD }
+        board: { type: string, example: full_board }
+        pricing_unit: { type: string, enum: [per_person, per_cabin] }
+        pricing_period: { type: string, enum: [per_night, per_package] }
+    ChildPolicy:
+      type: object
+      required: [adult_from_age, max_children_per_cabin, bands]
+      properties:
+        adult_from_age: { type: integer }
+        max_children_per_cabin: { type: integer }
+        bands:
+          type: array
+          items:
+            type: object
+            required: [age_from, age_to, basis]
+            properties:
+              age_from: { type: integer }
+              age_to: { type: integer }
+              basis: { type: string, enum: [free, percent_of_adult, fixed, included] }
+              percent_bps: { type: [integer, 'null'] }
+              requires_two_adults: { type: boolean }
+    Vessel:
+      type: object
+      required: [id, code, name, type, max_guests, categories, rate_plans]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        code: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [cruise_ship, dahabiya, steam] }
+        max_guests: { type: integer }
+        categories:
+          type: array
+          items: { $ref: '#/components/schemas/Category' }
+        rate_plans:
+          type: array
+          items: { $ref: '#/components/schemas/RatePlan' }
+        allocation:
+          {
+            type: string,
+            enum: [pool, allotment, on_request],
+            description: How this channel sells this vessel.,
+          }
+
+    Leg:
+      type: object
+      required: [id, from_port, to_port, depart_date, arrive_date]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        from_port: { $ref: '#/components/schemas/Port' }
+        to_port: { $ref: '#/components/schemas/Port' }
+        depart_date: { $ref: '#/components/schemas/Date' }
+        arrive_date: { $ref: '#/components/schemas/Date' }
+    Sailing:
+      type: object
+      required:
+        [
+          id,
+          vessel_id,
+          embark_port,
+          disembark_port,
+          embark_date,
+          disembark_date,
+          nights,
+          status,
+          legs,
+        ]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        vessel_id: { $ref: '#/components/schemas/Id' }
+        pattern_code: { type: [string, 'null'], example: LXR-7 }
+        name: { $ref: '#/components/schemas/Bilingual' }
+        embark_port: { $ref: '#/components/schemas/Port' }
+        disembark_port: { $ref: '#/components/schemas/Port' }
+        embark_date: { $ref: '#/components/schemas/Date' }
+        disembark_date: { $ref: '#/components/schemas/Date' }
+        nights: { type: integer }
+        status: { type: string, enum: [open, closed, cancelled] }
+        legs:
+          type: array
+          items: { $ref: '#/components/schemas/Leg' }
+
+    Availability:
+      type: object
+      required: [as_of, sailings]
+      properties:
+        as_of:
+          { type: string, format: date-time, description: Database time the counts were read at. }
+        sailings:
+          type: array
+          items:
+            type: object
+            required: [sailing_id, embark_date, disembark_date, nights, categories]
+            properties:
+              sailing_id: { $ref: '#/components/schemas/Id' }
+              pattern_code: { type: [string, 'null'] }
+              embark_date: { $ref: '#/components/schemas/Date' }
+              disembark_date: { $ref: '#/components/schemas/Date' }
+              nights: { type: integer }
+              categories:
+                type: array
+                items:
+                  type: object
+                  required: [category_id, code, status, free]
+                  properties:
+                    category_id: { $ref: '#/components/schemas/Id' }
+                    code: { type: string }
+                    status: { type: string, enum: [instant, on_request, sold_out] }
+                    free: { type: integer, description: Capped by the contract's visible-free cap. }
+                    from_price:
+                      description: Per person, double occupancy, before child and supplement rules.
+                      oneOf:
+                        - { $ref: '#/components/schemas/Money' }
+                        - { type: 'null' }
+
+    CabinRequest:
+      type: object
+      additionalProperties: false
+      required: [category_id, adults]
+      properties:
+        category_id: { $ref: '#/components/schemas/Id' }
+        adults: { type: integer, minimum: 1, maximum: 10 }
+        child_ages:
+          type: array
+          description: Ages on the embark date.
+          items: { type: integer, minimum: 0, maximum: 17 }
+        child_birth_dates:
+          type: array
+          description: Alternative to child_ages; the age on the embark date is computed.
+          items: { $ref: '#/components/schemas/Date' }
+    QuoteRequest:
+      type: object
+      additionalProperties: false
+      required: [sailing_id, market, cabins]
+      properties:
+        sailing_id: { $ref: '#/components/schemas/Id' }
+        market:
+          { type: string, example: international, description: Selects the contracted rate plan. }
+        rate_plan_id:
+          {
+            $ref: '#/components/schemas/Id',
+            description: Needed only if several plans match the market.,
+          }
+        cabins:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: '#/components/schemas/CabinRequest' }
+    PriceLine:
+      type: object
+      required: [cabin, kind, label, unit_amount, quantity, amount, in_total]
+      properties:
+        cabin: { type: integer, description: Index of the cabin in the request. }
+        kind: { type: string, enum: [adult, child, cabin, supplement, markup, commission] }
+        label: { type: string }
+        basis: { type: [string, 'null'] }
+        age: { type: [integer, 'null'] }
+        unit_amount: { type: integer }
+        quantity: { type: integer }
+        amount: { type: integer, description: Rounded half-up once. }
+        in_total:
+          {
+            type: boolean,
+            description: Commission lines are information and not part of the total.,
+          }
+    Policies:
+      type: object
+      description: Frozen with the quote and copied onto the booking.
+      required: [cancellation, payment, child]
+      properties:
+        cancellation:
+          type: object
+          properties:
+            rules:
+              type: array
+              items:
+                type: object
+                properties:
+                  from_days: { type: integer, description: Days before embarkation, inclusive. }
+                  penalty_bps:
+                    { type: integer, description: 'Basis points of the total (2500 = 25%).' }
+        payment:
+          type: object
+          properties:
+            deposit_bps: { type: integer }
+            balance_due_days: { type: integer }
+        child: { $ref: '#/components/schemas/ChildPolicy' }
+        inclusions:
+          {
+            type: object,
+            properties:
+              {
+                en: { type: array, items: { type: string } },
+                ar: { type: array, items: { type: string } },
+              },
+          }
+        exclusions:
+          {
+            type: object,
+            properties:
+              {
+                en: { type: array, items: { type: string } },
+                ar: { type: array, items: { type: string } },
+              },
+          }
+    Quote:
+      type: object
+      required: [id, sailing_id, rate_plan, currency, lines, total, net_total, policies, expires_at]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        sailing_id: { $ref: '#/components/schemas/Id' }
+        rate_plan: { $ref: '#/components/schemas/RatePlan' }
+        currency: { type: string }
+        cabins:
+          type: array
+          items:
+            type: object
+            properties:
+              category_id: { $ref: '#/components/schemas/Id' }
+              adults: { type: integer }
+              child_ages: { type: array, items: { type: integer } }
+        lines:
+          type: array
+          items: { $ref: '#/components/schemas/PriceLine' }
+        total: { $ref: '#/components/schemas/Money' }
+        net_total:
+          {
+            $ref: '#/components/schemas/Money',
+            description: What the cruise company receives (after commission).,
+          }
+        policies: { $ref: '#/components/schemas/Policies' }
+        expires_at: { type: string, format: date-time }
+
+    HoldRequest:
+      type: object
+      additionalProperties: false
+      required: [quote_id, kind]
+      properties:
+        quote_id: { $ref: '#/components/schemas/Id' }
+        kind: { type: string, enum: [checkout, option] }
+    Hold:
+      type: object
+      required: [id, kind, status, expires_at]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        kind: { type: string, enum: [checkout, option, offer, payment] }
+        status: { type: string, enum: [active, confirmed, expired, released] }
+        expires_at: { type: string, format: date-time }
+        quote_id: { $ref: '#/components/schemas/Id' }
+
+    GuestInput:
+      type: object
+      additionalProperties: false
+      required: [cabin, first_name, last_name]
+      properties:
+        cabin: { type: integer, minimum: 0, description: Index of the cabin. }
+        first_name: { type: string, minLength: 1, maxLength: 100 }
+        last_name: { type: string, minLength: 1, maxLength: 100 }
+        nationality: { type: string, pattern: '^[A-Z]{2}$', description: ISO 3166-1 alpha-2. }
+        date_of_birth: { $ref: '#/components/schemas/Date' }
+        passport_number:
+          {
+            type: string,
+            minLength: 3,
+            maxLength: 30,
+            writeOnly: true,
+            description: 'Encrypted at rest; never returned.',
+          }
+        lead: { type: boolean, default: false }
+    ConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [guests]
+      properties:
+        channel_ref:
+          {
+            type: string,
+            minLength: 1,
+            maxLength: 100,
+            description: Your reference; unique per channel forever.,
+          }
+        guests:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/GuestInput' }
+    RequestCreate:
+      type: object
+      additionalProperties: false
+      required: [quote_id]
+      properties:
+        quote_id: { $ref: '#/components/schemas/Id' }
+        channel_ref: { type: string, minLength: 1, maxLength: 100 }
+        guests:
+          type: array
+          items: { $ref: '#/components/schemas/GuestInput' }
+
+    Booking:
+      type: object
+      required:
+        [ref, status, payment_status, revision, sailing, cabins, total, amount_paid, created_at]
+      properties:
+        ref: { type: string, example: VS-26-00447 }
+        channel_ref: { type: [string, 'null'] }
+        status:
+          type: string
+          enum:
+            [
+              requested,
+              held,
+              offered,
+              confirmed,
+              declined,
+              expired,
+              cancelled,
+              completed,
+              paid_unavailable,
+            ]
+        reason:
+          {
+            type: [string, 'null'],
+            description: 'Why a confirmation became something else, e.g. credit_limit.',
+          }
+        payment_status: { type: string, enum: [unpaid, deposit_paid, paid, refund_due, refunded] }
+        revision: { type: integer, description: 'Send as If-Match when amending.' }
+        sailing: { $ref: '#/components/schemas/Sailing' }
+        cabins:
+          type: array
+          items:
+            type: object
+            required: [index, category_code, adults, child_ages, guests]
+            properties:
+              index: { type: integer }
+              category_code: { type: string }
+              adults: { type: integer }
+              child_ages: { type: array, items: { type: integer } }
+              guests:
+                type: array
+                description: Names only; dates of birth and passport numbers are never returned.
+                items:
+                  type: object
+                  properties:
+                    first_name: { type: string }
+                    last_name: { type: string }
+                    lead: { type: boolean }
+        total: { $ref: '#/components/schemas/Money' }
+        fees: { $ref: '#/components/schemas/Money' }
+        amount_paid: { $ref: '#/components/schemas/Money' }
+        payments_due:
+          type: array
+          items:
+            type: object
+            required: [kind, amount, due_date]
+            properties:
+              kind: { type: string, enum: [deposit, balance] }
+              amount: { $ref: '#/components/schemas/Money' }
+              due_date: { $ref: '#/components/schemas/Date' }
+        penalty:
+          oneOf:
+            - { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        open_offer:
+          description: An alternative offered for a request, while it is open.
+          oneOf:
+            - type: object
+              required: [id, sailing_id, expires_at, total]
+              properties:
+                id: { $ref: '#/components/schemas/Id' }
+                sailing_id: { $ref: '#/components/schemas/Id' }
+                expires_at: { type: string, format: date-time }
+                total: { $ref: '#/components/schemas/Money' }
+            - { type: 'null' }
+        request_expires_at: { type: [string, 'null'], format: date-time }
+        hold_expires_at:
+          { type: [string, 'null'], format: date-time, description: 'While held or offered.' }
+        created_at: { type: string, format: date-time }
+
+    AmendmentQuoteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        sailing_id: { $ref: '#/components/schemas/Id', description: Omit to keep the sailing. }
+        cabins:
+          type: array
+          description: The full set of cabins after the change; omit to keep them.
+          minItems: 1
+          maxItems: 20
+          items: { $ref: '#/components/schemas/CabinRequest' }
+    AmendmentQuote:
+      type: object
+      required: [quote, revision, changes, fee, difference]
+      properties:
+        quote: { $ref: '#/components/schemas/Quote' }
+        revision: { type: integer, description: The revision this amendment applies to. }
+        changes:
+          type: array
+          items: { type: string, enum: [date, category, occupancy, cabins] }
+        fee: { $ref: '#/components/schemas/Money' }
+        difference:
+          { $ref: '#/components/schemas/Money', description: New total minus current total. }
+
+    Event:
+      type: object
+      required: [event_id, type, resource, resource_id, resource_version, occurred_at, data]
+      properties:
+        event_id: { $ref: '#/components/schemas/Id' }
+        type:
+          type: string
+          enum:
+            - availability.changed
+            - rate.changed
+            - sailing.changed
+            - hold.expired
+            - booking.confirmed
+            - booking.amended
+            - booking.cancelled
+            - booking.paid_unavailable
+            - request.decided
+            - offer.created
+            - payment.recorded
+            - payment.overdue
+        resource: { type: string, enum: [inventory_bucket, sailing, rate_plan, hold, booking] }
+        resource_id: { $ref: '#/components/schemas/Id' }
+        resource_version:
+          { type: integer, description: 'Monotonic per resource: ignore versions you have seen.' }
+        occurred_at: { type: string, format: date-time }
+        data:
+          type: object
+          description: Never contains passport numbers or dates of birth.
+          additionalProperties: true
+      example:
+        event_id: 01a16a71-1b2c-7d3e-8f40-5a6b7c8d9e0f
+        type: booking.confirmed
+        resource: booking
+        resource_id: 01a16a70-aaaa-7bbb-8ccc-dddddddddddd
+        resource_version: 3
+        occurred_at: '2026-10-24T08:15:00Z'
+        data:
+          {
+            ref: VS-26-00447,
+            status: confirmed,
+            revision: 1,
+            channel_ref: NC-50211,
+            total: '117000',
+            currency: USD,
+          }

@@ -46,6 +46,9 @@ jobs:
       - name: Generated database types are up to date
         run: pnpm db:codegen && git diff --exit-code packages/db/src/generated
 
+      - name: Generated API types match openapi.yaml
+        run: pnpm --filter @vs/contracts generate:api && git diff --exit-code packages/contracts/src/generated
+
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

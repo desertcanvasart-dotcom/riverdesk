@@ -4,11 +4,20 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./openapi.yaml": "./openapi.yaml"
   },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:api": "openapi-typescript openapi.yaml -o src/generated/openapi.ts"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^13.1.0",
+    "openapi-typescript": "^7.13.0"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
   }
 }
