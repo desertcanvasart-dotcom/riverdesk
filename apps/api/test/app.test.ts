@@ -18,14 +18,14 @@ describe('api', () => {
   });
 
   it('reports health with a database round trip as vs_api', async () => {
-    const app = buildApp({ db, logger });
+    const app = buildApp({ db, logger, tokenSecret: Buffer.alloc(32, 1) });
     const response = await app.inject({ method: 'GET', url: '/health' });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: 'ok', database: true });
   });
 
   it('maps domain errors to their HTTP status and hides unknown errors', async () => {
-    const app = buildApp({ db, logger });
+    const app = buildApp({ db, logger, tokenSecret: Buffer.alloc(32, 1) });
     app.get('/boom/domain', async () => {
       throw new DomainError('RETRY_LATER');
     });
@@ -42,7 +42,7 @@ describe('api', () => {
   });
 
   it('serves the OpenAPI contract and the interactive docs', async () => {
-    const app = buildApp({ db, logger });
+    const app = buildApp({ db, logger, tokenSecret: Buffer.alloc(32, 1) });
     const yaml = await app.inject({ method: 'GET', url: '/openapi.yaml' });
     expect(yaml.statusCode).toBe(200);
     expect(yaml.body).toContain('openapi: 3.1.0');

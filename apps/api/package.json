@@ -11,11 +11,14 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fastify/formbody": "^9.0.1",
     "@scalar/fastify-api-reference": "^1.76.0",
     "@vs/contracts": "workspace:*",
     "@vs/engine": "workspace:*",
     "@vs/shared": "workspace:*",
-    "fastify": "^5.12.7"
+    "fastify": "^5.12.7",
+    "jose": "^6.2.13",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@vs/db": "workspace:*"
