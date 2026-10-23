@@ -52,13 +52,11 @@ export function buildApp(options: AppOptions) {
     }
     const status = (error as { statusCode?: number }).statusCode;
     if (status && status >= 400 && status < 500) {
-      return reply
-        .status(400)
-        .send({
-          error: new DomainError('VALIDATION_FAILED', {
-            message: (error as Error).message,
-          }).toJSON(),
-        });
+      return reply.status(400).send({
+        error: new DomainError('VALIDATION_FAILED', {
+          message: (error as Error).message,
+        }).toJSON(),
+      });
     }
     request.log.error({ err: error }, 'unhandled error');
     return reply.status(500).send({ error: new DomainError('INTERNAL').toJSON() });
