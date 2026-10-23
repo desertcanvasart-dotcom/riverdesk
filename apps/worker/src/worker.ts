@@ -9,6 +9,7 @@ import {
 } from '@vs/shared';
 import {
   completeBookingsTask,
+  overdueBalancesTask,
   expireHoldsTask,
   expireRequestsTask,
   releaseAllotmentsTask,
@@ -26,6 +27,8 @@ export const CRONTAB = [
   // (whatever the DST offset) and any missed run.
   '*/15 * * * * release_allotments ?max=1',
   '7 * * * * complete_bookings ?max=1',
+  // 05:00 UTC is 07:00–08:00 in Cairo: notices go out at the start of the working day.
+  '0 5 * * * overdue_balances ?max=1',
   '0 0 * * * nightly_invariants ?max=1',
 ].join('\n');
 
@@ -35,6 +38,7 @@ export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
     expire_requests: expireRequestsTask(db, logger),
     release_allotments: releaseAllotmentsTask(db, logger),
     complete_bookings: completeBookingsTask(db, logger),
+    overdue_balances: overdueBalancesTask(db, logger),
     nightly_invariants: nightlyInvariants(db, logger),
   };
 }

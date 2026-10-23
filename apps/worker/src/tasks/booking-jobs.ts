@@ -4,6 +4,7 @@ import {
   expireHolds,
   expireRequests,
   listOperatorIds,
+  processOverdueBalances,
   releaseDueAllotments,
   type EngineContext,
   type VsDatabase,
@@ -63,4 +64,10 @@ export function releaseAllotmentsTask(db: VsDatabase, logger: Logger): Task {
 
 export function completeBookingsTask(db: VsDatabase, logger: Logger): Task {
   return () => forEachOperator(db, logger, 'complete_bookings', (ctx) => completeBookings(db, ctx));
+}
+
+/** Daily: overdue prepaid balances get a late_payment exception and a notice; auto-cancel only if the policy says so. */
+export function overdueBalancesTask(db: VsDatabase, logger: Logger): Task {
+  return () =>
+    forEachOperator(db, logger, 'overdue_balances', (ctx) => processOverdueBalances(db, ctx));
 }

@@ -264,6 +264,8 @@ export interface ConfirmResult {
   paymentDueBy?: Date;
   /** True when the channel_ref already existed and that booking is returned. */
   existing?: boolean;
+  /** Why a confirmation became something else (e.g. 'credit_limit' → a request). */
+  reason?: string;
 }
 
 /**
@@ -330,6 +332,18 @@ export async function confirmHold(
 
         if (!prepaid) {
           if (!hold) return diagnoseHold(tx, data.holdId);
+          if (
+            contract.payment_mode === 'credit' &&
+            (await exceedsCredit(tx, peek.channel_id, quote))
+          ) {
+            return creditRequest(tx, ctx, {
+              hold,
+              quote,
+              contract,
+              channelRef: data.channelRef,
+              guests: data.guests,
+            });
+          }
           const { booking } = await insertBooking(tx, ctx, {
             quote,
             contractId: contract.id,
@@ -612,4 +626,74 @@ export async function expireHolds(
     });
     return { expired: expired.length };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Agent credit (spec § Credit rules)
+// ---------------------------------------------------------------------------
+
+/**
+ * True when the agent's unpaid confirmed bookings plus this one exceed its credit limit. Credit is
+ * off until set per agent; a booking in another currency than the limit counts as over it.
+ * Locks the channel row so two confirmations of one agent cannot both pass the check.
+ */
+export async function exceedsCredit(tx: Tx, channelId: string, quote: Quote): Promise<boolean> {
+  const channel = await tx
+    .selectFrom('channel')
+    .selectAll()
+    .where('id', '=', channelId)
+    .forUpdate()
+    .executeTakeFirstOrThrow();
+  if (!channel.credit_allowed || channel.credit_limit === null) return true;
+  if (channel.credit_currency !== quote.currency) return true;
+  const { rows } = await sql<{ exposure: string }>`
+    select coalesce(sum(total + fees - amount_paid), 0)::text as exposure
+    from vs.booking
+    where channel_id = ${channelId} and status = 'confirmed' and currency = ${quote.currency}`.execute(
+    tx,
+  );
+  return BigInt(rows[0]!.exposure) + quote.total > channel.credit_limit;
+}
+
+/**
+ * Over the limit: the booking becomes a request for staff approval and the hold is released at
+ * once (docs/decisions.md). Staff accepting the request approve the credit.
+ */
+async function creditRequest(
+  tx: Tx,
+  ctx: EngineContext,
+  options: {
+    hold: { id: string };
+    quote: Quote;
+    contract: { id: string; request_sla_hours: number };
+    channelRef?: string;
+    guests: z.infer<typeof guestSchema>[];
+  },
+): Promise<ConfirmResult> {
+  await tx
+    .updateTable('hold')
+    .set({ status: 'released' })
+    .where('id', '=', options.hold.id)
+    .execute();
+  await releaseHoldLines(tx, ctx, [options.hold.id], 'hold.credit_limit');
+  const { booking } = await insertBooking(tx, ctx, {
+    quote: options.quote,
+    contractId: options.contract.id,
+    status: 'requested',
+    channelRef: options.channelRef,
+    requestExpiresAt: sql<Date>`now() + make_interval(hours => ${options.contract.request_sla_hours}
+      + (select request_grace_hours from vs.operator_setting))`,
+  });
+  await tx
+    .updateTable('hold')
+    .set({ booking_id: booking.id })
+    .where('id', '=', options.hold.id)
+    .execute();
+  await replaceGuests(tx, ctx, booking.id, options.guests);
+  await auditBooking(tx, ctx, 'booking.credit_limit_request', booking.id, null, {
+    ref: booking.ref,
+    hold_id: options.hold.id,
+    total: booking.total,
+  });
+  return { bookingId: booking.id, ref: booking.ref, status: 'requested', reason: 'credit_limit' };
 }

@@ -348,3 +348,49 @@ Reason: the Batch 0 decision on Cairo-time jobs; Egypt's DST would make a fixed 
 **2026-10-23 · A temporary read-only progress page at `/progress`.**
 The back office shows the demo operator's counters, invariant status, a 6-week availability grid, bookings, holds, quotes and open exceptions. It reads through one engine function (`getOverview`), so rule 1 still holds, and returns 404 when `VS_ENV=hosted`. `pnpm db:seed` now also adds sample activity through the engine.
 Reason: the operator asked to look around before the real screens exist. It is deleted in Batch 6.
+
+## Batch 4
+
+**2026-10-23 · The payment ledger is append-only.**
+Receipts are positive. Refunds and reversals are negative. A payment can be reversed once, and a reversal cannot itself be reversed. Runtime roles have no UPDATE or DELETE on `payment`. `booking.amount_paid` is the running sum in the booking currency.
+Reason: spec § Recording payments ("can only be reversed by a new entry").
+
+**2026-10-23 · Payments in another currency.**
+The exchange rate is a decimal string with up to 6 decimal places (1 unit of the payment currency = rate units of the booking currency). The booking-currency equivalent is stored next to the original amount, rounded half-up once. A payment in another currency without a rate is refused.
+Reason: the operator agreed to this recommendation; no floats (rule 10).
+
+**2026-10-23 · How deposit, balance and payment status are set.**
+
+- The deposit is the deposit percentage × total, rounded half-up. The balance is due on embarkation minus `balance_due_days`. Both come from the booking's policy snapshot, and both are recomputed whenever the total or the sailing changes (offer accepted, amendment).
+- Payment status runs `unpaid` → `deposit_paid` → `paid` against total + fees.
+- After a cancellation, or for a paid-but-unavailable booking, the status is `refund_due` while more was received than is kept, then `refunded`.
+
+Reason: these are the five statuses the prompt lists.
+
+**2026-10-23 · A prepaid booking confirms when the total received reaches the deposit.**
+A smaller payment is recorded and the booking stays `held`.
+Reason: spec § Payments ("when the deposit (or full amount) is received while the payment hold is active").
+
+**2026-10-23 · A late payment retakes the cabins inside a savepoint.**
+When a payment arrives after the payment hold expired (whether or not the expiry job has run), the engine first finishes the expiry, which releases the hold's cabins. It then takes the cabins again in a savepoint. If any leg is full, the savepoint is rolled back and the booking becomes `paid_unavailable`, with a critical exception and a `booking.paid_unavailable` event. The money is still recorded and is fully refundable.
+Reason: spec test 8. A booking is never confirmed without its cabins, and received money is never lost.
+
+**2026-10-23 · How the credit limit works.**
+Credit is off until set per agent. Exposure is the sum of total + fees − paid over the agent's confirmed bookings in the limit's currency; a booking in another currency counts as over the limit. The agent's channel row is locked during the check, so two concurrent confirmations cannot both pass. Over the limit, the booking becomes a request and the hold is released at once. Staff accepting the request approve the credit.
+Reason: the operator agreed to this recommendation.
+
+**2026-10-23 · What a refund may return.**
+After a cancellation, the refundable amount is what was received minus the penalty and amendment fees. For a paid-but-unavailable booking, everything is refundable. A refund larger than the refundable amount is refused.
+Reason: penalties and fees come from the booking's policy snapshot.
+
+**2026-10-23 · Amendment fees add to what is owed.**
+They accumulate in `booking.fees`. They are owed on top of the cruise total and kept on cancellation.
+Reason: the Batch 3 fee rule; the ledger example shows it.
+
+**2026-10-23 · Overdue balances (daily job at 05:00 UTC).**
+Overdue balances of prepaid bookings open one `late_payment` exception and one `payment.overdue` event; that event is the notice to the channel. Automatic cancellation happens only when the booking's payment policy snapshot enables it, `auto_cancel_after_days` after the due date. It is off by default.
+Reason: spec § Prepaid rules.
+
+**2026-10-23 · The action list is a query.**
+`getActionList` returns holds expiring today, open requests with SLA hours left, deposits due, balances overdue or due within 3 days, paid-but-unavailable bookings and open exceptions. Missing guest details and unassigned cabins join it in Batch 6, alongside cabin assignment.
+Reason: the Batch 6 home screen reads it as is.

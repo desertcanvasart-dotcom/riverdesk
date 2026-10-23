@@ -137,6 +137,7 @@ export async function insertBooking(
     .returningAll()
     .executeTakeFirstOrThrow();
   const cabins = await insertCabins(tx, ctx, booking.id, options.quote.cabins as QuotedCabin[]);
+  await refreshPaymentTerms(tx, booking.id);
   return { booking, cabins };
 }
 
@@ -472,3 +473,39 @@ export async function assertBeforeCutoff(tx: Tx, sailingId: string) {
 }
 
 export { cairoToday };
+
+// ---------------------------------------------------------------------------
+// Payment terms (Batch 4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Deposit (deposit % of the total, rounded half-up once) and balance due date (embarkation −
+ * balance_due_days) from the booking's quote policy snapshot; then the payment status.
+ */
+export async function refreshPaymentTerms(tx: Tx, bookingId: string) {
+  await sql`
+    update vs.booking b
+    set deposit_amount = (b.total * (q.policies->'payment'->>'deposit_bps')::bigint * 2 + 10000) / 20000,
+        balance_due_date = s.embark_date - (q.policies->'payment'->>'balance_due_days')::int
+    from vs.quote q, vs.sailing s
+    where b.id = ${bookingId} and q.id = b.quote_id and s.id = b.sailing_id`.execute(tx);
+  await refreshPaymentStatus(tx, bookingId);
+}
+
+/**
+ * unpaid → deposit_paid → paid while the booking stands; after a cancellation (or when paid but
+ * unavailable) refund_due while more was received than is kept, then refunded.
+ */
+export async function refreshPaymentStatus(tx: Tx, bookingId: string) {
+  await sql`
+    update vs.booking b set payment_status = case
+      when b.status in ('cancelled', 'paid_unavailable') then case
+        when b.amount_paid - coalesce(b.penalty_amount, 0) - b.fees > 0 then 'refund_due'
+        when exists (select from vs.payment p where p.booking_id = b.id and p.kind = 'refund') then 'refunded'
+        when b.amount_paid > 0 then 'paid'
+        else 'unpaid' end
+      when b.amount_paid >= b.total + b.fees then 'paid'
+      when b.deposit_amount > 0 and b.amount_paid >= b.deposit_amount then 'deposit_paid'
+      else 'unpaid' end
+    where b.id = ${bookingId}`.execute(tx);
+}

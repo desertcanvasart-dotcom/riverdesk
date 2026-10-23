@@ -216,7 +216,13 @@ export async function availabilityChanged(
 }
 
 export interface ExceptionInput {
-  kind: 'invariant' | 'oversubscription' | 'schedule_change' | 'guest_age_mismatch';
+  kind:
+    | 'invariant'
+    | 'oversubscription'
+    | 'schedule_change'
+    | 'guest_age_mismatch'
+    | 'paid_unavailable'
+    | 'late_payment';
   severity: 'critical' | 'warning' | 'info';
   summary: string;
   refs: { entity: string; id: string }[];

@@ -10,6 +10,7 @@ import {
   auditBooking,
   bookingEvent,
   guestSchema,
+  refreshPaymentStatus,
   replaceGuests,
   requestKeySchema,
   withRequestKey,
@@ -100,6 +101,7 @@ export async function cancelBooking(
           .set({ penalty_amount: penalty })
           .where('id', '=', booking.id)
           .execute();
+        await refreshPaymentStatus(tx, booking.id);
 
         const lines = await tx
           .updateTable('booking_line')
@@ -169,6 +171,7 @@ async function cancelHeld(tx: Tx, ctx: EngineContext, bookingId: string, reason:
     throw new DomainError('INVALID_STATE', {
       message: 'The booking is no longer waiting for payment',
     });
+  await refreshPaymentStatus(tx, booking.id);
   await bookingEvent(tx, ctx, booking.id, 'booking.cancelled', {
     penalty: '0',
     currency: booking.currency,

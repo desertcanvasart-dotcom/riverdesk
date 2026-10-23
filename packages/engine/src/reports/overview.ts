@@ -28,6 +28,7 @@ export interface Overview {
   bookings: {
     ref: string;
     status: string;
+    paymentStatus: string;
     channel: string;
     pattern: string | null;
     embarkDate: string;
@@ -84,7 +85,7 @@ export async function getOverview(
              (select count(*)::int from vs.cabin_period p where p.category_id = c.id and p.during @> ${today}::date) as cabins
       from vs.cabin_category c order by c.sort_order, c.code`.execute(tx);
     const bookings = await sql<Overview['bookings'][number]>`
-      select b.ref, b.status, ch.name as channel, sp.code as pattern, s.embark_date::text as "embarkDate",
+      select b.ref, b.status, b.payment_status as "paymentStatus", ch.name as channel, sp.code as pattern, s.embark_date::text as "embarkDate",
              (select count(*)::int from vs.booking_cabin bc where bc.booking_id = b.id and bc.status = 'active') as cabins,
              (select count(*)::int from vs.guest g where g.booking_id = b.id) as guests,
              b.total::text as total, b.currency, b.revision, b.created_at as "createdAt"

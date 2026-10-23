@@ -36,6 +36,7 @@ describe('worker', () => {
               'expire_holds',
               'expire_requests',
               'nightly_invariants',
+              'overdue_balances',
               'release_allotments',
             ]),
           );
@@ -53,6 +54,7 @@ describe('worker', () => {
     'expire_requests',
     'release_allotments',
     'complete_bookings',
+    'overdue_balances',
   ])('runs %s for every operator through the job queue', async (task) => {
     const job = await quickAddJob(
       { connectionString: workerUrl },

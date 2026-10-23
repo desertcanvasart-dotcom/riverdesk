@@ -56,6 +56,7 @@ export default async function ProgressPage() {
               <tr>
                 <th>Ref</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Channel</th>
                 <th>Cruise</th>
                 <th>Embark</th>
@@ -71,6 +72,9 @@ export default async function ProgressPage() {
                   <td className="mono">{b.ref}</td>
                   <td>
                     <span className={`pill ${b.status}`}>{b.status}</span>
+                  </td>
+                  <td>
+                    <span className={`pill ${b.paymentStatus}`}>{b.paymentStatus.replace('_', ' ')}</span>
                   </td>
                   <td>{b.channel}</td>
                   <td>{b.pattern ?? '—'}</td>
@@ -285,6 +289,8 @@ th { color: var(--muted); font-weight: 600; } .num { text-align: right; font-var
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--line); }
 .pill.confirmed, .pill.option { background: var(--okbg); color: var(--ok); }
 .pill.held, .pill.requested, .pill.payment, .pill.checkout, .pill.warning { background: var(--amberbg); color: var(--amber); }
+.pill.paid, .pill.deposit_paid { background: var(--okbg); color: var(--ok); }
+.pill.refund_due, .pill.paid_unavailable { background: var(--badbg); color: var(--bad); }
 .pill.cancelled, .pill.expired, .pill.critical { background: var(--badbg); color: var(--bad); }
 .exceptions { margin: 0; padding-left: 18px; } .exceptions li { margin: 4px 0; }
 @media (max-width: 600px) { .page { padding: 0 0 32px; } h1 { font-size: 18px; } }

@@ -22,3 +22,4 @@ export * from './booking/allotments';
 export * from './booking/amendments';
 export { withRequestKey, guestSchema, type GuestInput } from './booking/common';
 export * from './reports/overview';
+export * from './booking/payments';

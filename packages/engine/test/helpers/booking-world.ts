@@ -34,7 +34,14 @@ export async function bookingWorld(): Promise<BookingWorld> {
   await generateSchedule(db, ctx, { vesselId: demo.vesselId, until: addDays(M, 76) });
   const categoryIds = Object.values(demo.categories);
   const agent = async (code: string, terms: Partial<Parameters<typeof createContract>[2]>) => {
-    const channel = await createChannel(db, ctx, { code, name: code, type: 'agent' });
+    const channel = await createChannel(db, ctx, {
+      code,
+      name: code,
+      type: 'agent',
+      creditAllowed: true,
+      creditLimit: 100_000_000,
+      creditCurrency: 'USD',
+    });
     await createContract(db, ctx, {
       channelId: channel.id,
       vesselId: demo.vesselId,

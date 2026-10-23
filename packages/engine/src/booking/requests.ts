@@ -12,6 +12,7 @@ import {
   insertBooking,
   insertBookingLines,
   insertCabins,
+  refreshPaymentTerms,
   needsFor,
   replaceGuests,
   requestKeySchema,
@@ -405,6 +406,7 @@ export async function acceptOffer(
         if (!booking)
           throw new DomainError('INVALID_STATE', { message: 'The request is no longer offered' });
         await replaceCabins(tx, ctx, booking.id, quote.cabins as QuotedCabin[]);
+        await refreshPaymentTerms(tx, booking.id);
 
         if (prepaid) {
           await bookingEvent(tx, ctx, booking.id, 'request.decided', {

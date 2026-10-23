@@ -9,6 +9,7 @@ import { dateSchema } from '../schedule/setup';
 import { daysBeforeEmbark, latestPolicies, penaltyBps } from './cancel';
 import {
   auditBooking,
+  refreshPaymentTerms,
   bookingEvent,
   requestKeySchema,
   sailingLegs,
@@ -373,9 +374,11 @@ export async function applyAmendment(
             currency: quote.currency,
             total: quote.total,
             net_total: quote.netTotal,
+            fees: sql<bigint>`fees + ${fee}`,
           })
           .where('id', '=', booking.id)
           .execute();
+        await refreshPaymentTerms(tx, booking.id);
         await writeRevision(tx, ctx, {
           bookingId: booking.id,
           rev: booking.revision,

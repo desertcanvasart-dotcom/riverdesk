@@ -682,6 +682,9 @@ export async function createDemoActivity(
     code: 'cairo-travel',
     name: 'Cairo Travel (agent)',
     type: 'agent',
+    creditAllowed: true,
+    creditLimit: 2_000_000,
+    creditCurrency: 'USD',
   });
   await createContract(db, ctx, {
     channelId: agency.id,
@@ -725,6 +728,9 @@ export async function createDemoActivity(
     code: 'aswan-tours',
     name: 'Aswan Tours (on request)',
     type: 'agent',
+    creditAllowed: true,
+    creditLimit: 2_000_000,
+    creditCurrency: 'USD',
   });
   await createContract(db, ctx, {
     channelId: requests.id,
