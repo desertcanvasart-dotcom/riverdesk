@@ -445,3 +445,54 @@ Reason: the timestamp protects against replays, and the format is the familiar o
 **2026-10-24 · Owner invitations instead of creating Auth users.**
 `pnpm platform:create-company` creates the company, its settings, its back-office channel and an owner invitation, all as the admin user. The invited person signs in with that email, as verified by Supabase Auth, and the back office claims the invitation through the allow-listed `vs.claim_staff_invitation` (back office only). One open invitation per email exists across the platform. Invitations expire after 14 days.
 Reason: creating Auth users would need the `service_role` key, which rule 7 keeps out of everything except migrations and break-glass.
+
+## Batch 5 (part 2: handlers, webhooks, sandbox)
+
+**2026-10-24 · The idempotency key and its result are stored in the same transaction as the work.**
+
+- `withRequestKey` takes a transaction-scoped advisory lock on (channel, key), so a concurrent duplicate gets `409 IN_PROGRESS` at once.
+- It stores the result in the same transaction as the booking work, so a crash after commit never loses it (test 6).
+- The same key with a different body is `422`.
+- Results replay for 7 days; after that the key is reused as new, and `channel_ref` still finds the booking.
+- A replay returns the original operation's result (the same booking, hold or quote), rendered from current state.
+
+Reason: committing the key as `in_progress` in a separate transaction first, as the prompt sketches, can leave a key without its result after a crash.
+
+**2026-10-24 · Access tokens are HS256 JWTs.**
+They are signed with `API_TOKEN_SECRET` and carry the API client, company and channel. They live 15 minutes. Client secrets are random 32-byte strings, stored as SHA-256 hashes and compared in constant time; at most two are active per client. The client is looked up through the allow-listed `vs.resolve_api_client` (API role only).
+Reason: no token table to query on every call; rotation without downtime.
+
+**2026-10-24 · Rate limit: a Postgres-backed fixed window per minute.**
+One row per client per minute (`rate_limit_counter`). The default is 600 per minute, configurable per client. A refused request gets `429` with `Retry-After` set to the seconds left in the minute. Old windows are pruned hourly.
+Reason: the prompt allows a Postgres counter, and it needs no Redis.
+
+**2026-10-24 · The event feed and webhooks read below a safe horizon.**
+Both return events in `(txid, seq)` order and only below `pg_snapshot_xmin(pg_current_snapshot())`.
+Reason: a transaction that started earlier but commits later can never fall behind a cursor.
+
+**2026-10-24 · Which events a channel sees.**
+Its own bookings and holds (by `channel_id`), plus availability and sailing changes for its contracted vessels and categories, and rate changes for its contracted plans. Allotment buckets emit no availability events, so other channels' allotments stay invisible.
+Reason: spec § Contract enforcement.
+
+**2026-10-24 · Webhook delivery.**
+
+- One delivery per endpoint × event; every attempt is recorded in `webhook_attempt`.
+- A delivery is due only when no earlier event of the same resource is still pending for that endpoint, so each resource arrives in order.
+- Backoff is 1, 2, 4 … minutes, at most 2 hours. A delivery is dead 24 hours after its first attempt.
+- Endpoint secrets are encrypted with the field keyring.
+- A new endpoint starts at the current end of the feed (no back-fill).
+
+Reason: spec § Events and webhooks.
+
+**2026-10-24 · Contract enforcement in the API.**
+The engine already enforces vessels, categories, rate plans, allocation, stop-sell and TTLs. The API adds three things:
+
+- Ownership: another channel's hold, offer or booking is `404`, so its existence does not leak.
+- Channel-aware availability: the channel's own allotment plus the pool, capped by `visible_free_cap`.
+- Strict bodies: unknown fields, for example a `ttl_minutes` on a hold, are refused with `400`.
+
+Reason: TTLs come only from the contract, never from the caller.
+
+**2026-10-24 · The sandbox is a company created with the platform command.**
+"Sandbox Nile Cruises" runs the demo vessel, pricing and schedule, plus a nilecrz client (`pnpm sandbox:setup`). On the hosted project it needs `--confirm-hosted`.
+Reason: the sandbox behaves exactly like a real company, and its data stays isolated by RLS.

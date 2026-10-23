@@ -19,7 +19,8 @@
     "db:codegen": "pnpm --filter @vs/db codegen",
     "db:reset": "pnpm --filter @vs/db reset && pnpm --filter @vs/engine seed-demo",
     "db:check-roles": "pnpm --filter @vs/db check-roles",
-    "platform:create-company": "pnpm --filter @vs/db create-company"
+    "platform:create-company": "pnpm --filter @vs/db create-company",
+    "sandbox:setup": "pnpm --filter @vs/engine sandbox-setup"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

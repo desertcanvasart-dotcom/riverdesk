@@ -38,6 +38,8 @@ describe('worker', () => {
               'nightly_invariants',
               'overdue_balances',
               'release_allotments',
+              'webhooks',
+              'prune_rate_limits',
             ]),
           );
         },
@@ -55,6 +57,8 @@ describe('worker', () => {
     'release_allotments',
     'complete_bookings',
     'overdue_balances',
+    'webhooks',
+    'prune_rate_limits',
   ])('runs %s for every operator through the job queue', async (task) => {
     const job = await quickAddJob(
       { connectionString: workerUrl },

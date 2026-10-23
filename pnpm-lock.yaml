@@ -38,6 +38,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@fastify/formbody':
+        specifier: ^9.0.1
+        version: 9.0.1
       '@scalar/fastify-api-reference':
         specifier: ^1.76.0
         version: 1.76.0
@@ -53,6 +56,12 @@ importers:
       fastify:
         specifier: ^5.12.7
         version: 5.12.7
+      jose:
+        specifier: ^6.2.13
+        version: 6.2.13
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@vs/db':
         specifier: workspace:*
@@ -458,6 +467,9 @@ packages:
 
   '@fastify/fast-json-stringify-compiler@5.1.1':
     resolution: {integrity: sha512-pyxRKk7UpUnnrztP9pF4+ZYxusEQ4LifTyzRdiXmyql1QezNHxO02D25MVU2o4kMeAMYWAjG6RKRlojgkbiDAw==}
+
+  '@fastify/formbody@9.0.1':
+    resolution: {integrity: sha512-QaUet4NQavwnl6iPYMaf5hJC2N7kRPOmC58RhDiFThfg7Hcc8X2LdpcEfmaOEBimq5z7yZLy1e1q+PIv3o3tFQ==}
 
   '@fastify/forwarded@3.1.2':
     resolution: {integrity: sha512-89WiRG+hW3VQSfCwg4Hb8b43PeyEX15K5+lEfsZ4EUth/FyOjS/lv8HsVuswUNXWiSnxMGNouE/fq/0w3VumHQ==}
@@ -1501,6 +1513,9 @@ packages:
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
+  jose@6.2.13:
+    resolution: {integrity: sha512-7TIg10ZE1x82YediN+lcrPNvGMKge9yFHQD+Qho/b8y2adfugU3AsvvHfxV0fzyFllT6l9xCjf4RWY9g/Z9PJQ==}
+
   js-levenshtein@1.1.6:
     resolution: {integrity: sha512-X2BB11YZtrRqY4EnQcLX5Rh373zbK4alC1FW7D7MBhL2gtcC17cTnr6DmfHZeS0s2rTHjUTMMHfG7gO8SSdw+g==}
     engines: {node: '>=0.10.0'}
@@ -2400,6 +2415,11 @@ snapshots:
   '@fastify/fast-json-stringify-compiler@5.1.1':
     dependencies:
       fast-json-stringify: 7.1.3
+
+  '@fastify/formbody@9.0.1':
+    dependencies:
+      fast-querystring: 1.1.2
+      fastify-plugin: 6.0.1
 
   '@fastify/forwarded@3.1.2': {}
 
@@ -3346,6 +3366,8 @@ snapshots:
   is-number@7.0.0: {}
 
   isexe@2.0.0: {}
+
+  jose@6.2.13: {}
 
   js-levenshtein@1.1.6: {}
 

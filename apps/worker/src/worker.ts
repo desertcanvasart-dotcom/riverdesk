@@ -15,6 +15,7 @@ import {
   releaseAllotmentsTask,
 } from './tasks/booking-jobs';
 import { nightlyInvariants } from './tasks/nightly-invariants';
+import { pruneRateLimitsTask, webhooksTask } from './tasks/webhook-jobs';
 
 /**
  * Cron schedule (Graphile Worker crontab, evaluated in UTC). 00:00 UTC is 02:00 or 03:00 in
@@ -29,6 +30,8 @@ export const CRONTAB = [
   '7 * * * * complete_bookings ?max=1',
   // 05:00 UTC is 07:00–08:00 in Cairo: notices go out at the start of the working day.
   '0 5 * * * overdue_balances ?max=1',
+  '* * * * * webhooks ?max=1',
+  '23 * * * * prune_rate_limits ?max=1',
   '0 0 * * * nightly_invariants ?max=1',
 ].join('\n');
 
@@ -39,6 +42,8 @@ export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
     release_allotments: releaseAllotmentsTask(db, logger),
     complete_bookings: completeBookingsTask(db, logger),
     overdue_balances: overdueBalancesTask(db, logger),
+    webhooks: webhooksTask(db, logger),
+    prune_rate_limits: pruneRateLimitsTask(db, logger),
     nightly_invariants: nightlyInvariants(db, logger),
   };
 }
