@@ -1,0 +1,32 @@
+{
+  "name": "@vs/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts",
+    "./testing/setup": "./src/testing/setup.ts",
+    "./migrate": "./src/migrate.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "migrate": "tsx src/cli/migrate.ts",
+    "seed": "tsx seed/seed.ts",
+    "reset": "tsx src/cli/reset.ts && tsx src/cli/migrate.ts && tsx seed/seed.ts",
+    "codegen": "tsx src/cli/codegen.ts"
+  },
+  "dependencies": {
+    "@vs/contracts": "workspace:*",
+    "@vs/shared": "workspace:*",
+    "graphile-worker": "^0.18.0",
+    "kysely": "^0.29.7",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "kysely-codegen": "^0.20.0"
+  }
+}
