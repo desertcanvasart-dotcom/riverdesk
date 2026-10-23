@@ -161,7 +161,8 @@
     "pricing": "جارٍ حساب السعر…",
     "fromPrice": "من {price} للفرد",
     "market_international": "دولي",
-    "market_egyptian_resident": "مقيم في مصر"
+    "market_egyptian_resident": "مقيم في مصر",
+    "allItineraries": "الكل"
   },
   "bookings": {
     "title": "الحجوزات",

@@ -57,6 +57,7 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
   const [market, setMarket] = useState('');
   const [from, setFrom] = useState(() => cairoTodayIso());
   const [sailingId, setSailingId] = useState('');
+  const [pattern, setPattern] = useState('');
   const [cabins, setCabins] = useState<CabinDraft[]>(() => [
     { categoryId: vessels[0]?.categories[0]?.id ?? '', adults: 2, ages: '' },
   ]);
@@ -300,69 +301,90 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
           ) : !availability.data?.sailings.length ? (
             <Empty>{t('noSailings')}</Empty>
           ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {availability.data.sailings.map((s) => {
-                const enough = [...needed].every(([categoryId, n]) => {
-                  const c = s.categories.find((x) => x.categoryId === categoryId);
-                  return c && (c.status === 'on_request' || c.free >= n);
-                });
-                return (
-                  <li key={s.sailingId}>
+            <>
+              <div className="mb-2 flex flex-wrap gap-1">
+                {['', ...new Set(availability.data.sailings.map((s) => s.patternCode ?? ''))].map(
+                  (code) => (
                     <button
+                      key={code || 'all'}
                       type="button"
-                      disabled={!enough}
-                      onClick={() => {
-                        setSailingId(s.sailingId);
-                        // On a phone the summary sits below the list: bring it into view.
-                        if (window.innerWidth < 1024)
-                          document
-                            .getElementById('book-summary')
-                            ?.scrollIntoView({ behavior: 'smooth' });
-                      }}
+                      onClick={() => setPattern(code)}
                       className={cx(
-                        'w-full rounded-lg border p-3 text-start text-sm transition disabled:opacity-40',
-                        s.sailingId === sailingId
-                          ? 'border-brand ring-2 ring-brand/20'
-                          : 'border-line hover:border-brand',
+                        'rounded-full px-3 py-1 text-sm',
+                        pattern === code ? 'bg-brand text-brand-ink' : 'border border-line',
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">
-                          {formatDate(s.embarkDate, locale, 'long')} –{' '}
-                          {formatDate(s.disembarkDate, locale)}
-                        </span>
-                        <span className="text-xs text-muted">
-                          {s.patternCode} · {tc('nights', { n: s.nights })}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {s.categories
-                          .filter((c) => needed.has(c.categoryId))
-                          .map((c) => (
-                            <Badge
-                              key={c.categoryId}
-                              tone={
-                                c.status === 'sold_out'
-                                  ? 'bad'
-                                  : c.status === 'on_request'
-                                    ? 'warn'
-                                    : 'ok'
-                              }
-                            >
-                              {c.code}{' '}
-                              {c.status === 'sold_out'
-                                ? t('soldOut')
-                                : c.status === 'on_request'
-                                  ? t('onRequest')
-                                  : t('free', { n: c.free })}
-                            </Badge>
-                          ))}
-                      </div>
+                      <span dir="ltr">{code || t('allItineraries')}</span>
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
+                  ),
+                )}
+              </div>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {availability.data.sailings
+                  .filter((s) => !pattern || s.patternCode === pattern)
+                  .map((s) => {
+                    const enough = [...needed].every(([categoryId, n]) => {
+                      const c = s.categories.find((x) => x.categoryId === categoryId);
+                      return c && (c.status === 'on_request' || c.free >= n);
+                    });
+                    return (
+                      <li key={s.sailingId}>
+                        <button
+                          type="button"
+                          disabled={!enough}
+                          onClick={() => {
+                            setSailingId(s.sailingId);
+                            // On a phone the summary sits below the list: bring it into view.
+                            if (window.innerWidth < 1024)
+                              document
+                                .getElementById('book-summary')
+                                ?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className={cx(
+                            'w-full rounded-lg border p-3 text-start text-sm transition disabled:opacity-40',
+                            s.sailingId === sailingId
+                              ? 'border-brand ring-2 ring-brand/20'
+                              : 'border-line hover:border-brand',
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">
+                              {formatDate(s.embarkDate, locale, 'long')} –{' '}
+                              {formatDate(s.disembarkDate, locale)}
+                            </span>
+                            <span className="text-xs text-muted">
+                              {s.patternCode} · {tc('nights', { n: s.nights })}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {s.categories
+                              .filter((c) => needed.has(c.categoryId))
+                              .map((c) => (
+                                <Badge
+                                  key={c.categoryId}
+                                  tone={
+                                    c.status === 'sold_out'
+                                      ? 'bad'
+                                      : c.status === 'on_request'
+                                        ? 'warn'
+                                        : 'ok'
+                                  }
+                                >
+                                  {c.code}{' '}
+                                  {c.status === 'sold_out'
+                                    ? t('soldOut')
+                                    : c.status === 'on_request'
+                                      ? t('onRequest')
+                                      : t('free', { n: c.free })}
+                                </Badge>
+                              ))}
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </>
           )}
         </Card>
       </div>

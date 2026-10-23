@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { Alert, Badge, Button, Field, Input, Select, Table, Td } from '../../../../components/ui';
+import { Alert, Badge, Button, Field, Input, Select } from '../../../../components/ui';
 import { useErrorText } from '../../../../lib/errors';
 import { formatDate } from '../../../../lib/format';
 import { newRequestKey, useTRPC } from '../../../../lib/trpc';
@@ -86,26 +86,30 @@ export function GuestsEditor({
         {guests.length === 0 ? (
           <p className="text-sm text-muted">{tc('none')}</p>
         ) : (
-          <Table
-            head={[t('cabin'), tb('firstName'), tb('lastName'), tb('nationality'), t('dob'), '']}
-          >
+          <ul className="divide-y divide-line text-sm">
             {guests.map((g) => (
-              <tr key={g.id}>
-                <Td>{g.cabin + 1}</Td>
-                <Td>
-                  {g.firstName} {g.lead && <Badge tone="info">{t('lead')}</Badge>}
-                </Td>
-                <Td>{g.lastName}</Td>
-                <Td>{g.nationality ?? '—'}</Td>
-                <Td>{g.dateOfBirth ? formatDate(g.dateOfBirth, locale, 'long') : '—'}</Td>
-                <Td>
-                  <Badge tone={g.hasPassport ? 'ok' : 'warn'}>
-                    {g.hasPassport ? t('passportOnFile') : t('noPassport')}
-                  </Badge>
-                </Td>
-              </tr>
+              <li key={g.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                <span className="text-muted">
+                  {t('cabin')} {g.cabin + 1}
+                </span>
+                <span className="font-medium">
+                  {g.firstName} {g.lastName}
+                </span>
+                {g.lead && <Badge tone="info">{t('lead')}</Badge>}
+                {g.nationality && (
+                  <span className="text-muted" dir="ltr">
+                    {g.nationality}
+                  </span>
+                )}
+                {g.dateOfBirth && (
+                  <span className="text-muted">{formatDate(g.dateOfBirth, locale, 'long')}</span>
+                )}
+                <Badge tone={g.hasPassport ? 'ok' : 'warn'}>
+                  {g.hasPassport ? t('passportOnFile') : t('noPassport')}
+                </Badge>
+              </li>
             ))}
-          </Table>
+          </ul>
         )}
         {canEdit && (
           <Button

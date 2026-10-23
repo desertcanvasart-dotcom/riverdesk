@@ -161,7 +161,8 @@
     "pricing": "Pricing…",
     "fromPrice": "from {price} pp",
     "market_international": "International",
-    "market_egyptian_resident": "Egyptian resident"
+    "market_egyptian_resident": "Egyptian resident",
+    "allItineraries": "All"
   },
   "bookings": {
     "title": "Bookings",

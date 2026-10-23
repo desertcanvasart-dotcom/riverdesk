@@ -10,5 +10,5 @@
       }
     ]
   },
-  "include": ["next-env.d.ts", "app", "server", "test", ".next/types/**/*.ts", "types"]
+  "include": ["next-env.d.ts", "app", "server", "test", "scripts", ".next/types/**/*.ts", "types"]
 }

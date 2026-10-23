@@ -549,3 +549,9 @@ Reason: spec § Sensitive data. It is a hard requirement once manifests export p
 **2026-10-24 · The itinerary is built day by day from the schedule template.**
 It walks the template stops from embarkation to disembarkation, into the next cycle when the cruise wraps round, and groups the calls by cruise day. The emergency phone and the voucher note (boarding point, instructions) are company settings shown on every voucher. Resident and Egyptian rates add the ID-at-embarkation note.
 Reason: spec § Documents (voucher contents).
+
+**2026-10-24 · The temporary `/progress` page is removed.**
+The Batch 6 screens replace it: Today, inventory, bookings, schedule, guests and the vacancy sheet. `getOverview` is gone with it.
+
+**2026-10-24 · Screens are checked at 375 px in both languages by a script, and the phone booking is timed.**
+`pnpm --filter @vs/backoffice screenshots` signs in as the demo owner and captures every screen in Arabic and English at 375 px. It fails if a page scrolls sideways or has the wrong text direction. The images go to `docs/screenshots/batch-6/` and are not committed. `pnpm --filter @vs/backoffice usability` plays a phone booking at human pace (about 1 s per tap, about 8 characters a second): 9.6 s and 6 taps locally, against the 60 s target. Itinerary chips on the booking screen keep the sailing list short on a phone.
