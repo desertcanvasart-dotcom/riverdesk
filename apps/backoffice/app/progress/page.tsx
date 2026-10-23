@@ -74,7 +74,9 @@ export default async function ProgressPage() {
                     <span className={`pill ${b.status}`}>{b.status}</span>
                   </td>
                   <td>
-                    <span className={`pill ${b.paymentStatus}`}>{b.paymentStatus.replace('_', ' ')}</span>
+                    <span className={`pill ${b.paymentStatus}`}>
+                      {b.paymentStatus.replace('_', ' ')}
+                    </span>
                   </td>
                   <td>{b.channel}</td>
                   <td>{b.pattern ?? '—'}</td>
