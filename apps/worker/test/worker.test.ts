@@ -28,9 +28,17 @@ describe('worker', () => {
       await vi.waitFor(
         async () => {
           const { rows } = await owner().query<{ identifier: string }>(
-            `select identifier from graphile_worker._private_known_crontabs where identifier = 'nightly_invariants'`,
+            `select identifier from graphile_worker._private_known_crontabs order by identifier`,
           );
-          expect(rows).toHaveLength(1);
+          expect(rows.map((r) => r.identifier)).toEqual(
+            expect.arrayContaining([
+              'complete_bookings',
+              'expire_holds',
+              'expire_requests',
+              'nightly_invariants',
+              'release_allotments',
+            ]),
+          );
         },
         { timeout: 10_000, interval: 200 },
       );
@@ -39,18 +47,24 @@ describe('worker', () => {
     }
   });
 
-  it('runs nightly_invariants for every operator through the job queue', async () => {
+  it.each([
+    'nightly_invariants',
+    'expire_holds',
+    'expire_requests',
+    'release_allotments',
+    'complete_bookings',
+  ])('runs %s for every operator through the job queue', async (task) => {
     const job = await quickAddJob(
       { connectionString: workerUrl },
-      'nightly_invariants',
+      task,
       {},
-      { jobKey: `test-${Date.now()}` },
+      { jobKey: `test-${task}-${Date.now()}` },
     );
     await runOnce({ connectionString: workerUrl, taskList: buildTaskList(db, logger) });
     const { rows } = await owner().query(
-      `select 1 from graphile_worker._private_jobs where id = $1`,
+      `select last_error from graphile_worker._private_jobs where id = $1`,
       [job.id],
     );
-    expect(rows).toHaveLength(0); // completed jobs are deleted
+    expect(rows).toHaveLength(0); // completed jobs are deleted; a failed one stays with last_error
   });
 });

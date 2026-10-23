@@ -7,16 +7,36 @@ import {
   type Config,
   type Logger,
 } from '@vs/shared';
+import {
+  completeBookingsTask,
+  expireHoldsTask,
+  expireRequestsTask,
+  releaseAllotmentsTask,
+} from './tasks/booking-jobs';
 import { nightlyInvariants } from './tasks/nightly-invariants';
 
 /**
  * Cron schedule (Graphile Worker crontab, evaluated in UTC). 00:00 UTC is 02:00 or 03:00 in
  * Cairo depending on DST. Jobs tied to a Cairo date compute it in Postgres, never from this time.
  */
-export const CRONTAB = ['0 0 * * * nightly_invariants ?max=1'].join('\n');
+export const CRONTAB = [
+  '* * * * * expire_holds ?max=1',
+  '*/5 * * * * expire_requests ?max=1',
+  // Release dates are Cairo dates compared in Postgres, so every 15 minutes covers 00:05 Cairo
+  // (whatever the DST offset) and any missed run.
+  '*/15 * * * * release_allotments ?max=1',
+  '7 * * * * complete_bookings ?max=1',
+  '0 0 * * * nightly_invariants ?max=1',
+].join('\n');
 
 export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
-  return { nightly_invariants: nightlyInvariants(db, logger) };
+  return {
+    expire_holds: expireHoldsTask(db, logger),
+    expire_requests: expireRequestsTask(db, logger),
+    release_allotments: releaseAllotmentsTask(db, logger),
+    complete_bookings: completeBookingsTask(db, logger),
+    nightly_invariants: nightlyInvariants(db, logger),
+  };
 }
 
 export interface WorkerHandle {

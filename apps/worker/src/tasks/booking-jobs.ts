@@ -1,0 +1,66 @@
+import type { Task } from 'graphile-worker';
+import {
+  completeBookings,
+  expireHolds,
+  expireRequests,
+  listOperatorIds,
+  releaseDueAllotments,
+  type EngineContext,
+  type VsDatabase,
+} from '@vs/engine';
+import { systemActor, type Logger } from '@vs/shared';
+
+/** Runs `fn` for every operator, each in its own tenant transaction(s); one failure does not stop the rest. */
+async function forEachOperator(
+  db: VsDatabase,
+  logger: Logger,
+  job: string,
+  fn: (ctx: EngineContext) => Promise<Record<string, number>>,
+) {
+  const totals: Record<string, number> = {};
+  let failures = 0;
+  for (const operatorId of await listOperatorIds(db)) {
+    try {
+      const result = await fn({ operatorId, actor: systemActor(job) });
+      for (const [key, value] of Object.entries(result)) totals[key] = (totals[key] ?? 0) + value;
+    } catch (error) {
+      failures += 1;
+      logger.error({ err: error, operatorId, job }, 'job failed for operator');
+    }
+  }
+  if (failures > 0) throw new Error(`${job} failed for ${failures} operator(s)`);
+  if (Object.values(totals).some((n) => n > 0)) logger.info({ job, ...totals }, 'job finished');
+}
+
+/** Every minute: expire holds in batches of 500 until none are due. */
+export function expireHoldsTask(db: VsDatabase, logger: Logger): Task {
+  return () =>
+    forEachOperator(db, logger, 'expire_holds', async (ctx) => {
+      let total = 0;
+      for (;;) {
+        const { expired } = await expireHolds(db, ctx, { limit: 500 });
+        total += expired;
+        if (expired < 500) return { expired: total };
+      }
+    });
+}
+
+export function expireRequestsTask(db: VsDatabase, logger: Logger): Task {
+  return () => forEachOperator(db, logger, 'expire_requests', (ctx) => expireRequests(db, ctx));
+}
+
+export function releaseAllotmentsTask(db: VsDatabase, logger: Logger): Task {
+  return () =>
+    forEachOperator(db, logger, 'release_allotments', async (ctx) => {
+      let total = 0;
+      for (;;) {
+        const { released } = await releaseDueAllotments(db, ctx, { limit: 500 });
+        total += released;
+        if (released < 500) return { released: total };
+      }
+    });
+}
+
+export function completeBookingsTask(db: VsDatabase, logger: Logger): Task {
+  return () => forEachOperator(db, logger, 'complete_bookings', (ctx) => completeBookings(db, ctx));
+}
