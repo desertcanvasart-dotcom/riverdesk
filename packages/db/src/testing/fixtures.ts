@@ -89,6 +89,7 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   hold_line: bookingFixture,
   offer: bookingFixture,
   guest: bookingFixture,
+  payment: bookingFixture,
   idempotency_key: async (db, operatorId) => {
     const channel = await pricingWorld(db, operatorId);
     await db.query(
@@ -387,6 +388,12 @@ function bookingWorld(db: pg.Pool, operatorId: string): Promise<void> {
       `insert into vs.guest (operator_id, booking_id, booking_cabin_id, first_name, last_name, lead)
        values ($1, $2, $3, 'Fixture', 'Guest', true)`,
       [o, booking, cabin],
+    );
+    await db.query(
+      `insert into vs.payment (operator_id, booking_id, kind, method, amount, currency, booking_amount, reference,
+                               received_on, actor_type, actor_label)
+       values ($1, $2, 'payment', 'cash', 100, 'USD', 100, 'fixture', '2026-01-01', 'system', 'fixture')`,
+      [o, booking],
     );
   })();
   bookingWorlds.set(operatorId, created);

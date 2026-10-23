@@ -64,6 +64,8 @@ export interface AuditLog {
 }
 
 export interface Booking {
+  amount_paid: Generated<bigint>;
+  balance_due_date: string | null;
   cancel_reason: string | null;
   cancelled_at: Timestamp | null;
   channel_id: string;
@@ -73,11 +75,14 @@ export interface Booking {
   contract_id: string;
   created_at: Generated<Timestamp>;
   currency: string;
+  deposit_amount: Generated<bigint>;
+  fees: Generated<bigint>;
   id: Generated<string>;
   kind: Generated<string>;
   market: string;
   net_total: bigint;
   operator_id: string;
+  payment_status: Generated<string>;
   penalty_amount: bigint | null;
   quote_id: string;
   rate_plan_id: string;
@@ -470,6 +475,26 @@ export interface OperatorSetting {
   updated_at: Generated<Timestamp>;
 }
 
+export interface Payment {
+  actor_id: string | null;
+  actor_label: string | null;
+  actor_type: string;
+  amount: bigint;
+  booking_amount: bigint;
+  booking_id: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  fx_rate: string | null;
+  id: Generated<string>;
+  kind: string;
+  method: string;
+  note: string | null;
+  operator_id: string;
+  received_on: string;
+  reference: string;
+  reverses_payment_id: string | null;
+}
+
 export interface PaymentPolicy {
   auto_cancel_after_days: number | null;
   auto_cancel_overdue: Generated<boolean>;
@@ -731,6 +756,7 @@ export interface DB {
   offer: Offer;
   operator: Operator;
   operator_setting: OperatorSetting;
+  payment: Payment;
   payment_policy: PaymentPolicy;
   port: Port;
   quote: Quote;
