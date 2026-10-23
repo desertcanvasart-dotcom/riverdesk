@@ -23,6 +23,18 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface Allotment {
+  channel_id: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  notes: string | null;
+  operator_id: string;
+  release_days: number;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
 export interface AmendmentFeeRule {
   amount: bigint | null;
   cancellation_policy_id: string;
@@ -49,6 +61,82 @@ export interface AuditLog {
   id: Generated<string>;
   operator_id: string;
   request_key: string | null;
+}
+
+export interface Booking {
+  cancel_reason: string | null;
+  cancelled_at: Timestamp | null;
+  channel_id: string;
+  channel_ref: string | null;
+  completed_at: Timestamp | null;
+  confirmed_at: Timestamp | null;
+  contract_id: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  id: Generated<string>;
+  kind: Generated<string>;
+  market: string;
+  net_total: bigint;
+  operator_id: string;
+  penalty_amount: bigint | null;
+  quote_id: string;
+  rate_plan_id: string;
+  ref: string;
+  request_expires_at: Timestamp | null;
+  revision: Generated<number>;
+  sailing_id: string;
+  status: string;
+  total: bigint;
+  updated_at: Generated<Timestamp>;
+  version: Generated<bigint>;
+  vessel_id: string;
+}
+
+export interface BookingCabin {
+  adults: number;
+  assigned_cabin_id: string | null;
+  booking_id: string;
+  category_id: string;
+  child_ages: Generated<number[]>;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  operator_id: string;
+  seq: number;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface BookingLine {
+  booking_cabin_id: string;
+  booking_id: string;
+  bucket_id: string;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  leg_id: string;
+  operator_id: string;
+  released_at: Timestamp | null;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface BookingRevision {
+  actor_id: string | null;
+  actor_label: string | null;
+  actor_type: string;
+  booking_id: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  fee: Generated<bigint>;
+  id: Generated<string>;
+  net_total: bigint;
+  operator_id: string;
+  quote_id: string;
+  reason: string;
+  rev: number;
+  sailing_id: string;
+  snapshot: Json;
+  total: bigint;
 }
 
 export interface Cabin {
@@ -230,6 +318,49 @@ export interface Exception {
   updated_at: Generated<Timestamp>;
 }
 
+export interface Guest {
+  booking_cabin_id: string;
+  booking_id: string;
+  created_at: Generated<Timestamp>;
+  date_of_birth: string | null;
+  first_name: string;
+  id: Generated<string>;
+  last_name: string;
+  lead: Generated<boolean>;
+  nationality: string | null;
+  operator_id: string;
+  passport_ciphertext: Buffer | null;
+  passport_key_id: string | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface Hold {
+  booking_id: string | null;
+  channel_id: string;
+  contract_id: string;
+  created_at: Generated<Timestamp>;
+  ended_at: Timestamp | null;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  kind: string;
+  operator_id: string;
+  quote_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  version: Generated<bigint>;
+}
+
+export interface HoldLine {
+  bucket_id: string;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  hold_id: string;
+  id: Generated<string>;
+  leg_id: string;
+  n: number;
+  operator_id: string;
+}
+
 export interface IdempotencyKey {
   created_at: Generated<Timestamp>;
   expires_at: Generated<Timestamp>;
@@ -302,6 +433,18 @@ export interface Leg {
   vessel_id: string;
 }
 
+export interface Offer {
+  booking_id: string;
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  hold_id: string;
+  id: Generated<string>;
+  operator_id: string;
+  quote_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Operator {
   created_at: Generated<Timestamp>;
   default_locale: Generated<string>;
@@ -314,6 +457,7 @@ export interface Operator {
 export interface OperatorSetting {
   allotment_release_days: Generated<number>;
   assignment_cutoff_days: Generated<number>;
+  booking_ref_prefix: Generated<string>;
   checkout_hold_minutes: Generated<number>;
   created_at: Generated<Timestamp>;
   offer_hold_hours: Generated<number>;
@@ -556,8 +700,13 @@ export interface Vessel {
 }
 
 export interface DB {
+  allotment: Allotment;
   amendment_fee_rule: AmendmentFeeRule;
   audit_log: AuditLog;
+  booking: Booking;
+  booking_cabin: BookingCabin;
+  booking_line: BookingLine;
+  booking_revision: BookingRevision;
   cabin: Cabin;
   cabin_block: CabinBlock;
   cabin_category: CabinCategory;
@@ -572,10 +721,14 @@ export interface DB {
   child_policy_band: ChildPolicyBand;
   event: Event;
   exception: Exception;
+  guest: Guest;
+  hold: Hold;
+  hold_line: HoldLine;
   idempotency_key: IdempotencyKey;
   inventory_bucket: InventoryBucket;
   inventory_event: InventoryEvent;
   leg: Leg;
+  offer: Offer;
   operator: Operator;
   operator_setting: OperatorSetting;
   payment_policy: PaymentPolicy;

@@ -80,6 +80,15 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   channel_contract_category: pricingFixture,
   channel_contract_rate_plan: pricingFixture,
   quote: pricingFixture,
+  allotment: bookingFixture,
+  booking: bookingFixture,
+  booking_cabin: bookingFixture,
+  booking_line: bookingFixture,
+  booking_revision: bookingFixture,
+  hold: bookingFixture,
+  hold_line: bookingFixture,
+  offer: bookingFixture,
+  guest: bookingFixture,
   idempotency_key: async (db, operatorId) => {
     const channel = await pricingWorld(db, operatorId);
     await db.query(
@@ -295,6 +304,97 @@ export function pricingWorld(db: pg.Pool, operatorId: string): Promise<string> {
 
 async function pricingFixture(db: pg.Pool, operatorId: string): Promise<void> {
   await pricingWorld(db, operatorId);
+}
+
+const bookingWorlds = new Map<string, Promise<void>>();
+
+/**
+ * One row in every Batch 3 table, on top of pricingWorld. The hold is expired and the booking
+ * line released, so the fixture moves no counters and invariant 2 holds.
+ */
+function bookingWorld(db: pg.Pool, operatorId: string): Promise<void> {
+  const existing = bookingWorlds.get(operatorId);
+  if (existing) return existing;
+  const created = (async () => {
+    const channel = await pricingWorld(db, operatorId);
+    const one = async (text: string, params: unknown[]) =>
+      (await db.query<{ id: string }>(text, params)).rows[0]!.id;
+    const o = operatorId;
+    const ids = (
+      await db.query<{
+        vessel: string;
+        category: string;
+        sailing: string;
+        leg: string;
+        bucket: string;
+        quote: string;
+        contract: string;
+        plan: string;
+      }>(
+        `select v.id as vessel, c.id as category, s.id as sailing, l.id as leg, b.id as bucket,
+                q.id as quote, q.contract_id as contract, q.rate_plan_id as plan
+         from vs.vessel v
+         join vs.cabin_category c on c.vessel_id = v.id
+         join vs.sailing s on s.vessel_id = v.id
+         join vs.leg l on l.vessel_id = v.id
+         join vs.inventory_bucket b on b.leg_id = l.id and b.kind = 'pool'
+         join vs.quote q on q.sailing_id = s.id
+         where v.operator_id = $1 and v.code = 'FIX' limit 1`,
+        [o],
+      )
+    ).rows[0]!;
+    await db.query(
+      `insert into vs.allotment (operator_id, channel_id, vessel_id, release_days) values ($1, $2, $3, 21)`,
+      [o, channel, ids.vessel],
+    );
+    const booking = await one(
+      `insert into vs.booking (operator_id, ref, channel_id, contract_id, vessel_id, sailing_id, quote_id, rate_plan_id,
+                               status, revision, market, currency, total, net_total)
+       values ($1, 'FX-27-00001', $2, $3, $4, $5, $6, $7, 'cancelled', 1, 'international', 'USD', 0, 0) returning id`,
+      [o, channel, ids.contract, ids.vessel, ids.sailing, ids.quote, ids.plan],
+    );
+    const cabin = await one(
+      `insert into vs.booking_cabin (operator_id, booking_id, seq, category_id, adults, status)
+       values ($1, $2, 0, $3, 2, 'cancelled') returning id`,
+      [o, booking, ids.category],
+    );
+    await db.query(
+      `insert into vs.booking_line (operator_id, booking_id, booking_cabin_id, leg_id, category_id, bucket_id, status, released_at)
+       values ($1, $2, $3, $4, $5, $6, 'released', now())`,
+      [o, booking, cabin, ids.leg, ids.category, ids.bucket],
+    );
+    await db.query(
+      `insert into vs.booking_revision (operator_id, booking_id, rev, quote_id, sailing_id, currency, total, net_total,
+                                        snapshot, reason, actor_type, actor_label)
+       values ($1, $2, 1, $3, $4, 'USD', 0, 0, '{}', 'fixture', 'system', 'fixture')`,
+      [o, booking, ids.quote, ids.sailing],
+    );
+    const hold = await one(
+      `insert into vs.hold (operator_id, channel_id, contract_id, quote_id, booking_id, kind, status, expires_at, ended_at)
+       values ($1, $2, $3, $4, $5, 'offer', 'expired', now(), now()) returning id`,
+      [o, channel, ids.contract, ids.quote, booking],
+    );
+    await db.query(
+      `insert into vs.hold_line (operator_id, hold_id, leg_id, category_id, bucket_id, n) values ($1, $2, $3, $4, $5, 1)`,
+      [o, hold, ids.leg, ids.category, ids.bucket],
+    );
+    await db.query(
+      `insert into vs.offer (operator_id, booking_id, quote_id, hold_id, status, expires_at)
+       values ($1, $2, $3, $4, 'expired', now())`,
+      [o, booking, ids.quote, hold],
+    );
+    await db.query(
+      `insert into vs.guest (operator_id, booking_id, booking_cabin_id, first_name, last_name, lead)
+       values ($1, $2, $3, 'Fixture', 'Guest', true)`,
+      [o, booking, cabin],
+    );
+  })();
+  bookingWorlds.set(operatorId, created);
+  return created;
+}
+
+async function bookingFixture(db: pg.Pool, operatorId: string): Promise<void> {
+  await bookingWorld(db, operatorId);
 }
 
 export async function seedFixtures(
