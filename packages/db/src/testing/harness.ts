@@ -12,6 +12,7 @@ export const NON_TENANT_TABLES: readonly string[] = [];
 export const SECURITY_DEFINER_ALLOWLIST: Record<string, RuntimeRoleName[]> = {
   list_operator_ids: ['vs_worker'],
   resolve_staff: ['vs_backoffice'],
+  claim_staff_invitation: ['vs_backoffice'],
 };
 
 export interface TenantTable {

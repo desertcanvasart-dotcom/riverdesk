@@ -90,6 +90,12 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   offer: bookingFixture,
   guest: bookingFixture,
   payment: bookingFixture,
+  staff_invitation: async (db, operatorId) => {
+    await db.query(
+      `insert into vs.staff_invitation (operator_id, email, display_name, role) values ($1, $2, 'Fixture', 'read_only')`,
+      [operatorId, `invite-${randomUUID()}@example.test`],
+    );
+  },
   idempotency_key: async (db, operatorId) => {
     const channel = await pricingWorld(db, operatorId);
     await db.query(

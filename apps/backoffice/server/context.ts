@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { getStaffContext } from '@vs/engine';
+import { claimStaffInvitation, getStaffContext } from '@vs/engine';
 import { loadConfig, required } from '@vs/shared';
 import { backofficeDb } from './db';
 import type { Context } from './trpc';
@@ -26,5 +26,12 @@ export async function createContext(): Promise<Context> {
   );
   const { data } = await supabase.auth.getUser();
   if (!data.user) return { staff: null };
-  return { staff: await getStaffContext(backofficeDb(), data.user.id) };
+  const db = backofficeDb();
+  const staff = await getStaffContext(db, data.user.id);
+  if (staff) return { staff };
+  // First sign-in of an invited person: only with an email Supabase Auth has verified.
+  if (data.user.email && data.user.email_confirmed_at) {
+    return { staff: await claimStaffInvitation(db, data.user.id, data.user.email) };
+  }
+  return { staff: null };
 }

@@ -417,3 +417,31 @@ The company that runs nilecrz also owns and runs the vessel system; cruise compa
 - The terms offered to cruise companies should state this neutrality.
 
 Reason: the operator's answer.
+
+## Batch 5 (part 1: contract and onboarding)
+
+**2026-10-24 · The API contract is `packages/contracts/openapi.yaml` (OpenAPI 3.1).**
+
+- Request and response types are generated from it (`pnpm --filter @vs/contracts generate:api`), and CI fails if the generated file is stale.
+- Tests check that it is valid OpenAPI 3.1, that its error codes equal the error catalogue, that every write requires `Idempotency-Key`, and that no response schema has a passport or birth-date field.
+- The API serves it at `/openapi.yaml`, with interactive docs (Scalar) at `/docs`.
+
+Reason: the prompt puts the contract first.
+
+**2026-10-24 · API conventions.**
+
+- Field names are snake_case.
+- Money is `{amount, currency}`, with `amount` an integer in minor units. JSON integers are exact up to 2^53, far above any booking.
+- Dates are Cairo calendar dates; timestamps are UTC.
+- Unknown request fields are refused.
+- Passport numbers are write-only; dates of birth are never returned.
+
+Reason: one unambiguous shape for every client.
+
+**2026-10-24 · Webhook signatures.**
+Header: `X-VS-Signature: t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "<t>.<raw body>")>`. Receivers reject timestamps older than 5 minutes.
+Reason: the timestamp protects against replays, and the format is the familiar one.
+
+**2026-10-24 · Owner invitations instead of creating Auth users.**
+`pnpm platform:create-company` creates the company, its settings, its back-office channel and an owner invitation, all as the admin user. The invited person signs in with that email, as verified by Supabase Auth, and the back office claims the invitation through the allow-listed `vs.claim_staff_invitation` (back office only). One open invitation per email exists across the platform. Invitations expire after 14 days.
+Reason: creating Auth users would need the `service_role` key, which rule 7 keeps out of everything except migrations and break-glass.

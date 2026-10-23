@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./testing": "./src/testing/index.ts",
     "./testing/setup": "./src/testing/setup.ts",
-    "./migrate": "./src/migrate.ts"
+    "./migrate": "./src/migrate.ts",
+    "./platform": "./src/platform.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -17,7 +18,8 @@
     "seed": "tsx seed/seed.ts",
     "reset": "tsx src/cli/reset.ts && tsx src/cli/migrate.ts && tsx seed/seed.ts",
     "codegen": "tsx src/cli/codegen.ts",
-    "check-roles": "tsx src/cli/check-roles.ts"
+    "check-roles": "tsx src/cli/check-roles.ts",
+    "create-company": "tsx src/cli/create-company.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",

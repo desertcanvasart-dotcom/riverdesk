@@ -73,6 +73,19 @@ pnpm db:reset    # drops everything owned by vs_owner, then migrates and seeds (
 - Check runtime logins: `VS_ENV_FILE=.env.hosted pnpm db:check-roles` (read-only; prints no secrets).
 - Runtime roles connect through the Supavisor pooler as `<role>.<project ref>`. Back office and API use the transaction port (6543); the worker uses the session port (5432).
 
+## Add a cruise company
+
+```bash
+pnpm platform:create-company --name "Nile Dream Cruises" --slug nile-dream --prefix NDM \
+  --owner-email owner@niledream.com --owner-name "Mona Hassan" --locale ar
+```
+
+Hosted: prefix with `VS_ENV_FILE=.env.hosted`. The owner then signs in to the back office with that email (Supabase Auth verifies it); the first sign-in links them as the company's owner. The invitation is valid 14 days.
+
+## Channel API docs
+
+The contract is `packages/contracts/openapi.yaml`. The running API serves it at `/openapi.yaml` and as interactive docs at `/docs` (locally http://localhost:4000/docs). After editing the YAML, run `pnpm --filter @vs/contracts generate:api`.
+
 ## Roles
 
 | Role            | Login | Used by                     | Notes                                                                            |

@@ -680,6 +680,19 @@ export interface SeasonPeriod {
   vessel_id: string;
 }
 
+export interface StaffInvitation {
+  accepted_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  display_name: string;
+  email: string;
+  expires_at: Generated<Timestamp>;
+  id: Generated<string>;
+  operator_id: string;
+  role: string;
+  staff_user_id: string | null;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface StaffUser {
   active: Generated<boolean>;
   auth_user_id: string;
@@ -770,6 +783,7 @@ export interface DB {
   schedule_template_stop: ScheduleTemplateStop;
   season: Season;
   season_period: SeasonPeriod;
+  staff_invitation: StaffInvitation;
   staff_user: StaffUser;
   supplement: Supplement;
   vessel: Vessel;
