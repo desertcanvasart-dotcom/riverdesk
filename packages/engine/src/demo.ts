@@ -477,11 +477,17 @@ export async function createDemoPricing(db: VsDatabase, ctx: EngineContext, vess
     categoryIds: allCategories,
     ratePlanIds: plans,
   });
-  const backOffice = await createChannel(db, ctx, {
-    code: 'back-office',
-    name: 'Back office (phone, WhatsApp, walk-in)',
-    type: 'back_office',
-  });
+  // A company created with platform:create-company already has its back-office channel.
+  const existingBackOffice = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx.selectFrom('channel').select('id').where('type', '=', 'back_office').executeTakeFirst(),
+  );
+  const backOffice =
+    existingBackOffice ??
+    (await createChannel(db, ctx, {
+      code: 'back-office',
+      name: 'Back office (phone, WhatsApp, walk-in)',
+      type: 'back_office',
+    }));
   await createContract(db, ctx, {
     channelId: backOffice.id,
     vesselId,

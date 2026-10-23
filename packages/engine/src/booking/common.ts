@@ -42,6 +42,13 @@ export function decodeResult(value: unknown): unknown {
   return value;
 }
 
+/**
+ * Runs `run` once per (scope, key) — the scope is the channel — and stores its result in the
+ * same transaction as the work, so a crash after commit can never lose the result (spec test 6).
+ * - A concurrent duplicate gets IN_PROGRESS at once (transaction-scoped advisory lock).
+ * - The same key with a different body gets IDEMPOTENCY_KEY_REUSED.
+ * - A completed key replays its result for 7 days; after that the key is free again.
+ */
 export async function withRequestKey<T>(
   tx: Tx,
   ctx: EngineContext,
@@ -53,27 +60,47 @@ export async function withRequestKey<T>(
     .update(options.action)
     .update(JSON.stringify(encodeResult(options.input)))
     .digest('hex');
-  const { rows } = await sql<{ id: string }>`
-    insert into vs.idempotency_key (operator_id, scope_id, key, request_hash)
-    values (${ctx.operatorId}, ${options.scopeId}, ${options.key}, ${hash})
-    on conflict (operator_id, scope_id, key) do nothing
-    returning id`.execute(tx);
-  if (rows[0]) {
-    const result = await run();
-    await sql`
-      update vs.idempotency_key set status = 'done', response_body = ${JSON.stringify(encodeResult(result))}::jsonb
-      where id = ${rows[0].id}`.execute(tx);
-    return result;
-  }
+  const { rows: lock } = await sql<{ locked: boolean }>`
+    select pg_try_advisory_xact_lock(hashtextextended(${`${options.scopeId}:${options.key}`}, 0)) as locked`.execute(
+    tx,
+  );
+  if (!lock[0]!.locked) throw new DomainError('IN_PROGRESS');
+
   const existing = await tx
     .selectFrom('idempotency_key')
-    .select(['request_hash', 'status', 'response_body'])
+    .select([
+      'id',
+      'request_hash',
+      'status',
+      'response_body',
+      sql<boolean>`expires_at <= now()`.as('expired'),
+    ])
     .where('scope_id', '=', options.scopeId)
     .where('key', '=', options.key)
-    .executeTakeFirstOrThrow();
-  if (existing.request_hash !== hash) throw new DomainError('IDEMPOTENCY_KEY_REUSED');
-  if (existing.status !== 'done') throw new DomainError('IN_PROGRESS');
-  return decodeResult(existing.response_body) as T;
+    .executeTakeFirst();
+  let keyId: string;
+  if (existing && !existing.expired) {
+    if (existing.request_hash !== hash) throw new DomainError('IDEMPOTENCY_KEY_REUSED');
+    if (existing.status !== 'done') throw new DomainError('IN_PROGRESS');
+    return decodeResult(existing.response_body) as T;
+  } else if (existing) {
+    await sql`
+      update vs.idempotency_key
+      set request_hash = ${hash}, status = 'in_progress', response_body = null, expires_at = now() + interval '7 days'
+      where id = ${existing.id}`.execute(tx);
+    keyId = existing.id;
+  } else {
+    const { rows } = await sql<{ id: string }>`
+      insert into vs.idempotency_key (operator_id, scope_id, key, request_hash)
+      values (${ctx.operatorId}, ${options.scopeId}, ${options.key}, ${hash})
+      returning id`.execute(tx);
+    keyId = rows[0]!.id;
+  }
+  const result = await run();
+  await sql`
+    update vs.idempotency_key set status = 'done', response_body = ${JSON.stringify(encodeResult(result))}::jsonb
+    where id = ${keyId}`.execute(tx);
+  return result;
 }
 
 export const requestKeySchema = z.string().min(1).max(255).optional();

@@ -34,6 +34,7 @@ export const quoteAmendmentInput = z.object({
   sailingId: z.uuid().optional(),
   /** The full set of cabins after the change; omit to keep the current cabins. */
   cabins: z.array(cabinSchema).min(1).max(20).optional(),
+  requestKey: requestKeySchema,
 });
 
 interface FeeRule {
@@ -176,19 +177,24 @@ export async function quoteAmendment(
       throw new DomainError('INVALID_STATE', { message: 'Only confirmed bookings can be amended' });
     return { ...b, cabins: await activeCabins(tx, b.id) };
   });
-  const quote = await createQuote(db, ctx, {
-    channelId: booking.channel_id,
-    sailingId: data.sailingId ?? booking.sailing_id,
-    market: booking.market,
-    ratePlanId: booking.rate_plan_id,
-    cabins:
-      data.cabins ??
-      booking.cabins.map((c) => ({
-        categoryId: c.categoryId,
-        adults: c.adults,
-        childAges: c.childAges,
-      })),
-  });
+  const quote = await createQuote(
+    db,
+    ctx,
+    {
+      channelId: booking.channel_id,
+      sailingId: data.sailingId ?? booking.sailing_id,
+      market: booking.market,
+      ratePlanId: booking.rate_plan_id,
+      cabins:
+        data.cabins ??
+        booking.cabins.map((c) => ({
+          categoryId: c.categoryId,
+          adults: c.adults,
+          childAges: c.childAges,
+        })),
+    },
+    { requestKey: data.requestKey },
+  );
   const { changes, fee } = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
     feeFor(tx, booking, quote),
   );

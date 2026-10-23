@@ -4,6 +4,7 @@ import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
 import { ageOn, type BusinessDate } from '@vs/shared';
 import { audit } from '../audit';
+import { withRequestKey } from '../booking/common';
 import { parseInput, type EngineContext, type Tx } from '../internal';
 import { dateSchema } from '../schedule/setup';
 import {
@@ -394,8 +395,20 @@ export async function createQuote(
   db: VsDatabase,
   ctx: EngineContext,
   input: PriceSailingInput,
+  options: { requestKey?: string } = {},
 ): Promise<Quote> {
-  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+  return db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    withRequestKey(
+      tx,
+      ctx,
+      { scopeId: input.channelId, key: options.requestKey, action: 'quote.create', input },
+      () => insertQuote(tx, ctx, input),
+    ),
+  );
+}
+
+async function insertQuote(tx: Tx, ctx: EngineContext, input: PriceSailingInput): Promise<Quote> {
+  {
     const priced = await priceSailingInTx(tx, input);
     const { rows } = await sql<{ id: string }>`
       insert into vs.quote (operator_id, channel_id, contract_id, vessel_id, sailing_id, rate_plan_id, season_id,
@@ -421,7 +434,7 @@ export async function createQuote(
       },
     });
     return loadQuote(tx, id);
-  });
+  }
 }
 
 export async function loadQuote(tx: Tx, quoteId: string): Promise<Quote> {

@@ -39,6 +39,12 @@ export const envSchema = z.object({
   PASSPORT_PREVIOUS_KEYS: z.string().optional(),
 
   SEED_STAFF_PASSWORD: z.string().min(8).optional(),
+
+  /** HS256 key for channel API access tokens (32+ random bytes, base64). */
+  API_TOKEN_SECRET: z
+    .string()
+    .refine((value) => Buffer.from(value, 'base64').length >= 32, 'At least 32 bytes, base64')
+    .optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;
