@@ -394,3 +394,26 @@ Reason: spec § Prepaid rules.
 **2026-10-23 · The action list is a query.**
 `getActionList` returns holds expiring today, open requests with SLA hours left, deposits due, balances overdue or due within 3 days, paid-but-unavailable bookings and open exceptions. Missing guest details and unassigned cabins join it in Batch 6, alongside cabin assignment.
 Reason: the Batch 6 home screen reads it as is.
+
+## Multi-tenancy (agreed 2026-10-24)
+
+**2026-10-24 · The platform owner adds companies.**
+A platform-admin command (built in Batch 5; a small admin screen later) creates the company (operator) with its settings, its back-office channel and an invite for its first owner. There is no self-service sign-up.
+Reason: the platform owner controls who joins. Sign-up, approval and billing are not needed for the pilot.
+
+**2026-10-24 · One login per company.**
+A staff login belongs to exactly one company (`staff_user.auth_user_id` is unique). Someone working for two companies uses two logins.
+Reason: simplest and safest for isolation, and no change to the data model.
+
+**2026-10-24 · nilecrz gets API credentials per company.**
+nilecrz is a channel of each company that sells through it, and holds one API client per company. Each company controls its own contract with nilecrz and can switch it off. There is no cross-company account.
+Reason: fits the existing isolation; every API call stays inside one tenant.
+
+**2026-10-24 · The platform is owned by nilecrz's company.**
+The company that runs nilecrz also owns and runs the vessel system; cruise companies are its customers. This answers the spec's open "ownership" question. Consequences:
+
+- nilecrz gets no privileged access. It is a channel under a contract like any other portal, sees only what each company's contract allows, and never sees other channels' allotments, holds or bookings.
+- Platform-level access (break-glass, migrations) stays separate from the nilecrz application and its credentials.
+- The terms offered to cruise companies should state this neutrality.
+
+Reason: the operator's answer.
