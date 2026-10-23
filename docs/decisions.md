@@ -236,3 +236,60 @@ Reason: the seed exercises the same write path as staff do (rule 1), and `@vs/db
 **2026-10-23 · Commitments are simulated in tests until Batch 3.**
 Tests set `held` and `booked` on pool buckets directly as the owner (`simulateCommitment`), always within invariant 3. Batch 3 replaces these with real holds and bookings when invariant 2 arrives.
 Reason: the prompt asks for a test-only fixture until holds and bookings exist.
+
+## Batch 2
+
+**2026-10-23 · Rounding.**
+Amounts are integer minor units throughout. Each price line is rounded once, half-up: a child's percentage of the adult double rate, and each per-cabin markup or commission line. Totals are sums of the rounded lines. Per-night prices are whole-number multiplications, so they never need rounding.
+Reason: the prompt's rule. One rounding per line makes every total reproducible by hand.
+
+**2026-10-23 · How unit, period and basis combine.**
+
+- A rate plan sets `pricing_unit` (`per_person` or `per_cabin`) and `pricing_period` (`per_night` or `per_package`).
+- Per-person rates have a basis: the price per person when 1, 2 or 3+ people pay the adult rate. Those "payers" are the adults, children at or above the adult age, and children whose band needs two adults when the cabin has only one (they pay the adult double rate).
+- Package rates are keyed by sailing pattern. Per-night rates are multiplied by the sailing's nights.
+
+Reason: the operator's answer that vessels price per person or per cabin, per night or per package.
+
+**2026-10-23 · Children in per-cabin plans.**
+A per-cabin price covers everyone in the cabin. Only `fixed` child bands add to it; free, included and percentage bands appear as zero lines.
+Reason: a percentage of an adult rate has no meaning when there is no per-person rate; this follows the Part 0 decision that per-cabin prices cover occupancy up to the category maximum.
+
+**2026-10-23 · Occupancy rules.**
+Every cabin needs at least one adult. The adults may not exceed the category's `max_adults`, all guests may not exceed `max_occupancy`, and children may not exceed the policy's `max_children_per_cabin` (default 2). Every child counts toward occupancy.
+Reason: this reproduces the default "max 1 child per double, 2 per triple" from the categories' maximum occupancy.
+
+**2026-10-23 · Ages are taken on the embark date.**
+A quote accepts child ages or dates of birth; dates of birth are converted to the age on the embark date. Ages 0–1 free; 2–5 at 25%; 6–11 at 50%. Both percentage bands need two adults; 12 and over pay the adult rate.
+Reason: the operator's child policy. "Below 2 free, 3–6 25%" was read as 2–5, so that ages 2 and 6 each fall in exactly one band.
+
+**2026-10-23 · Supplements.**
+A supplement belongs to a rate plan, which fixes its currency. It is charged once for each night of the sailing within its date range; nights run from the embark date to the night before disembarking. Adult-rate guests pay the adult amount; children who are not in a free band pay the child amount. Only mandatory supplements are priced; optional ones are in the backlog.
+Reason: a gala dinner on the disembark date is not part of the cruise.
+
+**2026-10-23 · Markup and commission.**
+
+- Markup: the rates are net, and one markup line per cabin adds to the price.
+- Commission: the rates are the selling price, and one commission line per cabin records what the channel keeps. It is not part of the total; `net_total` = total − commission.
+- nilecrz: no adjustment.
+
+Reason: "net or commissionable as contracted" (spec § Agent portal).
+
+**2026-10-23 · How a rate plan is chosen.**
+The rate plan must be in the channel's contract and match the requested market. If the contract has several plans for a market, the caller names one. Each plan has one currency.
+Reason: the Part 0 currency decision. A quote is always in its plan's currency.
+
+**2026-10-23 · Quote shape.**
+A quote stores its lines, the resolved cabins and the policy snapshots (cancellation rules, amendment fees, payment terms, child policy, inclusions and exclusions, contract terms) as JSON. It is immutable: runtime roles cannot update or delete it. It expires after the longer of the contract's checkout and option holds.
+Reason: the spec's quote contents; immutability guarantees that later rate changes never touch a quote. This replaces the `quote_cabin` and `quote_line` tables proposed in Part 0.
+
+**2026-10-23 · nilecrz's payment mode is `channel_collected`.**
+The prompt's Batch 2 seed says "prepaid".
+Reason: the operator confirmed in Part 0 that nilecrz collects the guest's money and settles with the operator.
+
+**2026-10-23 · `charter_rate` is not built.**
+Reason: charters are not in the MVP (see backlog).
+
+**2026-10-23 · Runtime role passwords are set only when login fails.**
+The bootstrap no longer re-sets an unchanged password on every migration run.
+Reason: re-setting a password, even unchanged, makes the Supabase pooler drop its cached credentials, so the apps' logins would fail for a few seconds after every deploy.

@@ -3,6 +3,17 @@ import { addDays, isoWeekday, type BusinessDate } from '@vs/shared';
 import { cairoToday, type EngineContext } from './internal';
 import { changeCapacity } from './inventory/capacity';
 import {
+  createCancellationPolicy,
+  createChannel,
+  createChildPolicy,
+  createContract,
+  createPaymentPolicy,
+  createRatePlan,
+  createSeason,
+  createSupplement,
+  setRates,
+} from './pricing/setup';
+import {
   createCabinCategory,
   createPort,
   createSailingPattern,
@@ -246,4 +257,233 @@ export async function createDemoVessel(
     patterns,
     validFrom,
   };
+}
+
+/** Rounds amount × bps / 10000 to a whole currency unit (minor units, 2 decimals). */
+function demoAmount(base: bigint, ...factorsBps: number[]): bigint {
+  let value = base;
+  for (const bps of factorsBps) value = (value * BigInt(bps) + 5000n) / 10000n;
+  return ((value + 50n) / 100n) * 100n;
+}
+
+/**
+ * Demo pricing for the demo vessel (prompt § Batch 2 seed): rate plans for the international
+ * (USD) and Egyptian/resident (EGP) markets, per person per package; high season October–April
+ * and low season May–September across the horizon; the pilot child policy; gala dinners on
+ * 24 and 31 December; channels nilecrz (pool, no markup, channel collects payment) and the
+ * operator's back office.
+ */
+export async function createDemoPricing(db: VsDatabase, ctx: EngineContext, vesselId: string) {
+  const { categories, patterns } = await db.withTenantTx(
+    ctx.operatorId,
+    ctx.actor,
+    async ({ db: tx }) => ({
+      categories: await tx
+        .selectFrom('cabin_category')
+        .select(['id', 'code'])
+        .where('vessel_id', '=', vesselId)
+        .execute(),
+      patterns: await tx
+        .selectFrom('sailing_pattern')
+        .select(['id', 'code'])
+        .where('vessel_id', '=', vesselId)
+        .execute(),
+    }),
+  );
+  const today = await todayInCairo(db);
+  const year = Number(today.slice(0, 4));
+  const startYear = Number(today.slice(5, 7)) >= 10 ? year : year - 1;
+  const highPeriods: { from: BusinessDate; to: BusinessDate }[] = [];
+  const lowPeriods: { from: BusinessDate; to: BusinessDate }[] = [];
+  for (let y = startYear; y < startYear + 3; y += 1) {
+    highPeriods.push({ from: `${y}-10-01` as BusinessDate, to: `${y + 1}-04-30` as BusinessDate });
+    lowPeriods.push({
+      from: `${y + 1}-05-01` as BusinessDate,
+      to: `${y + 1}-09-30` as BusinessDate,
+    });
+  }
+  const high = await createSeason(db, ctx, {
+    vesselId,
+    code: 'HIGH',
+    name: 'High season (Oct–Apr)',
+    periods: highPeriods,
+  });
+  const low = await createSeason(db, ctx, {
+    vesselId,
+    code: 'LOW',
+    name: 'Low season (May–Sep)',
+    periods: lowPeriods,
+  });
+
+  const child = await createChildPolicy(db, ctx, {
+    name: 'Pilot child policy',
+    adultFromAge: 12,
+    maxChildrenPerCabin: 2,
+    bands: [
+      { ageFrom: 0, ageTo: 1, basis: 'free' },
+      {
+        ageFrom: 2,
+        ageTo: 5,
+        basis: 'percent_of_adult',
+        percentBps: 2500,
+        requiresTwoAdults: true,
+      },
+      {
+        ageFrom: 6,
+        ageTo: 11,
+        basis: 'percent_of_adult',
+        percentBps: 5000,
+        requiresTwoAdults: true,
+      },
+    ],
+  });
+  const cancellation = await createCancellationPolicy(db, ctx, {
+    name: 'Standard cancellation',
+    rules: [
+      { fromDays: 60, penaltyBps: 0 },
+      { fromDays: 30, penaltyBps: 2500 },
+      { fromDays: 15, penaltyBps: 5000 },
+      { fromDays: 0, penaltyBps: 10000 },
+    ],
+  });
+  const payment = await createPaymentPolicy(db, ctx, {
+    name: 'Deposit 25%, balance 30 days before',
+  });
+  const policies = {
+    childPolicyId: child.id,
+    cancellationPolicyId: cancellation.id,
+    paymentPolicyId: payment.id,
+  };
+  const inclusions = {
+    en: ['Full board on board', 'Guided visits as per itinerary', 'Transfers in Luxor and Aswan'],
+    ar: [
+      'إقامة كاملة على متن المركب',
+      'زيارات بصحبة مرشد حسب البرنامج',
+      'الانتقالات في الأقصر وأسوان',
+    ],
+  };
+  const exclusions = {
+    en: ['Drinks', 'Tips', 'Visa'],
+    ar: ['المشروبات', 'الإكراميات', 'التأشيرة'],
+  };
+
+  // Double rate per person, low season, standard cabin; other cells derive from it.
+  const markets = [
+    {
+      code: 'INTL',
+      name: 'International (USD)',
+      market: 'international',
+      currency: 'USD',
+      gala: [7500n, 3750n],
+      base: { 'LXR-4': 45000n, 'LXR-7': 75000n, 'ASW-3': 35000n, 'ASW-7': 75000n },
+    },
+    {
+      code: 'EGY',
+      name: 'Egyptian & resident (EGP)',
+      market: 'egyptian_resident',
+      currency: 'EGP',
+      gala: [250000n, 125000n],
+      base: { 'LXR-4': 1200000n, 'LXR-7': 2000000n, 'ASW-3': 950000n, 'ASW-7': 2000000n },
+    },
+  ] as const;
+  const categoryFactor: Record<string, number> = { STD: 10000, SUP: 12000, JS: 16000, RS: 25000 };
+  const plans: string[] = [];
+  for (const m of markets) {
+    const plan = await createRatePlan(db, ctx, {
+      vesselId,
+      code: m.code,
+      name: m.name,
+      market: m.market,
+      currency: m.currency,
+      pricingUnit: 'per_person',
+      pricingPeriod: 'per_package',
+      ...policies,
+      inclusions,
+      exclusions,
+    });
+    plans.push(plan.id);
+    const rates = [];
+    for (const pattern of patterns) {
+      const base = m.base[pattern.code as keyof typeof m.base];
+      for (const category of categories) {
+        for (const [season, seasonBps] of [
+          [low.id, 10000],
+          [high.id, 13000],
+        ] as const) {
+          const double = demoAmount(base, categoryFactor[category.code]!, seasonBps);
+          rates.push({
+            categoryId: category.id,
+            seasonId: season,
+            sailingPatternId: pattern.id,
+            basis: 'double' as const,
+            amount: double,
+          });
+          rates.push({
+            categoryId: category.id,
+            seasonId: season,
+            sailingPatternId: pattern.id,
+            basis: 'single' as const,
+            amount: demoAmount(double, 15000),
+          });
+          if (category.code === 'STD' || category.code === 'SUP') {
+            rates.push({
+              categoryId: category.id,
+              seasonId: season,
+              sailingPatternId: pattern.id,
+              basis: 'triple' as const,
+              amount: demoAmount(double, 9000),
+            });
+          }
+        }
+      }
+    }
+    await setRates(db, ctx, { ratePlanId: plan.id, rates });
+    for (let y = startYear; y < startYear + 3; y += 1) {
+      for (const day of ['24', '31']) {
+        await createSupplement(db, ctx, {
+          ratePlanId: plan.id,
+          code: `GALA-${y}-12-${day}`,
+          kind: 'gala',
+          nameEn: day === '24' ? 'Christmas Eve gala dinner' : "New Year's Eve gala dinner",
+          nameAr: day === '24' ? 'عشاء ليلة عيد الميلاد' : 'عشاء ليلة رأس السنة',
+          dateFrom: `${y}-12-${day}`,
+          dateTo: `${y}-12-${day}`,
+          amountAdult: m.gala[0],
+          amountChild: m.gala[1],
+        });
+      }
+    }
+  }
+
+  const allCategories = categories.map((c) => c.id);
+  const nilecrz = await createChannel(db, ctx, {
+    code: 'nilecrz',
+    name: 'nilecrz',
+    type: 'portal',
+  });
+  await createContract(db, ctx, {
+    channelId: nilecrz.id,
+    vesselId,
+    allocation: 'pool',
+    paymentMode: 'channel_collected',
+    priceAdjustment: 'none',
+    validFrom: today,
+    categoryIds: allCategories,
+    ratePlanIds: plans,
+  });
+  const backOffice = await createChannel(db, ctx, {
+    code: 'back-office',
+    name: 'Back office (phone, WhatsApp, walk-in)',
+    type: 'back_office',
+  });
+  await createContract(db, ctx, {
+    channelId: backOffice.id,
+    vesselId,
+    allocation: 'pool',
+    paymentMode: 'vessel_prepaid',
+    validFrom: today,
+    categoryIds: allCategories,
+    ratePlanIds: plans,
+  });
+  return { ratePlanIds: plans, channels: { nilecrz: nilecrz.id, backOffice: backOffice.id } };
 }

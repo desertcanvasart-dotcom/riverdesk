@@ -1,5 +1,5 @@
 import { loadConfig, required, systemActor } from '@vs/shared';
-import { createDemoVessel, generateSchedule, openDatabase } from '../src/index';
+import { createDemoPricing, createDemoVessel, generateSchedule, openDatabase } from '../src/index';
 
 // Local only: adds the demo vessel to the seeded demo operator through the engine (as the
 // back-office role), then generates 18 months of schedule. Re-runnable.
@@ -21,6 +21,15 @@ try {
   console.log(
     `demo vessel ${vesselId}: ${result.legsCreated} legs, ${result.sailingsCreated} sailings created (until ${result.until})`,
   );
+  const plans = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx.selectFrom('rate_plan').select('id').where('vessel_id', '=', vesselId).execute(),
+  );
+  if (plans.length === 0) {
+    const pricing = await createDemoPricing(db, ctx, vesselId);
+    console.log(
+      `demo pricing: ${pricing.ratePlanIds.length} rate plans, channels nilecrz and back office`,
+    );
+  }
 } finally {
   await db.close();
 }

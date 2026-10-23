@@ -27,3 +27,10 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - Shifting a sailing onto the date of another sailing of the same pattern collides with `sailing_pattern_date_idx`. Rare; handle it if it ever happens.
 - Auto-resolve `schedule_change` exceptions once their bookings have been amended or cancelled (Batch 3/6).
 - Allotment buckets: add the foreign key from `inventory_bucket.allotment_id` with the allotment table (Batch 3).
+
+## Noted during Batch 2
+
+- Optional supplements chosen at quote time (spec mentions `mandatory`; the MVP prices mandatory ones only).
+- Pricing by the lead guest's nationality and residency (spec § Market). The MVP takes the market as a quote input; staff reprice if the guest cannot show ID.
+- Child band amounts in another currency than the rate plan are refused; add per-currency fixed child amounts if a plan ever needs them.
+- Extra-bed pricing (`extra_bed_allowed` on categories is stored but not priced).
