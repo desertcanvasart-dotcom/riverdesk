@@ -1,0 +1,53 @@
+import { describe, expect, it } from 'vitest';
+import {
+  add,
+  convert,
+  formatMinor,
+  money,
+  mulDivHalfUp,
+  multiply,
+  percentOf,
+  sum,
+} from '../src/money';
+
+describe('money', () => {
+  it('stores integer minor units as bigint', () => {
+    expect(money(12_345, 'USD')).toEqual({ amount: 12_345n, currency: 'USD' });
+    expect(() => money(1.5, 'USD')).toThrow(RangeError);
+    expect(() => money(1, 'usd')).toThrow();
+    expect(() => money(1, 'JPY')).toThrow();
+  });
+
+  it('refuses to mix currencies', () => {
+    expect(() => add(money(1, 'USD'), money(1, 'EUR'))).toThrow('Currency mismatch');
+  });
+
+  it('sums and multiplies', () => {
+    expect(sum([money(100, 'EGP'), money(250, 'EGP')], 'EGP').amount).toBe(350n);
+    expect(multiply(money(19_900, 'USD'), 7).amount).toBe(139_300n);
+  });
+
+  it('rounds half-up once', () => {
+    expect(mulDivHalfUp(5n, 1n, 2n)).toBe(3n); // 2.5 → 3
+    expect(mulDivHalfUp(7n, 1n, 3n)).toBe(2n); // 2.33 → 2
+    expect(mulDivHalfUp(-5n, 1n, 2n)).toBe(-3n); // symmetric for refunds
+    expect(percentOf(money(12_345, 'USD'), 2500).amount).toBe(3_086n); // 3086.25 → 3086
+    expect(percentOf(money(10_001, 'USD'), 5000).amount).toBe(5_001n); // 5000.5 → 5001
+  });
+
+  it('converts with a decimal-string rate and no floats', () => {
+    // 100.00 USD at 0.9215 EUR per USD = 92.15 EUR
+    expect(convert(money(10_000, 'USD'), '0.9215', 'EUR')).toEqual({
+      amount: 9_215n,
+      currency: 'EUR',
+    });
+    // 33.33 EUR at 1.0851 = 36.166... → 36.17 USD
+    expect(convert(money(3_333, 'EUR'), '1.0851', 'USD').amount).toBe(3_617n);
+    expect(() => convert(money(1, 'USD'), '-1', 'EUR')).toThrow();
+  });
+
+  it('formats for logs and debugging', () => {
+    expect(formatMinor(money(5, 'EGP'))).toBe('0.05 EGP');
+    expect(formatMinor(money(-123_456, 'USD'))).toBe('-1234.56 USD');
+  });
+});
