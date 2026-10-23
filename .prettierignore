@@ -6,3 +6,4 @@ dist
 supabase/.temp
 packages/db/src/generated
 docs/spec-v2.md
+next-env.d.ts
