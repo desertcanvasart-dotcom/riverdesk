@@ -16,6 +16,7 @@ export type RuntimeRoleName = (typeof RUNTIME_ROLES)[number];
 export async function bootstrap(
   client: pg.ClientBase,
   passwords: Record<RuntimeRoleName, string>,
+  canLogIn: (role: RuntimeRoleName, password: string) => Promise<boolean> = async () => false,
 ): Promise<void> {
   await client.query(`
     do $$
@@ -34,10 +35,12 @@ export async function bootstrap(
   `);
   await client.query(`alter role ${OWNER_ROLE} nologin nobypassrls nocreaterole nocreatedb`);
   for (const role of RUNTIME_ROLES) {
+    await client.query(`alter role ${role} login nobypassrls nocreaterole nocreatedb noinherit`);
+    // Only set the password when the configured one does not work (new role, or rotated in the
+    // env file). Re-setting it unchanged makes Supabase's pooler drop its cached credentials.
+    if (await canLogIn(role, passwords[role])) continue;
     const verifier = client.escapeLiteral(scramVerifier(passwords[role]));
-    await client.query(
-      `alter role ${role} login nobypassrls nocreaterole nocreatedb noinherit password ${verifier}`,
-    );
+    await client.query(`alter role ${role} password ${verifier}`);
   }
   // Lets the admin user SET ROLE vs_owner for migrations without inheriting its rights.
   await client.query(`grant ${OWNER_ROLE} to current_user with inherit false, set true`);

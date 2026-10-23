@@ -40,7 +40,9 @@ export async function migrate(options: MigrateOptions): Promise<string[]> {
   const applied: string[] = [];
   try {
     await client.query('select pg_advisory_lock($1)', [LOCK_KEY]);
-    await bootstrap(client, options.passwords);
+    await bootstrap(client, options.passwords, (role, password) =>
+      canLogIn(options.adminUrl, ssl, role, password),
+    );
 
     const done = new Map(
       (
@@ -85,6 +87,38 @@ export async function migrate(options: MigrateOptions): Promise<string[]> {
     await client.end();
   }
   return applied;
+}
+
+/**
+ * Tries a login as a runtime role at the admin URL's host. On the Supabase pooler the admin user
+ * is `postgres.<ref>`, so the role logs in as `<role>.<ref>`.
+ */
+async function canLogIn(
+  adminUrl: string,
+  ssl: pg.ConnectionConfig['ssl'],
+  role: RuntimeRoleName,
+  password: string,
+): Promise<boolean> {
+  const url = new URL(adminUrl);
+  const suffix = decodeURIComponent(url.username).split('.')[1];
+  const client = new pg.Client({
+    host: url.hostname,
+    port: Number(url.port || 5432),
+    database: url.pathname.slice(1) || 'postgres',
+    user: suffix ? `${role}.${suffix}` : role,
+    password,
+    ssl,
+    connectionTimeoutMillis: 10_000,
+  });
+  client.on('error', () => {});
+  try {
+    await client.connect();
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await client.end().catch(() => {});
+  }
 }
 
 /** Graphile Worker installs its own schema; it runs as vs_owner, and only vs_worker gets rights. */
