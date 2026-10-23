@@ -188,3 +188,51 @@ Reason: another local Supabase project (nilecrz) already uses the default 543xx 
 
 **2026-10-23 · Hosted settings live in `.env.hosted`, not `.env.local`.**
 Reason: Next.js loads `.env.local` automatically in development, which would point local runs at the hosted database. Tests, `seed` and `reset` refuse any database that isn't local.
+
+## Batch 1
+
+**2026-10-23 · A cabin counts on a leg if it is in service on the leg's departure date.**
+`cabin_period` stores a cabin's category and when it is in service, as date ranges that may not overlap. Invariant 1, generation and `changeCapacity` all use the same rule.
+Reason: one rule everywhere. A cabin removed partway through a leg still serves that leg, which matches what happens on board.
+
+**2026-10-23 · `changeCapacity` replaces the cabin's state from the effective date onward.**
+Periods that start after that date are dropped, and the new state applies from the date on. The date may not be in the past (Cairo date, from the database clock). Adding a cabin to a category that has no pool bucket on an existing leg creates that bucket first.
+Reason: the simplest rule that keeps invariant 1 exact. Scheduled changes are made one at a time.
+
+**2026-10-23 · Counters cannot go negative.**
+`total`, `held`, `booked` and `overcommit` have `CHECK (>= 0)` constraints. `held + booked <= total + overcommit` is not a constraint; `check_invariants()` checks it and the conditional updates enforce it.
+Reason: negative counts are never valid. The upper bound is checked by the function so an emergency block can go over free (see the overcommit decision in Part 0).
+
+**2026-10-23 · Stop-sale reasons.**
+`stop_reason` is one of `manual`, `emergency_block` or `invariant`. Releasing the block that caused an overcommit lifts an `emergency_block` stop once the overcommit is back to zero, and resolves the oversubscription exception. Resuming sales is refused while a bucket is still overcommitted.
+Reason: invariant 3 requires an overcommitted bucket to stay stopped with an open exception.
+
+**2026-10-23 · An outbox event's `resource_version` is the owning row's `version`.**
+Buckets, legs and sailings carry a `version` that every change increments. `availability.changed` is emitted per pool bucket. Its payload holds the vessel, leg and category ids and the cause, never personal data.
+Reason: monotonic per resource without a separate counter table, and no extra lock.
+
+**2026-10-23 · How `generateSchedule` works.**
+
+- It locks the vessel row, so it never interleaves with `changeCapacity` or schedule exceptions, which read the same cabins and legs.
+- It plans cycles from the template's `valid_from`, keeps legs departing between today (Cairo) and the horizon (18 months), and skips dry-dock ranges.
+- A planned leg that overlaps a live leg is skipped and returned as a conflict instead of failing the whole run.
+- It creates a sailing only when every leg in its chain exists and is open. "7 nights from Aswan" in the last generated week appears on the next run that adds the following week.
+
+Reason: idempotent; never changes or deletes an existing leg.
+
+**2026-10-23 · How schedule exceptions are applied.**
+
+- `cancel` and `dry_dock` set the legs and their sailings to `cancelled`. Counters stay as they are, so bookings remain until staff move them.
+- `shift` moves legs by whole days. The no-overlap constraint is deferrable, so a run of legs can move together, but overlaps are still refused (`SCHEDULE_CONFLICT`).
+- After any change, a sailing whose legs no longer join up (one leg must end on the date and at the port where the next begins) is set to `closed`.
+- Legs with commitments raise one `schedule_change` exception. Every touched sailing emits `sailing.changed`.
+
+Reason: the spec flags affected bookings rather than refusing the change; a sailing with a gap night or a port jump must not stay on sale.
+
+**2026-10-23 · The demo vessel is defined in `@vs/engine` and seeded through the engine.**
+`pnpm db:seed` creates the operator and staff (`@vs/db`), then the vessel, cabins, template, patterns and 18 months of schedule through engine functions running as `vs_backoffice`.
+Reason: the seed exercises the same write path as staff do (rule 1), and `@vs/db` does not depend on its own consumer.
+
+**2026-10-23 · Commitments are simulated in tests until Batch 3.**
+Tests set `held` and `booked` on pool buckets directly as the owner (`simulateCommitment`), always within invariant 3. Batch 3 replaces these with real holds and bookings when invariant 2 arrives.
+Reason: the prompt asks for a test-only fixture until holds and bookings exist.

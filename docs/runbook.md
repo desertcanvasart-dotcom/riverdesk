@@ -12,7 +12,7 @@ pnpm install
 cp .env.example .env          # local defaults; nothing secret
 pnpm supabase:start           # local Postgres on 55322, Auth/API on 55321
 pnpm db:migrate               # roles, schemas, migrations, Graphile Worker schema
-pnpm db:seed                  # demo operator + two staff logins
+pnpm db:seed                  # demo operator, two staff logins, demo vessel + 18 months of schedule
 ```
 
 Then, each in its own terminal:
@@ -24,6 +24,12 @@ pnpm --filter @vs/worker dev       # Graphile Worker + cron
 ```
 
 Demo logins (local Auth only): `owner@demo.local` and `reservations@demo.local`, password `SEED_STAFF_PASSWORD` from `.env`.
+
+## Look at availability
+
+```bash
+pnpm --filter @vs/engine availability-grid 4   # demo vessel, next 4 weeks, Markdown table
+```
 
 ## Checks (same as CI)
 
@@ -43,7 +49,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ## Reset the local database
 
 ```bash
-pnpm db:reset    # drops everything owned by vs_owner, then migrates and seeds
+pnpm db:reset    # drops everything owned by vs_owner, then migrates and seeds (incl. demo vessel)
 ```
 
 `reset` and `seed` refuse to run against a non-local host.

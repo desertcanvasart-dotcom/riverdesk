@@ -15,9 +15,9 @@
     "supabase:start": "supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,postgres-meta,supavisor,mailpit",
     "supabase:stop": "supabase stop",
     "db:migrate": "pnpm --filter @vs/db migrate",
-    "db:seed": "pnpm --filter @vs/db seed",
+    "db:seed": "pnpm --filter @vs/db seed && pnpm --filter @vs/engine seed-demo",
     "db:codegen": "pnpm --filter @vs/db codegen",
-    "db:reset": "pnpm --filter @vs/db reset",
+    "db:reset": "pnpm --filter @vs/db reset && pnpm --filter @vs/engine seed-demo",
     "db:check-roles": "pnpm --filter @vs/db check-roles"
   },
   "devDependencies": {

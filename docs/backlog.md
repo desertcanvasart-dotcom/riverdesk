@@ -19,3 +19,11 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 
 - Bundle `apps/api` and `apps/worker` for deployment (they currently run TypeScript through tsx). Do this with the hosting choice, before Batch 7.
 - Run the full role and definer allow-list checks (`checkRolesAndDefiners`) against the hosted database, not only `pnpm db:check-roles`.
+
+## Noted during Batch 1
+
+- Event feed (Batch 5): order by `seq` but never serve events newer than the oldest in-flight transaction. The `txid` column is already stored for this.
+- The emergency-block exception lists commitment counts per leg; list the affected bookings once bookings exist (Batch 3).
+- Shifting a sailing onto the date of another sailing of the same pattern collides with `sailing_pattern_date_idx`. Rare; handle it if it ever happens.
+- Auto-resolve `schedule_change` exceptions once their bookings have been amended or cancelled (Batch 3/6).
+- Allotment buckets: add the foreign key from `inventory_bucket.allotment_id` with the allotment table (Batch 3).

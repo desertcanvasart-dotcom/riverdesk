@@ -9,12 +9,15 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed-demo": "tsx scripts/seed-demo.ts",
+    "availability-grid": "tsx scripts/availability-grid.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",
     "@vs/db": "workspace:*",
     "@vs/shared": "workspace:*",
-    "kysely": "^0.29.7"
+    "kysely": "^0.29.7",
+    "zod": "^4.6.7"
   }
 }
