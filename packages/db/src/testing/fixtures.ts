@@ -90,6 +90,12 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   offer: bookingFixture,
   guest: bookingFixture,
   payment: bookingFixture,
+  api_client: apiFixture,
+  api_client_secret: apiFixture,
+  rate_limit_counter: apiFixture,
+  webhook_endpoint: apiFixture,
+  webhook_delivery: apiFixture,
+  webhook_attempt: apiFixture,
   staff_invitation: async (db, operatorId) => {
     await db.query(
       `insert into vs.staff_invitation (operator_id, email, display_name, role) values ($1, $2, 'Fixture', 'read_only')`,
@@ -408,6 +414,59 @@ function bookingWorld(db: pg.Pool, operatorId: string): Promise<void> {
 
 async function bookingFixture(db: pg.Pool, operatorId: string): Promise<void> {
   await bookingWorld(db, operatorId);
+}
+
+const apiWorlds = new Map<string, Promise<void>>();
+
+/** One row in every Batch 5 table (API clients, rate limits, webhooks), on top of pricingWorld. */
+function apiWorld(db: pg.Pool, operatorId: string): Promise<void> {
+  const existing = apiWorlds.get(operatorId);
+  if (existing) return existing;
+  const created = (async () => {
+    const channel = await pricingWorld(db, operatorId);
+    const one = async (text: string, params: unknown[]) =>
+      (await db.query<{ id: string }>(text, params)).rows[0]!.id;
+    const o = operatorId;
+    const hex = () => randomUUID().replace(/-/g, '');
+    const client = await one(
+      `insert into vs.api_client (operator_id, channel_id, client_id, name) values ($1, $2, $3, 'Fixture') returning id`,
+      [o, channel, `vsc_${hex().slice(0, 24)}`],
+    );
+    await db.query(
+      `insert into vs.api_client_secret (operator_id, api_client_id, secret_hash, hint) values ($1, $2, $3, 'fix')`,
+      [o, client, hex() + hex()],
+    );
+    await db.query(
+      `insert into vs.rate_limit_counter (operator_id, api_client_id, window_start, hits) values ($1, $2, date_trunc('minute', now()), 1)`,
+      [o, client],
+    );
+    const endpoint = await one(
+      `insert into vs.webhook_endpoint (operator_id, channel_id, url, secret_ciphertext, secret_key_id, active)
+       values ($1, $2, 'https://example.test/hook', '\\x00', 'fixture', false) returning id`,
+      [o, channel],
+    );
+    const event = (
+      await db.query<{ id: string; resource_id: string; txid: string; seq: string }>(
+        `select id, resource_id, txid::text, seq::text from vs.event where operator_id = $1 limit 1`,
+        [o],
+      )
+    ).rows[0]!;
+    const delivery = await one(
+      `insert into vs.webhook_delivery (operator_id, endpoint_id, event_id, resource_id, event_txid, event_seq, status)
+       values ($1, $2, $3, $4, $5::xid8, $6, 'delivered') returning id`,
+      [o, endpoint, event.id, event.resource_id, event.txid, event.seq],
+    );
+    await db.query(
+      `insert into vs.webhook_attempt (operator_id, delivery_id, attempt, status_code) values ($1, $2, 1, 200)`,
+      [o, delivery],
+    );
+  })();
+  apiWorlds.set(operatorId, created);
+  return created;
+}
+
+async function apiFixture(db: pg.Pool, operatorId: string): Promise<void> {
+  await apiWorld(db, operatorId);
 }
 
 export async function seedFixtures(

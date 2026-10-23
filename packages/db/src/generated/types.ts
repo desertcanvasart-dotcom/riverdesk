@@ -49,6 +49,30 @@ export interface AmendmentFeeRule {
   updated_at: Generated<Timestamp>;
 }
 
+export interface ApiClient {
+  active: Generated<boolean>;
+  channel_id: string;
+  client_id: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  name: string;
+  operator_id: string;
+  rate_limit_per_minute: Generated<number>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ApiClientSecret {
+  api_client_id: string;
+  created_at: Generated<Timestamp>;
+  hint: string;
+  id: Generated<string>;
+  last_used_at: Timestamp | null;
+  operator_id: string;
+  revoked_at: Timestamp | null;
+  secret_hash: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface AuditLog {
   action: string;
   actor_id: string | null;
@@ -554,6 +578,13 @@ export interface Rate {
   vessel_id: string;
 }
 
+export interface RateLimitCounter {
+  api_client_id: string;
+  hits: Generated<number>;
+  operator_id: string;
+  window_start: Timestamp;
+}
+
 export interface RatePlan {
   active: Generated<boolean>;
   board: Generated<string>;
@@ -737,9 +768,56 @@ export interface Vessel {
   updated_at: Generated<Timestamp>;
 }
 
+export interface WebhookAttempt {
+  attempt: number;
+  created_at: Generated<Timestamp>;
+  delivery_id: string;
+  duration_ms: number | null;
+  error: string | null;
+  id: Generated<string>;
+  operator_id: string;
+  status_code: number | null;
+}
+
+export interface WebhookDelivery {
+  attempts: Generated<number>;
+  created_at: Generated<Timestamp>;
+  delivered_at: Timestamp | null;
+  endpoint_id: string;
+  event_id: string;
+  event_seq: bigint;
+  event_txid: string;
+  first_attempt_at: Timestamp | null;
+  id: Generated<string>;
+  last_error: string | null;
+  last_status_code: number | null;
+  next_attempt_at: Generated<Timestamp>;
+  operator_id: string;
+  resource_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface WebhookEndpoint {
+  active: Generated<boolean>;
+  channel_id: string;
+  created_at: Generated<Timestamp>;
+  event_types: string[] | null;
+  id: Generated<string>;
+  last_seq: Generated<bigint>;
+  last_txid: Generated<string>;
+  operator_id: string;
+  secret_ciphertext: Buffer;
+  secret_key_id: string;
+  updated_at: Generated<Timestamp>;
+  url: string;
+}
+
 export interface DB {
   allotment: Allotment;
   amendment_fee_rule: AmendmentFeeRule;
+  api_client: ApiClient;
+  api_client_secret: ApiClientSecret;
   audit_log: AuditLog;
   booking: Booking;
   booking_cabin: BookingCabin;
@@ -774,6 +852,7 @@ export interface DB {
   port: Port;
   quote: Quote;
   rate: Rate;
+  rate_limit_counter: RateLimitCounter;
   rate_plan: RatePlan;
   sailing: Sailing;
   sailing_leg: SailingLeg;
@@ -787,4 +866,7 @@ export interface DB {
   staff_user: StaffUser;
   supplement: Supplement;
   vessel: Vessel;
+  webhook_attempt: WebhookAttempt;
+  webhook_delivery: WebhookDelivery;
+  webhook_endpoint: WebhookEndpoint;
 }
