@@ -513,7 +513,9 @@ export async function refreshPaymentTerms(tx: Tx, bookingId: string) {
   await sql`
     update vs.booking b
     set deposit_amount = (b.total * (q.policies->'payment'->>'deposit_bps')::bigint * 2 + 10000) / 20000,
-        balance_due_date = s.embark_date - (q.policies->'payment'->>'balance_due_days')::int
+        -- Never before the booking date: a last-minute booking owes its balance at once.
+        balance_due_date = greatest(s.embark_date - (q.policies->'payment'->>'balance_due_days')::int,
+                                    (b.created_at at time zone 'Africa/Cairo')::date)
     from vs.quote q, vs.sailing s
     where b.id = ${bookingId} and q.id = b.quote_id and s.id = b.sailing_id`.execute(tx);
   await refreshPaymentStatus(tx, bookingId);

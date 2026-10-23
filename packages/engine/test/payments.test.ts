@@ -359,8 +359,13 @@ describe('payments and exceptions', () => {
       `update vs.hold set expires_at = now() + interval '1 second' where id = $1`,
       [waiting.holdId],
     );
-    const overdue = await prepaid('LXR-4', 7, 'JS'); // balance due 30 days before embarkation: already past
+    const overdue = await prepaid('LXR-4', 7, 'JS');
     await pay(w, overdue.bookingId, BigInt((await booking(overdue.bookingId)).deposit_amount));
+    // Test-only time travel: the balance fell due yesterday.
+    await owner().query(
+      `update vs.booking set balance_due_date = (now() at time zone 'Africa/Cairo')::date - 1 where id = $1`,
+      [overdue.bookingId],
+    );
     const list = await getActionList(w.db, w.ctx);
     expect(list.holdsExpiringToday.map((h) => h.bookingRef)).toContain(waiting.ref);
     expect(list.depositsDue.map((d) => d.ref)).toContain(waiting.ref);
@@ -373,6 +378,10 @@ describe('payments and exceptions', () => {
   it('overdue balances: a late_payment exception and one notice; automatic cancellation only when the policy enables it', async () => {
     const b = await prepaid('ASW-3', 11, 'SUP');
     await pay(w, b.bookingId, BigInt((await booking(b.bookingId)).deposit_amount));
+    await owner().query(
+      `update vs.booking set balance_due_date = (now() at time zone 'Africa/Cairo')::date - 1 where id = $1`,
+      [b.bookingId],
+    );
     const first = await processOverdueBalances(w.db, w.ctx);
     expect(first.notices).toBeGreaterThanOrEqual(1);
     const again = await processOverdueBalances(w.db, w.ctx);
@@ -474,5 +483,14 @@ describe('payments and exceptions', () => {
         ...rows.map((r) => `| ${r.join(' | ')} |`),
       ].join('\n'),
     );
+  });
+
+  it('a last-minute booking owes its balance on the booking date, never in the past', async () => {
+    const b = await prepaid('LXR-4', 7); // embarks in 7–13 days: inside the 30-day balance window
+    const { rows } = await owner().query<{ due: string; today: string }>(
+      `select balance_due_date::text as due, (now() at time zone 'Africa/Cairo')::date::text as today from vs.booking where id = $1`,
+      [b.bookingId],
+    );
+    expect(rows[0]!.due).toBe(rows[0]!.today);
   });
 });
