@@ -8,6 +8,7 @@ import { serverCaller } from '../../../../server/caller';
 import { AmendPanel } from './amend-panel';
 import { CancelPanel } from './cancel-panel';
 import { GuestsEditor } from './guests-editor';
+import { PaymentActions } from './payment-actions';
 
 export default async function BookingPage({ params }: { params: Promise<{ ref: string }> }) {
   const { ref } = await params;
@@ -20,9 +21,11 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
     });
   const [profile, vessels] = await Promise.all([caller.me.profile(), caller.book.vessels()]);
   const canWrite = profile.permissions.includes('bookings.write');
+  const canPay = profile.permissions.includes('payments.write');
   const t = await getTranslations('bookings');
   const tc = await getTranslations('common');
   const ts = await getTranslations('status');
+  const tp = await getTranslations('payments');
   const locale = await getLocale();
   const money = (amount: bigint) => formatMoney(amount, booking.currency, locale);
   const s = booking.sailing;
@@ -163,7 +166,16 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
           />
         </Card>
 
-        <Card title={t('payments')}>
+        <Card
+          title={t('payments')}
+          actions={
+            canPay &&
+            booking.status !== 'requested' &&
+            booking.status !== 'offered' && (
+              <PaymentActions bookingRef={booking.ref} canRefund={booking.amountPaid > 0n} />
+            )
+          }
+        >
           {booking.payments.length === 0 ? (
             <p className="text-sm text-muted">{tc('none')}</p>
           ) : (
@@ -171,8 +183,8 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
               {booking.payments.map((p) => (
                 <tr key={p.id} className={p.reversed ? 'text-muted line-through' : undefined}>
                   <Td>{formatDate(p.receivedOn, locale)}</Td>
-                  <Td>{p.kind}</Td>
-                  <Td>{p.method}</Td>
+                  <Td>{tp(`kind_${p.kind}` as 'kind_payment')}</Td>
+                  <Td>{tp(`method_${p.method}` as 'method_cash')}</Td>
                   <Td className="tabular-nums">{formatMoney(p.amount, p.currency, locale)}</Td>
                   <Td>
                     <span dir="ltr">{p.reference}</span>

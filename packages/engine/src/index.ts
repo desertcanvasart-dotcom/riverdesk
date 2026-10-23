@@ -29,3 +29,5 @@ export * from './channel/webhooks';
 export * from './backoffice/reads';
 export * from './backoffice/book';
 export * from './backoffice/setup-reads';
+export * from './backoffice/channels';
+export * from './backoffice/settings';

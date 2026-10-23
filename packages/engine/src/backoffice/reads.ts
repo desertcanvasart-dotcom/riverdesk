@@ -231,7 +231,7 @@ export async function previewCancellation(db: VsDatabase, ctx: EngineContext, bo
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const b = await tx
       .selectFrom('booking')
-      .select(['id', 'status', 'total', 'fees', 'amount_paid', 'currency', 'sailing_id'])
+      .select(['id', 'status', 'total', 'currency', 'sailing_id'])
       .where('id', '=', bookingId)
       .executeTakeFirstOrThrow();
     if (b.status === 'held')
@@ -240,18 +240,15 @@ export async function previewCancellation(db: VsDatabase, ctx: EngineContext, bo
         penaltyBps: 0,
         penalty: 0n,
         currency: b.currency,
-        refundable: b.amount_paid,
       };
     const days = await daysBeforeEmbark(tx, b.sailing_id);
     const bps = penaltyBps(await latestPolicies(tx, b.id), days);
     const penalty = mulDivHalfUp(b.total, BigInt(bps), 10_000n);
-    const kept = penalty + b.fees;
     return {
       daysBefore: days,
       penaltyBps: bps,
       penalty,
       currency: b.currency,
-      refundable: b.amount_paid > kept ? b.amount_paid - kept : 0n,
     };
   });
 }

@@ -520,3 +520,11 @@ Reason: these are set up once per vessel and season, while rates and departures 
 **2026-10-24 · Each test file checks the invariants of the operators it created.**
 The after-file hook and the "clean database" test now look only at the test file's own operators (tracked by `createOperator`). Vitest runs files in parallel, and some files corrupt counters on purpose to prove detection, so a cluster-wide check could fail a file for another file's deliberate damage. The nightly job still checks every operator. The webhook test now runs the job until the event clears the feed horizon, since any transaction open elsewhere rightly holds it back for a moment.
 Reason: rule 6 stays per file and deterministic.
+
+**2026-10-24 · Staff, invitations and company defaults are managed in the back office.**
+The owner invites people by email with a role, changes roles, deactivates or reactivates them, and revokes open invitations. An invitation is revoked by expiring it, since the table forbids deletes. The company always keeps at least one active owner: the check locks every active owner row, so two demotions at once cannot both pass. Company name, default language and the hold, SLA, cut-off, release and retention defaults are editable. The booking-reference prefix is fixed once bookings exist.
+Reason: spec § Settings. Defaults apply to new holds, requests and contracts only.
+
+**2026-10-24 · Secrets are shown once, in a modal.**
+New API client secrets, rotated secrets and webhook signing secrets appear once, in a dialog with a copy button. Lists show only the last four characters and when each secret was last used.
+Reason: rule 9. A banner at the top of a long page scrolls out of view on a phone.
