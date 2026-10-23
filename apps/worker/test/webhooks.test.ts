@@ -105,6 +105,23 @@ describe('webhooks', () => {
   }, 120_000);
 
   const afterAllClose: (() => Promise<void>)[] = [];
+
+  /**
+   * Runs the job until `done` holds (5 s at most). Events are only dispatched once they are below
+   * the feed's safe horizon, and any transaction open elsewhere in the cluster (other test files
+   * run in parallel) holds the horizon back for a moment: the job is right to wait.
+   */
+  async function runUntil(done: () => boolean) {
+    const totals = { created: 0, sent: 0, failed: 0 };
+    for (const deadline = Date.now() + 5_000; ;) {
+      const result = await runWebhooks(db, ctx);
+      totals.created += result.created;
+      totals.sent += result.sent;
+      totals.failed += result.failed;
+      if (done() || Date.now() > deadline) return totals;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
   afterAll(async () => {
     for (const close of afterAllClose) await close();
     await new Promise((done) => server.close(done));
@@ -113,7 +130,11 @@ describe('webhooks', () => {
 
   it('delivers signed events; payloads never contain passport numbers', async () => {
     const bookingId = await book();
-    const result = await runWebhooks(db, ctx);
+    const result = await runUntil(() =>
+      received.some(
+        (r) => r.event.type === 'booking.confirmed' && r.event.resource_id === bookingId,
+      ),
+    );
     expect(result.sent).toBeGreaterThanOrEqual(1);
     const confirmed = received.find(
       (r) => r.event.type === 'booking.confirmed' && r.event.resource_id === bookingId,
@@ -150,7 +171,7 @@ describe('webhooks', () => {
     expect(rows.map((r) => r.type)).toEqual(['booking.confirmed', 'booking.cancelled']);
     failing.add(rows[0]!.id);
     const before = received.length;
-    await runWebhooks(db, ctx);
+    await runUntil(() => received.slice(before).some((r) => r.event.resource_id === bookingId));
     const forBooking = received.slice(before).filter((r) => r.event.resource_id === bookingId);
     expect(forBooking.map((r) => [r.event.type, r.status])).toEqual([['booking.confirmed', 500]]);
 
@@ -161,7 +182,9 @@ describe('webhooks', () => {
       [bookingId],
     );
     const mark = received.length;
-    await runWebhooks(db, ctx);
+    await runUntil(
+      () => received.slice(mark).filter((r) => r.event.resource_id === bookingId).length >= 2,
+    );
     const delivered = received.slice(mark).filter((r) => r.event.resource_id === bookingId);
     expect(delivered.map((r) => [r.event.type, r.status])).toEqual([
       ['booking.confirmed', 200],

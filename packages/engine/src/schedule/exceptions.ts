@@ -70,7 +70,80 @@ export async function applyScheduleException(
   input: z.input<typeof scheduleExceptionInput>,
 ): Promise<ScheduleExceptionResult> {
   const data = parseInput(scheduleExceptionInput, input);
-  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) =>
+    applyInTx(tx, ctx, data).then(({ legIds: _legIds, ...result }) => result),
+  );
+}
+
+export interface ScheduleExceptionPreview extends Omit<
+  ScheduleExceptionResult,
+  'scheduleExceptionId' | 'exceptionId'
+> {
+  legs: { id: string; departDate: string; arriveDate: string }[];
+  bookings: { ref: string; status: string; channel: string; cabins: number }[];
+  holds: number;
+  allotments: { channel: string; cabins: number }[];
+}
+
+class PreviewRollback extends Error {
+  constructor(readonly preview: ScheduleExceptionPreview) {
+    super('preview');
+  }
+}
+
+/**
+ * The impact of a schedule exception before staff apply it: the real change runs inside a
+ * transaction, its effects are read, and everything is rolled back. Exact by construction.
+ */
+export async function previewScheduleException(
+  db: VsDatabase,
+  ctx: EngineContext,
+  input: z.input<typeof scheduleExceptionInput>,
+): Promise<ScheduleExceptionPreview> {
+  const data = parseInput(scheduleExceptionInput, input);
+  try {
+    await db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+      const result = await applyInTx(tx, ctx, data);
+      const ids = result.legIds;
+      const legs = await sql<ScheduleExceptionPreview['legs'][number]>`
+        select id, depart_date::text as "departDate", arrive_date::text as "arriveDate"
+        from vs.leg where id = any(${ids}::uuid[]) order by depart_date`.execute(tx);
+      const bookings = await sql<ScheduleExceptionPreview['bookings'][number]>`
+        select b.ref, b.status, ch.name as channel, count(distinct bl.booking_cabin_id)::int as cabins
+        from vs.booking_line bl join vs.booking b on b.id = bl.booking_id join vs.channel ch on ch.id = b.channel_id
+        where bl.leg_id = any(${ids}::uuid[]) and bl.status = 'confirmed'
+        group by b.ref, b.status, ch.name order by b.ref`.execute(tx);
+      const holds = await sql<{ n: number }>`
+        select count(distinct h.id)::int as n from vs.hold_line hl join vs.hold h on h.id = hl.hold_id
+        where hl.leg_id = any(${ids}::uuid[]) and h.status = 'active'`.execute(tx);
+      const allotments = await sql<ScheduleExceptionPreview['allotments'][number]>`
+        select ch.name as channel, max(b.total)::int as cabins
+        from vs.inventory_bucket b join vs.allotment a on a.id = b.allotment_id join vs.channel ch on ch.id = a.channel_id
+        where b.leg_id = any(${ids}::uuid[]) and b.kind = 'allotment' and b.released_at is null and b.total > 0
+        group by ch.name order by ch.name`.execute(tx);
+      throw new PreviewRollback({
+        legsChanged: result.legsChanged,
+        sailingsChanged: result.sailingsChanged,
+        sailingsClosed: result.sailingsClosed,
+        legs: legs.rows,
+        bookings: bookings.rows,
+        holds: holds.rows[0]!.n,
+        allotments: allotments.rows,
+      });
+    });
+  } catch (error) {
+    if (error instanceof PreviewRollback) return error.preview;
+    throw error;
+  }
+  throw new Error('unreachable');
+}
+
+async function applyInTx(
+  tx: Tx,
+  ctx: EngineContext,
+  data: z.infer<typeof scheduleExceptionInput>,
+): Promise<ScheduleExceptionResult & { legIds: string[] }> {
+  {
     await lockVessel(tx, data.vesselId);
 
     let legs: LegRow[];
@@ -230,8 +303,9 @@ export async function applyScheduleException(
       sailingsChanged: sailings.changed.length,
       sailingsClosed: sailings.closed,
       exceptionId,
+      legIds,
     };
-  });
+  }
 }
 
 async function lockLegs(

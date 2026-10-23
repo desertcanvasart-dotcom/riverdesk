@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { owner, testConfig } from '@vs/db/testing';
+import { operatorsCreatedHere, owner, testConfig } from '@vs/db/testing';
 import { createCompany } from '@vs/db/platform';
 import { claimStaffInvitation, getStaffContext, openDatabase, type VsDatabase } from '../src/index';
 
@@ -34,6 +34,7 @@ describe('company onboarding (platform command + first sign-in)', () => {
       ownerEmail: email,
       ownerName: 'Mona Hassan',
     });
+    operatorsCreatedHere().add(created.operatorId);
     const { rows } = await owner().query(
       `select o.name, s.booking_ref_prefix, c.type as channel, i.email, i.role
        from vs.operator o join vs.operator_setting s on s.operator_id = o.id
@@ -82,6 +83,7 @@ describe('company onboarding (platform command + first sign-in)', () => {
       ownerEmail: otherEmail,
       ownerName: 'X',
     });
+    operatorsCreatedHere().add(created.operatorId);
     await owner().query(
       `update vs.staff_invitation set expires_at = now() - interval '1 second' where operator_id = $1`,
       [created.operatorId],

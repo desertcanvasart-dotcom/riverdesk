@@ -28,10 +28,14 @@ describe('invariant checks', () => {
     await api.close();
   });
 
-  it('checks every operator and finds nothing on a clean database', async () => {
+  it('checks every operator and finds nothing for a clean one', async () => {
     const results = await runInvariantChecks(worker, actor);
-    expect(results.map((result) => result.operatorId)).toContain(operatorId);
-    expect(results.every((result) => result.violations === 0 && result.opened === 0)).toBe(true);
+    // Other test files run in parallel on the same database and break invariants on purpose, so
+    // only this file's operator is expected to be clean.
+    expect(results.find((result) => result.operatorId === operatorId)).toMatchObject({
+      violations: 0,
+      opened: 0,
+    });
   });
 
   it('only the worker can list operators', async () => {

@@ -51,3 +51,20 @@ export function formatDateTime(value: Date | string, locale: string): string {
 export function hoursLeft(value: Date | string): number {
   return Math.max(0, Math.round((new Date(value).getTime() - Date.now()) / 360_000) / 10);
 }
+
+/** "585.5" / "٥٨٥٫٥٠" → 58550n minor units; null when it is not an amount with at most 2 decimals. */
+export function parseMoney(text: string): bigint | null {
+  const western = text
+    .trim()
+    .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660))
+    .replace(/[٫,]/g, (c) => (c === '٫' ? '.' : ''));
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(western);
+  if (!match) return null;
+  return BigInt(match[1]!) * 100n + BigInt((match[2] ?? '').padEnd(2, '0'));
+}
+
+/** 58550n → "585.50" for an input field (always Latin digits, no grouping). */
+export function minorToInput(amount: bigint): string {
+  const abs = (amount < 0n ? -amount : amount).toString().padStart(3, '0');
+  return `${amount < 0n ? '-' : ''}${abs.slice(0, -2)}.${abs.slice(-2)}`;
+}

@@ -508,3 +508,15 @@ Reason: rule 9 (passports encrypted, never shown or logged), without forcing sta
 **2026-10-24 · The deposit is due on the Cairo booking date (bug fix).**
 The booking view took the deposit date from the UTC day of `created_at`. Between midnight and 02:00/03:00 Cairo time it therefore showed the deposit as due "yesterday". It now uses the Cairo calendar date, and a regression test covers it.
 Reason: business dates are Cairo dates (spec § Time).
+
+**2026-10-24 · A schedule change is previewed by running it and rolling it back.**
+`previewScheduleException` applies the real change inside a transaction. It reads the touched departures, bookings, holds and allotments, then rolls everything back (events and audit included). The preview cannot drift from what applying would do.
+Reason: spec § Schedule exceptions asks for an impact preview, and a separate "what would happen" calculation would be a second implementation to keep in step.
+
+**2026-10-24 · Templates, itineraries, seasons and policies are shown, not edited, in the MVP screens.**
+The schedule screen shows templates and itineraries. Departures are fully actionable: cancel, move, change port, dry dock (each with a preview), and extend the schedule. The rates screen edits rates and adds supplements, and shows seasons and policies read-only. Creating a new template, itinerary, season or policy stays with the setup script (`createScheduleTemplate`, `createSailingPattern`, `createSeason`, … in the engine). Editors for these are in the backlog.
+Reason: these are set up once per vessel and season, while rates and departures change weekly. Scope discipline (rule 12).
+
+**2026-10-24 · Each test file checks the invariants of the operators it created.**
+The after-file hook and the "clean database" test now look only at the test file's own operators (tracked by `createOperator`). Vitest runs files in parallel, and some files corrupt counters on purpose to prove detection, so a cluster-wide check could fail a file for another file's deliberate damage. The nightly job still checks every operator. The webhook test now runs the job until the event clears the feed horizon, since any transaction open elsewhere rightly holds it back for a moment.
+Reason: rule 6 stays per file and deterministic.

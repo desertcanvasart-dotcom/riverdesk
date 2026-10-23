@@ -4,8 +4,17 @@ import { uuidv7 } from '@vs/shared';
 import { owner } from './env';
 
 /** Creates an operator (and its settings row) directly as the owner. */
+const CREATED = Symbol.for('vs.testing.createdOperators');
+
+/** Operators created by the current test file (each Vitest file has its own globals). */
+export function operatorsCreatedHere(): Set<string> {
+  const store = globalThis as { [CREATED]?: Set<string> };
+  return (store[CREATED] ??= new Set());
+}
+
 export async function createOperator(name = 'Test operator'): Promise<string> {
   const id = uuidv7();
+  operatorsCreatedHere().add(id);
   const slug = `t-${id.slice(-12)}`;
   await owner().query('insert into vs.operator (id, name, slug) values ($1, $2, $3)', [
     id,

@@ -42,3 +42,5 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - A quote can back several holds; make quotes single-use per hold if channels misuse them.
 - Charters (spec test 9) remain out of the MVP.
 - Delete the temporary `/progress` page and `getOverview` when the Batch 6 screens land.
+
+- Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them.
