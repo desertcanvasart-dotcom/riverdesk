@@ -1,8 +1,7 @@
 import { addDays, loadConfig, systemActor } from '@vs/shared';
-import { getAvailability, openDatabase, todayInCairo } from '../src/index';
+import { DEMO_OPERATOR_ID, getAvailability, openDatabase, todayInCairo } from '../src/index';
 
 // Prints the demo vessel's availability for the next 4 weeks as a Markdown table.
-const DEMO_OPERATOR_ID = '019a0000-0000-7000-8000-000000000001';
 const weeks = Number(process.argv[2] ?? 4);
 
 const db = openDatabase('vs_backoffice', { config: loadConfig() });

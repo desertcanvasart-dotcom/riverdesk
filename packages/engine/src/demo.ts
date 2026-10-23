@@ -1,7 +1,13 @@
 import type { VsDatabase } from '@vs/db';
 import { addDays, isoWeekday, type BusinessDate } from '@vs/shared';
 import { cairoToday, type EngineContext } from './internal';
+import { applyAmendment, quoteAmendment } from './booking/amendments';
+import { createAllotment } from './booking/allotments';
+import { cancelBooking } from './booking/cancel';
+import { confirmHold, createHold } from './booking/holds';
+import { createRequest } from './booking/requests';
 import { changeCapacity } from './inventory/capacity';
+import { createQuote } from './pricing/quote';
 import {
   createCancellationPolicy,
   createChannel,
@@ -486,4 +492,266 @@ export async function createDemoPricing(db: VsDatabase, ctx: EngineContext, vess
     ratePlanIds: plans,
   });
   return { ratePlanIds: plans, channels: { nilecrz: nilecrz.id, backOffice: backOffice.id } };
+}
+
+/** The seeded demo operator (packages/db/seed). */
+export const DEMO_OPERATOR_ID = '019a0000-0000-7000-8000-000000000001';
+
+/**
+ * Sample activity for the demo operator, all through the engine: confirmed bookings, open holds,
+ * a prepaid booking waiting for payment, an agency allotment booking, a pending request, one
+ * cancellation and one amendment. For looking around locally; tests do not use it.
+ */
+export async function createDemoActivity(
+  db: VsDatabase,
+  ctx: EngineContext,
+  vesselId: string,
+  channels: { nilecrz: string; backOffice: string },
+) {
+  const { categories, plans } = await db.withTenantTx(
+    ctx.operatorId,
+    ctx.actor,
+    async ({ db: tx }) => ({
+      categories: Object.fromEntries(
+        (
+          await tx
+            .selectFrom('cabin_category')
+            .select(['id', 'code'])
+            .where('vessel_id', '=', vesselId)
+            .execute()
+        ).map((c) => [c.code, c.id]),
+      ) as Record<DemoCategoryCode, string>,
+      plans: (
+        await tx.selectFrom('rate_plan').select('id').where('vessel_id', '=', vesselId).execute()
+      ).map((p) => p.id),
+    }),
+  );
+  const monday = nextMonday(await todayInCairo(db));
+  const sailing = async (pattern: string, offset: number) => {
+    const row = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+      tx
+        .selectFrom('sailing')
+        .innerJoin('sailing_pattern', 'sailing_pattern.id', 'sailing.pattern_id')
+        .select('sailing.id')
+        .where('sailing.vessel_id', '=', vesselId)
+        .where('sailing_pattern.code', '=', pattern)
+        .where('sailing.embark_date', '=', addDays(monday, offset))
+        .executeTakeFirstOrThrow(),
+    );
+    return row.id;
+  };
+  const quote = (
+    channelId: string,
+    sailingId: string,
+    cabins: { cat: DemoCategoryCode; adults?: number; ages?: number[] }[],
+  ) =>
+    createQuote(db, ctx, {
+      channelId,
+      sailingId,
+      market: 'international',
+      cabins: cabins.map((c) => ({
+        categoryId: categories[c.cat],
+        adults: c.adults ?? 2,
+        childAges: c.ages ?? [],
+      })),
+    });
+  const guests = (names: string[][]) =>
+    names.map(([first, last], i) => ({
+      cabin: 0,
+      firstName: first!,
+      lastName: last!,
+      lead: i === 0,
+    }));
+  const book = async (
+    channelId: string,
+    pattern: string,
+    offset: number,
+    cabins: Parameters<typeof quote>[2],
+    who: string[][],
+    ref?: string,
+  ) => {
+    const q = await quote(channelId, await sailing(pattern, offset), cabins);
+    const hold = await createHold(db, ctx, { channelId, quoteId: q.id, kind: 'option' });
+    return confirmHold(db, ctx, {
+      holdId: hold.holdId,
+      guests: guests(who),
+      ...(ref ? { channelRef: ref } : {}),
+    });
+  };
+
+  // nilecrz bookings, confirmed at once (nilecrz collects payment).
+  await book(
+    channels.nilecrz,
+    'LXR-4',
+    0,
+    [{ cat: 'STD' }],
+    [
+      ['Emma', 'Clarke'],
+      ['James', 'Clarke'],
+    ],
+    'NC-50211',
+  );
+  await book(
+    channels.nilecrz,
+    'LXR-7',
+    0,
+    [{ cat: 'SUP', ages: [8] }],
+    [
+      ['Lukas', 'Weber'],
+      ['Anna', 'Weber'],
+    ],
+    'NC-50214',
+  );
+  await book(
+    channels.nilecrz,
+    'ASW-3',
+    4,
+    [{ cat: 'JS' }, { cat: 'STD', adults: 1 }],
+    [['Sofia', 'Rossi']],
+    'NC-50230',
+  );
+  await book(
+    channels.nilecrz,
+    'ASW-7',
+    11,
+    [{ cat: 'RS' }],
+    [
+      ['Hiro', 'Tanaka'],
+      ['Yuki', 'Tanaka'],
+    ],
+    'NC-50247',
+  );
+  await book(
+    channels.nilecrz,
+    'LXR-4',
+    14,
+    [{ cat: 'STD', ages: [4] }],
+    [['Marie', 'Dubois']],
+    'NC-50260',
+  );
+  const amended = await book(
+    channels.nilecrz,
+    'LXR-7',
+    21,
+    [{ cat: 'STD' }],
+    [['Carlos', 'Mendes']],
+    'NC-50275',
+  );
+  const cancelled = await book(
+    channels.nilecrz,
+    'LXR-4',
+    28,
+    [{ cat: 'SUP' }],
+    [['Olga', 'Ivanova']],
+    'NC-50290',
+  );
+
+  // Open holds: two options and a checkout in progress.
+  await createHold(db, ctx, {
+    channelId: channels.nilecrz,
+    quoteId: (
+      await quote(channels.nilecrz, await sailing('LXR-4', 7), [{ cat: 'STD' }, { cat: 'STD' }])
+    ).id,
+    kind: 'option',
+  });
+  await createHold(db, ctx, {
+    channelId: channels.nilecrz,
+    quoteId: (await quote(channels.nilecrz, await sailing('ASW-3', 18), [{ cat: 'JS' }])).id,
+    kind: 'option',
+  });
+  await createHold(db, ctx, {
+    channelId: channels.nilecrz,
+    quoteId: (await quote(channels.nilecrz, await sailing('LXR-7', 35), [{ cat: 'SUP' }])).id,
+    kind: 'checkout',
+  });
+
+  // A phone booking taken in the back office: prepaid, waiting for the deposit (24 h hold).
+  await book(
+    channels.backOffice,
+    'LXR-7',
+    14,
+    [{ cat: 'JS', ages: [10] }],
+    [
+      ['Ahmed', 'Mostafa'],
+      ['Nour', 'Mostafa'],
+    ],
+  );
+
+  // An agency with credit and its own allotment of 2 standard cabins on weeks 3–6.
+  const agency = await createChannel(db, ctx, {
+    code: 'cairo-travel',
+    name: 'Cairo Travel (agent)',
+    type: 'agent',
+  });
+  await createContract(db, ctx, {
+    channelId: agency.id,
+    vesselId,
+    allocation: 'pool',
+    paymentMode: 'credit',
+    priceAdjustment: 'commission',
+    adjustmentBps: 1000,
+    validFrom: monday,
+    categoryIds: Object.values(categories),
+    ratePlanIds: plans,
+  });
+  const allotmentLegs = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx
+      .selectFrom('leg')
+      .select('id')
+      .where('vessel_id', '=', vesselId)
+      .where('depart_date', '>=', addDays(monday, 14))
+      .where('depart_date', '<', addDays(monday, 42))
+      .execute(),
+  );
+  await createAllotment(db, ctx, {
+    channelId: agency.id,
+    vesselId,
+    legIds: allotmentLegs.map((l) => l.id),
+    categories: [{ categoryId: categories.STD, cabins: 2 }],
+  });
+  await book(
+    agency.id,
+    'LXR-4',
+    21,
+    [{ cat: 'STD' }],
+    [
+      ['Mohamed', 'Ali'],
+      ['Sara', 'Ali'],
+    ],
+  );
+
+  // An agency that books on request: one request waiting for staff.
+  const requests = await createChannel(db, ctx, {
+    code: 'aswan-tours',
+    name: 'Aswan Tours (on request)',
+    type: 'agent',
+  });
+  await createContract(db, ctx, {
+    channelId: requests.id,
+    vesselId,
+    allocation: 'on_request',
+    paymentMode: 'credit',
+    validFrom: monday,
+    categoryIds: Object.values(categories),
+    ratePlanIds: plans,
+  });
+  await createRequest(db, ctx, {
+    channelId: requests.id,
+    quoteId: (
+      await quote(requests.id, await sailing('ASW-7', 25), [{ cat: 'SUP' }, { cat: 'SUP' }])
+    ).id,
+    guests: guests([['Group', 'Leader']]),
+  });
+
+  // One cancellation (penalty by the policy) and one amendment (7 nights → 4 nights).
+  await cancelBooking(db, ctx, { bookingId: cancelled.bookingId, reason: 'Guest changed plans' });
+  const change = await quoteAmendment(db, ctx, {
+    bookingId: amended.bookingId,
+    sailingId: await sailing('LXR-4', 21),
+  });
+  await applyAmendment(db, ctx, {
+    bookingId: amended.bookingId,
+    revision: 1,
+    amendmentQuoteId: change.quote.id,
+  });
 }

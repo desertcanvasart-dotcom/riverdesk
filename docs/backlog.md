@@ -41,3 +41,4 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - Emergency-block exceptions: list the affected bookings, not only the counts.
 - A quote can back several holds; make quotes single-use per hold if channels misuse them.
 - Charters (spec test 9) remain out of the MVP.
+- Delete the temporary `/progress` page and `getOverview` when the Batch 6 screens land.

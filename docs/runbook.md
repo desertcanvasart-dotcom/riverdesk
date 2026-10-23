@@ -23,6 +23,8 @@ pnpm --filter @vs/api dev          # http://localhost:4000/health
 pnpm --filter @vs/worker dev       # Graphile Worker + cron
 ```
 
+Temporary progress view (local only, until Batch 6): http://localhost:3100/progress (`.claude/launch.json` runs the back office on 3100 and the API on 4000).
+
 Demo logins (local Auth only): `owner@demo.local` and `reservations@demo.local`, password `SEED_STAFF_PASSWORD` from `.env`.
 
 ## Worker jobs

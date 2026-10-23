@@ -342,3 +342,9 @@ Reason: rule 9.
 **2026-10-23 · When the booking jobs run.**
 `expire_holds` runs every minute, `expire_requests` every 5 minutes, `release_allotments` every 15 minutes and `complete_bookings` hourly. A release is due when `depart_date − release_days ≤ today (Cairo)`, compared in Postgres, which also covers the prompt's daily 00:05 run and its hourly catch-up.
 Reason: the Batch 0 decision on Cairo-time jobs; Egypt's DST would make a fixed cron time drift.
+
+## Between Batches 3 and 4
+
+**2026-10-23 · A temporary read-only progress page at `/progress`.**
+The back office shows the demo operator's counters, invariant status, a 6-week availability grid, bookings, holds, quotes and open exceptions. It reads through one engine function (`getOverview`), so rule 1 still holds, and returns 404 when `VS_ENV=hosted`. `pnpm db:seed` now also adds sample activity through the engine.
+Reason: the operator asked to look around before the real screens exist. It is deleted in Batch 6.

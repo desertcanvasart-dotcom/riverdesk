@@ -3,7 +3,8 @@ export default function Home() {
     <main>
       <h1>نظام الحجز · vessel-system</h1>
       <p lang="en" dir="ltr">
-        Back office skeleton. Screens arrive in Batch 6.
+        Back office skeleton. Screens arrive in Batch 6. Meanwhile, see the{' '}
+        <a href="/progress">temporary progress view</a>.
       </p>
     </main>
   );

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backoffice",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@vs/backoffice", "exec", "next", "dev", "--port", "3100"],
+      "port": 3100
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@vs/api", "dev"],
+      "port": 4000
+    }
+  ]
+}
