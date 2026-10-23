@@ -12,3 +12,6 @@ export * from './inventory/capacity';
 export * from './inventory/blocks';
 export * from './inventory/availability';
 export * from './demo';
+export * from './pricing/setup';
+export * from './pricing/compute';
+export * from './pricing/quote';
