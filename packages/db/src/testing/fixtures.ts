@@ -64,11 +64,28 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   inventory_bucket: inventoryWorld,
   inventory_event: inventoryWorld,
   event: inventoryWorld,
+  season: pricingFixture,
+  season_period: pricingFixture,
+  child_policy: pricingFixture,
+  child_policy_band: pricingFixture,
+  cancellation_policy: pricingFixture,
+  cancellation_rule: pricingFixture,
+  amendment_fee_rule: pricingFixture,
+  payment_policy: pricingFixture,
+  rate_plan: pricingFixture,
+  rate: pricingFixture,
+  supplement: pricingFixture,
+  channel: pricingFixture,
+  channel_contract: pricingFixture,
+  channel_contract_category: pricingFixture,
+  channel_contract_rate_plan: pricingFixture,
+  quote: pricingFixture,
   idempotency_key: async (db, operatorId) => {
+    const channel = await pricingWorld(db, operatorId);
     await db.query(
       `insert into vs.idempotency_key (operator_id, scope_id, key, request_hash)
        values ($1, $2, $3, 'fixture')`,
-      [operatorId, randomUUID(), `fixture-${randomUUID()}`],
+      [operatorId, channel, `fixture-${randomUUID()}`],
     );
   },
 };
@@ -175,6 +192,109 @@ export function inventoryWorld(db: pg.Pool, operatorId: string): Promise<void> {
   })();
   worlds.set(operatorId, created);
   return created;
+}
+
+const pricingWorlds = new Map<string, Promise<string>>();
+
+/**
+ * One row in every Batch 2 table for an operator, on top of inventoryWorld. Resolves to the
+ * fixture channel id (idempotency keys are scoped to a channel).
+ */
+export function pricingWorld(db: pg.Pool, operatorId: string): Promise<string> {
+  const existing = pricingWorlds.get(operatorId);
+  if (existing) return existing;
+  const created = (async () => {
+    await inventoryWorld(db, operatorId);
+    const one = async (text: string, params: unknown[]) =>
+      (await db.query<{ id: string }>(text, params)).rows[0]!.id;
+    const o = operatorId;
+    const ids = (
+      await db.query<{ vessel: string; category: string; sailing: string }>(
+        `select v.id as vessel, c.id as category, s.id as sailing
+         from vs.vessel v join vs.cabin_category c on c.vessel_id = v.id join vs.sailing s on s.vessel_id = v.id
+         where v.operator_id = $1 and v.code = 'FIX' limit 1`,
+        [o],
+      )
+    ).rows[0]!;
+    const season = await one(
+      `insert into vs.season (operator_id, vessel_id, code, name) values ($1, $2, 'ALL', 'All year') returning id`,
+      [o, ids.vessel],
+    );
+    await db.query(
+      `insert into vs.season_period (operator_id, vessel_id, season_id, during) values ($1, $2, $3, daterange('2026-01-01', '2028-12-31'))`,
+      [o, ids.vessel, season],
+    );
+    const child = await one(
+      `insert into vs.child_policy (operator_id, name) values ($1, 'Fixture') returning id`,
+      [o],
+    );
+    await db.query(
+      `insert into vs.child_policy_band (operator_id, child_policy_id, age_from, age_to, basis) values ($1, $2, 0, 11, 'free')`,
+      [o, child],
+    );
+    const cancel = await one(
+      `insert into vs.cancellation_policy (operator_id, name) values ($1, 'Fixture') returning id`,
+      [o],
+    );
+    await db.query(
+      `insert into vs.cancellation_rule (operator_id, cancellation_policy_id, from_days, penalty_bps) values ($1, $2, 0, 10000)`,
+      [o, cancel],
+    );
+    await db.query(
+      `insert into vs.amendment_fee_rule (operator_id, cancellation_policy_id, change_kind, fee_kind, percent_bps) values ($1, $2, 'any', 'percent', 0)`,
+      [o, cancel],
+    );
+    const payment = await one(
+      `insert into vs.payment_policy (operator_id, name) values ($1, 'Fixture') returning id`,
+      [o],
+    );
+    const plan = await one(
+      `insert into vs.rate_plan (operator_id, vessel_id, code, name, market, currency, pricing_unit, pricing_period,
+                                 child_policy_id, cancellation_policy_id, payment_policy_id)
+       values ($1, $2, 'FIX', 'Fixture', 'international', 'USD', 'per_person', 'per_night', $3, $4, $5) returning id`,
+      [o, ids.vessel, child, cancel, payment],
+    );
+    await db.query(
+      `insert into vs.rate (operator_id, vessel_id, rate_plan_id, category_id, season_id, basis, amount)
+       values ($1, $2, $3, $4, $5, 'double', 10000)`,
+      [o, ids.vessel, plan, ids.category, season],
+    );
+    await db.query(
+      `insert into vs.supplement (operator_id, rate_plan_id, code, kind, name_en, name_ar, date_from, date_to, amount_adult, amount_child)
+       values ($1, $2, 'GALA', 'gala', 'Gala', 'حفل', '2027-12-31', '2027-12-31', 5000, 2500)`,
+      [o, plan],
+    );
+    const channel = await one(
+      `insert into vs.channel (operator_id, code, name, type) values ($1, 'fixture', 'Fixture', 'portal') returning id`,
+      [o],
+    );
+    const contract = await one(
+      `insert into vs.channel_contract (operator_id, channel_id, vessel_id, allocation, payment_mode, valid_from)
+       values ($1, $2, $3, 'pool', 'channel_collected', '2026-01-01') returning id`,
+      [o, channel, ids.vessel],
+    );
+    await db.query(
+      `insert into vs.channel_contract_category (operator_id, contract_id, category_id) values ($1, $2, $3)`,
+      [o, contract, ids.category],
+    );
+    await db.query(
+      `insert into vs.channel_contract_rate_plan (operator_id, contract_id, rate_plan_id) values ($1, $2, $3)`,
+      [o, contract, plan],
+    );
+    await db.query(
+      `insert into vs.quote (operator_id, channel_id, contract_id, vessel_id, sailing_id, rate_plan_id, season_id, market,
+                             currency, cabins, lines, total, net_total, policies, expires_at)
+       values ($1, $2, $3, $4, $5, $6, $7, 'international', 'USD', '[]', '[]', 0, 0, '{}', now())`,
+      [o, channel, contract, ids.vessel, ids.sailing, plan, season],
+    );
+    return channel;
+  })();
+  pricingWorlds.set(operatorId, created);
+  return created;
+}
+
+async function pricingFixture(db: pg.Pool, operatorId: string): Promise<void> {
+  await pricingWorld(db, operatorId);
 }
 
 export async function seedFixtures(

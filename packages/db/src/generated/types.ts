@@ -23,6 +23,20 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AmendmentFeeRule {
+  amount: bigint | null;
+  cancellation_policy_id: string;
+  change_kind: string;
+  created_at: Generated<Timestamp>;
+  currency: string | null;
+  fee_kind: string;
+  from_days: Generated<number>;
+  id: Generated<string>;
+  operator_id: string;
+  percent_bps: number | null;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface AuditLog {
   action: string;
   actor_id: string | null;
@@ -92,6 +106,98 @@ export interface CabinPeriod {
   operator_id: string;
   updated_at: Generated<Timestamp>;
   vessel_id: string;
+}
+
+export interface CancellationPolicy {
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  name: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface CancellationRule {
+  cancellation_policy_id: string;
+  created_at: Generated<Timestamp>;
+  from_days: number;
+  id: Generated<string>;
+  operator_id: string;
+  penalty_bps: number;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface Channel {
+  active: Generated<boolean>;
+  code: string;
+  created_at: Generated<Timestamp>;
+  credit_allowed: Generated<boolean>;
+  credit_currency: string | null;
+  credit_limit: bigint | null;
+  id: Generated<string>;
+  name: string;
+  operator_id: string;
+  type: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ChannelContract {
+  active: Generated<boolean>;
+  adjustment_bps: Generated<number>;
+  allocation: string;
+  channel_id: string;
+  checkout_hold_minutes: Generated<number>;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  operator_id: string;
+  option_hold_hours: Generated<number>;
+  payment_mode: string;
+  price_adjustment: Generated<string>;
+  request_sla_hours: Generated<number>;
+  stop_sell: Generated<boolean>;
+  updated_at: Generated<Timestamp>;
+  valid_from: string;
+  valid_to: string | null;
+  vessel_id: string;
+  visible_free_cap: number | null;
+}
+
+export interface ChannelContractCategory {
+  category_id: string;
+  contract_id: string;
+  created_at: Generated<Timestamp>;
+  operator_id: string;
+}
+
+export interface ChannelContractRatePlan {
+  contract_id: string;
+  created_at: Generated<Timestamp>;
+  operator_id: string;
+  rate_plan_id: string;
+}
+
+export interface ChildPolicy {
+  adult_from_age: Generated<number>;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  max_children_per_cabin: Generated<number>;
+  name: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ChildPolicyBand {
+  age_from: number;
+  age_to: number;
+  basis: string;
+  child_policy_id: string;
+  created_at: Generated<Timestamp>;
+  fixed_amount: bigint | null;
+  fixed_currency: string | null;
+  id: Generated<string>;
+  operator_id: string;
+  percent_bps: number | null;
+  requires_two_adults: Generated<boolean>;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface Event {
@@ -220,6 +326,20 @@ export interface OperatorSetting {
   updated_at: Generated<Timestamp>;
 }
 
+export interface PaymentPolicy {
+  auto_cancel_after_days: number | null;
+  auto_cancel_overdue: Generated<boolean>;
+  balance_due_days: Generated<number>;
+  bank_transfer_hold_hours: Generated<number>;
+  card_hold_minutes: Generated<number>;
+  created_at: Generated<Timestamp>;
+  deposit_bps: Generated<number>;
+  id: Generated<string>;
+  name: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Port {
   active: Generated<boolean>;
   code: string;
@@ -229,6 +349,63 @@ export interface Port {
   name_en: string;
   operator_id: string;
   updated_at: Generated<Timestamp>;
+}
+
+export interface Quote {
+  cabins: Json;
+  channel_id: string;
+  contract_id: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  expires_at: Timestamp;
+  id: Generated<string>;
+  lines: Json;
+  market: string;
+  net_total: bigint;
+  operator_id: string;
+  policies: Json;
+  rate_plan_id: string;
+  sailing_id: string;
+  season_id: string;
+  total: bigint;
+  vessel_id: string;
+}
+
+export interface Rate {
+  amount: bigint;
+  basis: string | null;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  operator_id: string;
+  rate_plan_id: string;
+  sailing_pattern_id: string | null;
+  season_id: string;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface RatePlan {
+  active: Generated<boolean>;
+  board: Generated<string>;
+  cancellation_policy_id: string;
+  child_policy_id: string;
+  code: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  exclusions: Generated<Json>;
+  id: Generated<string>;
+  inclusions: Generated<Json>;
+  market: string;
+  min_nights: Generated<number>;
+  name: string;
+  operator_id: string;
+  payment_policy_id: string;
+  pricing_period: string;
+  pricing_unit: string;
+  updated_at: Generated<Timestamp>;
+  version: Generated<bigint>;
+  vessel_id: string;
 }
 
 export interface Sailing {
@@ -314,6 +491,26 @@ export interface ScheduleTemplateStop {
   updated_at: Generated<Timestamp>;
 }
 
+export interface Season {
+  code: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  name: string;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface SeasonPeriod {
+  created_at: Generated<Timestamp>;
+  during: string;
+  id: Generated<string>;
+  operator_id: string;
+  season_id: string;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
 export interface StaffUser {
   active: Generated<boolean>;
   auth_user_id: string;
@@ -324,6 +521,23 @@ export interface StaffUser {
   locale: Generated<string>;
   operator_id: string;
   role: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface Supplement {
+  amount_adult: bigint;
+  amount_child: bigint;
+  code: string;
+  created_at: Generated<Timestamp>;
+  date_from: string;
+  date_to: string;
+  id: Generated<string>;
+  kind: string;
+  mandatory: Generated<boolean>;
+  name_ar: string;
+  name_en: string;
+  operator_id: string;
+  rate_plan_id: string;
   updated_at: Generated<Timestamp>;
 }
 
@@ -342,11 +556,20 @@ export interface Vessel {
 }
 
 export interface DB {
+  amendment_fee_rule: AmendmentFeeRule;
   audit_log: AuditLog;
   cabin: Cabin;
   cabin_block: CabinBlock;
   cabin_category: CabinCategory;
   cabin_period: CabinPeriod;
+  cancellation_policy: CancellationPolicy;
+  cancellation_rule: CancellationRule;
+  channel: Channel;
+  channel_contract: ChannelContract;
+  channel_contract_category: ChannelContractCategory;
+  channel_contract_rate_plan: ChannelContractRatePlan;
+  child_policy: ChildPolicy;
+  child_policy_band: ChildPolicyBand;
   event: Event;
   exception: Exception;
   idempotency_key: IdempotencyKey;
@@ -355,13 +578,20 @@ export interface DB {
   leg: Leg;
   operator: Operator;
   operator_setting: OperatorSetting;
+  payment_policy: PaymentPolicy;
   port: Port;
+  quote: Quote;
+  rate: Rate;
+  rate_plan: RatePlan;
   sailing: Sailing;
   sailing_leg: SailingLeg;
   sailing_pattern: SailingPattern;
   schedule_exception: ScheduleException;
   schedule_template: ScheduleTemplate;
   schedule_template_stop: ScheduleTemplateStop;
+  season: Season;
+  season_period: SeasonPeriod;
   staff_user: StaffUser;
+  supplement: Supplement;
   vessel: Vessel;
 }
