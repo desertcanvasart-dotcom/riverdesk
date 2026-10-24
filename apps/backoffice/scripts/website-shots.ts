@@ -1,0 +1,80 @@
+/**
+ * Screenshots for the public website (apps/website/public/screens/<locale>/): each back-office
+ * screen at desktop width, plus Today on a phone. Demo company, local only.
+ *   pnpm --filter @vs/backoffice website-shots
+ */
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium, type Page } from 'playwright';
+import { BASE, signInAsDemoOwner } from './session';
+
+const OUT = join(import.meta.dirname, '../../website/public/screens');
+
+/** Website name → back-office path (and an optional step to show the interesting state). */
+const SCREENS: [string, string, ((page: Page) => Promise<void>)?][] = [
+  ['today', '/'],
+  [
+    'book',
+    '/book',
+    async (page) => {
+      await page.locator('ul.grid li button:not([disabled])').first().click();
+      await page.waitForSelector('text=US$');
+    },
+  ],
+  ['booking', '/bookings/VS-26-00001'],
+  ['requests', '/requests'],
+  ['inventory', '/inventory'],
+  ['schedule', '/schedule'],
+  ['rates', '/rates'],
+  ['channels', '/channels'],
+  ['payments', '/payments'],
+  [
+    'guests',
+    '/guests',
+    async (page) => {
+      await page.locator('ul button').first().click();
+      await page.waitForLoadState('networkidle');
+    },
+  ],
+  ['vacancy', '/vacancy'],
+  ['settings', '/settings'],
+];
+
+const browser = await chromium.launch();
+try {
+  for (const locale of ['ar', 'en'] as const) {
+    mkdirSync(join(OUT, locale), { recursive: true });
+    const desktop = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale });
+    await desktop.addCookies([{ name: 'vs_locale', value: locale, url: BASE }]);
+    const page = await desktop.newPage();
+    await signInAsDemoOwner(page);
+    for (const [name, path, prepare] of SCREENS) {
+      await page.goto(`${BASE}${path}`);
+      await page.waitForLoadState('networkidle');
+      if (prepare) await prepare(page);
+      await page.screenshot({
+        path: join(OUT, locale, `desktop-${name}.jpg`),
+        type: 'jpeg',
+        quality: 78,
+      });
+      console.log(`${locale} desktop-${name}`);
+    }
+    const phone = await browser.newContext({
+      viewport: { width: 390, height: 780 },
+      deviceScaleFactor: 2,
+      locale,
+    });
+    await phone.addCookies([
+      { name: 'vs_locale', value: locale, url: BASE },
+      ...(await desktop.cookies()),
+    ]);
+    const p = await phone.newPage();
+    await p.goto(`${BASE}/`);
+    await p.waitForLoadState('networkidle');
+    await p.screenshot({ path: join(OUT, locale, 'phone-today.jpg'), type: 'jpeg', quality: 78 });
+    await desktop.close();
+    await phone.close();
+  }
+} finally {
+  await browser.close();
+}

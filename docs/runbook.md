@@ -186,3 +186,21 @@ Tick each line, with a date and initials, before the pilot vessel takes its firs
 - [ ] **Pilot import done:** `--dry-run` reviewed with the reservations manager, the real run's report kept, and conflicts resolved by hand.
 - [ ] **Staff trained on the action list:** each reservations user has taken a phone booking, answered a request, recorded a payment and printed a voucher. They know Today is the first screen each morning.
 - [ ] **Pilot dashboard green:** invariants hold, 0 oversells.
+
+## Public website (`apps/website`)
+
+The public homepage and docs: Home, Features, For agencies & channels, Security, and Docs in four sections. Arabic (`/ar`, the default) and English (`/en`). It has no database and no login, and every page is rendered to static HTML at build time.
+
+```bash
+pnpm --filter @vs/website dev        # http://localhost:3200
+```
+
+| Setting                     | What it does                                             | Default                      |
+| --------------------------- | -------------------------------------------------------- | ---------------------------- |
+| `NEXT_PUBLIC_APP_URL`       | "Sign in" goes here (the back office)                    | `http://localhost:3100`      |
+| `NEXT_PUBLIC_API_DOCS_URL`  | "Live API reference"                                     | `http://localhost:4000/docs` |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | "Request a demo" opens an email to it; hidden when unset | unset                        |
+
+- **Docs** are Markdown files in `apps/website/content/docs/<ar|en>/<section>/NN-slug.md`, with a `title` and `summary` in the front matter. English defines the pages and their order. An Arabic page that is missing falls back to English, with a notice. Links are written without the language (`/docs/staff-guide/today`) and keep the reader's.
+- **Screenshots** in `public/screens/<locale>/` come from the demo company. Refresh them after screen changes, with the back office running: `pnpm --filter @vs/backoffice website-shots`.
+- **Test**: `pnpm --filter @vs/website test` checks that every page has a title and summary, every internal link and screenshot exists, and every Arabic page has an Arabic title.

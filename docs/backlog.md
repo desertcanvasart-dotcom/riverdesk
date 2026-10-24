@@ -43,3 +43,4 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - Charters (spec test 9) remain out of the MVP.
 
 - Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them.
+- Website: a contact or demo-request form (today a mailto link), a custom domain and hosting, privacy-friendly analytics if wanted, and docs search.

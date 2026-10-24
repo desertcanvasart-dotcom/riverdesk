@@ -581,3 +581,13 @@ Reason: spec Batch 7 § Pilot import. Rule 1: no second write path, even for a o
 **2026-10-24 · The restore drill is a logical dump and restore; PITR is still to be enabled.**
 The hosted project has daily physical backups, and point-in-time recovery is off (a paid add-on). The drill dumped the application schemas and restored them as `vs_owner` into a scratch database. It was run against hosted (schema only, since there are no companies yet) and against the local database (1,034 companies). Counts, policies, grants and the invariant check matched. The steps and timings are in the runbook. A restore into a second Supabase project, and enabling PITR, need account changes: they are on the go-live checklist.
 Reason: spec Batch 7 § Backups.
+
+**2026-10-24 · A public website and docs, named Riverdesk.**
+You chose the public name **Riverdesk** ("vessel-system" stays the code name), cruise companies as the main audience, Arabic and English, and docs in four parts: getting started & admin, staff guide, Channel API guide, concepts & glossary.
+
+- **The app:** `apps/website` is its own Next.js app, statically rendered, with no database or secrets, so it can be hosted anywhere public. The language is in the URL (`/ar`, `/en`), so pages can be shared and indexed.
+- **The docs:** Markdown in the repository, reviewed like code. Screenshots are real back-office screens of the demo company.
+- **Arabic:** the docs were translated from the English using the back office's own Arabic labels. Doing that showed the app used two Arabic words for guests and two names for Guests & manifests. Both are now unified (ضيوف, «الضيوف والكشوف»).
+- **First sign-in:** the two-step screen now prints the setup key under the QR code, for people who type it instead of scanning.
+- **Not built yet:** a contact form and analytics. "Request a demo" is a mailto link, shown only when a contact email is configured.
+  Reason: the user asked for a homepage, a presentation of the application and detailed docs (2026-10-24). It is outside the MVP spec but explicitly requested.

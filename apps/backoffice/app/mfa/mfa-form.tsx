@@ -11,7 +11,7 @@ export function MfaForm({ url, publishableKey }: { url: string; publishableKey: 
   const t = useTranslations('mfa');
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(url, publishableKey), [url, publishableKey]);
-  const [factor, setFactor] = useState<{ id: string; qr?: string } | null>(null);
+  const [factor, setFactor] = useState<{ id: string; qr?: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +24,12 @@ export function MfaForm({ url, publishableKey }: { url: string; publishableKey: 
         factorType: 'totp',
         friendlyName: `vessel-system ${new Date().toISOString().slice(0, 10)}`,
       });
-      if (enrolled.data) setFactor({ id: enrolled.data.id, qr: enrolled.data.totp.qr_code });
+      if (enrolled.data)
+        setFactor({
+          id: enrolled.data.id,
+          qr: enrolled.data.totp.qr_code,
+          secret: enrolled.data.totp.secret,
+        });
     })();
   }, [supabase]);
 
@@ -48,6 +53,18 @@ export function MfaForm({ url, publishableKey }: { url: string; publishableKey: 
           <h2 className="font-semibold">{t('enrollTitle')}</h2>
           <p className="text-sm text-muted">{t('enrollHelp')}</p>
           <img src={factor.qr} alt="" className="mx-auto h-48 w-48 rounded-lg bg-white p-2" />
+          {factor.secret && (
+            <p className="text-center text-sm">
+              <span className="block text-muted">{t('setupKey')}</span>
+              {/* Grouped in fours so it can be typed into the app without scanning. */}
+              <code
+                className="mt-1 inline-block rounded bg-line/40 px-2 py-1 font-mono tracking-wider"
+                dir="ltr"
+              >
+                {factor.secret.match(/.{1,4}/g)?.join(' ')}
+              </code>
+            </p>
+          )}
         </>
       ) : (
         <p className="text-sm text-muted">{t('verifyHelp')}</p>

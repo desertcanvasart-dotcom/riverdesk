@@ -79,7 +79,8 @@
     "verifyHelp": "Enter the 6-digit code from your authenticator app.",
     "code": "6-digit code",
     "submit": "Verify",
-    "failed": "That code did not work. Try the next one."
+    "failed": "That code did not work. Try the next one.",
+    "setupKey": "Can't scan? In the app choose \"Enter a setup key\", type this key and choose \"Time based\":"
   },
   "home": {
     "title": "Today",

@@ -12,6 +12,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@vs/api", "dev"],
       "port": 4000
+    },
+    {
+      "name": "website",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@vs/website", "dev"],
+      "port": 3200
     }
   ]
 }

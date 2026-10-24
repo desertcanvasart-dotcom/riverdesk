@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "title": "Riverdesk · Reservations for Nile cruise companies",
+    "description": "Riverdesk runs a Nile cruise company's reservations: live availability, phone bookings in under a minute, agencies and online channels on one inventory, vouchers and manifests in Arabic and English. It never oversells."
+  },
+  "nav": {
+    "features": "Features",
+    "channels": "For agencies & channels",
+    "security": "Security",
+    "docs": "Docs",
+    "signIn": "Sign in",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "Reservations for Nile cruise companies. Arabic first, built not to oversell.",
+    "product": "Product",
+    "gettingStarted": "Getting started",
+    "staffGuide": "Staff guide",
+    "apiGuide": "Channel API guide",
+    "glossary": "Glossary",
+    "app": "Riverdesk app",
+    "apiReference": "API reference",
+    "rights": "All rights reserved."
+  },
+  "cta": {
+    "demo": "Request a demo",
+    "features": "See the features",
+    "docs": "Read the docs",
+    "signIn": "Sign in to Riverdesk",
+    "apiGuide": "Channel API guide",
+    "apiReference": "Live API reference",
+    "demoSubject": "Riverdesk demo"
+  },
+  "home": {
+    "eyebrow": "For Nile cruise companies",
+    "title": "Every cabin, every channel, one source of truth.",
+    "subtitle": "Riverdesk runs your reservations: live availability across every departure, a phone booking in under a minute, agencies and online channels selling from the same inventory, and vouchers and manifests in Arabic and English. It is built so that a cabin can never be sold twice.",
+    "problemTitle": "Spreadsheets and WhatsApp were never built for this",
+    "problems": [
+      {
+        "title": "Double bookings",
+        "text": "Two agents sell the last suite on the same afternoon, and someone finds out at the gangway."
+      },
+      {
+        "title": "Nobody knows what is free",
+        "text": "Availability lives in one person's spreadsheet; agencies wait hours for an answer."
+      },
+      {
+        "title": "Paperwork by hand",
+        "text": "Vouchers, manifests and rooming lists are retyped for every departure, in two languages."
+      }
+    ],
+    "pillarsTitle": "What Riverdesk does for you",
+    "pillars": [
+      {
+        "title": "Never oversell",
+        "text": "Every hold and booking reserves cabins on each leg of the cruise in one step. The system checks itself every night and stops sales the moment anything is wrong."
+      },
+      {
+        "title": "A phone booking in under a minute",
+        "text": "Pick the itinerary, tap a sailing, type the guest's name, confirm. Live price and availability as you go, on a phone or a desk."
+      },
+      {
+        "title": "All your channels on one inventory",
+        "text": "Direct guests, travel agencies with allotments or credit, and online platforms through an API — each on its own contract, all from the same cabins."
+      },
+      {
+        "title": "Arabic first",
+        "text": "Every screen and document in Arabic and English, right-to-left done properly, Arabic digits, and a vessel staff can run from a phone."
+      },
+      {
+        "title": "Documents ready to print",
+        "text": "Vouchers, itineraries, payment schedules, manifests, rooming lists and the weekly vacancy sheet — PDF or Excel, in both languages."
+      },
+      {
+        "title": "A clear Today screen",
+        "text": "Requests waiting, holds about to expire, deposits and balances due, missing guest names, cabins to assign: what to do, most urgent first."
+      }
+    ],
+    "howTitle": "How it works",
+    "how": [
+      {
+        "title": "Set up your vessel",
+        "text": "Cabins and categories, the weekly route with its stops, itineraries, seasons, rates and policies. Riverdesk builds 18 months of departures."
+      },
+      {
+        "title": "Connect your channels",
+        "text": "Contracts for each agency and platform: shared inventory, allotments or on request; who collects payment; markup or commission."
+      },
+      {
+        "title": "Run the day from Today",
+        "text": "Take bookings, answer requests, record payments, print documents. Cabins are assigned and manifests prepared before each departure."
+      }
+    ],
+    "channelsTitle": "Agencies and online platforms connect directly",
+    "channelsText": "Contracted agencies see live availability and book under their own terms. Platforms such as nilecrz use the Channel API — real-time availability, holds, bookings, amendments and signed webhooks — so nobody sells from a stale list.",
+    "trustTitle": "Built for trust",
+    "trust": [
+      "Each company's data is isolated by the database itself",
+      "Passport numbers are encrypted and never logged",
+      "Two-step sign-in for owners and finance",
+      "Every change recorded in an audit log",
+      "A nightly PDF so the office keeps working during an outage"
+    ],
+    "finalTitle": "See it with your own departures",
+    "finalText": "We set Riverdesk up with your vessel, your itineraries and your rates, and import your existing future bookings."
+  },
+  "features": {
+    "title": "Features",
+    "intro": "Everything a Nile cruise reservations office needs, from the first enquiry to the passenger manifest.",
+    "items": [
+      {
+        "key": "today",
+        "title": "Today",
+        "text": "Your daily action list: requests waiting for an answer with their deadline, options and payment holds expiring, deposits and balances due, guest names missing before the cut-off, departures with cabins still to assign, and exceptions that need a decision."
+      },
+      {
+        "key": "book",
+        "title": "Fast phone booking",
+        "text": "Choose who the booking is for (a direct guest or an agency), filter by itinerary, tap a sailing that has room, and enter the lead guest. Prices update as you add cabins, adults and children's ages. One tap confirms — or files a request when the agency's contract is on request."
+      },
+      {
+        "key": "booking",
+        "title": "Bookings",
+        "text": "Search by reference, guest, agency or date. Each booking shows its cabins, guests, payments, revisions and documents. Change the date or the cabins with the price and amendment fee shown first, or cancel with the penalty shown before you confirm."
+      },
+      {
+        "key": "requests",
+        "title": "Requests",
+        "text": "Agency requests with a countdown to their deadline. Accept, decline with a reason, or offer another sailing — the agency is told at once."
+      },
+      {
+        "key": "inventory",
+        "title": "Inventory",
+        "text": "Free cabins per departure and category, with what is booked, held, allotted or blocked. Block cabins for repairs, stop or resume sales, or take a cabin out of service in an emergency."
+      },
+      {
+        "key": "schedule",
+        "title": "Schedule",
+        "text": "Departures for 18 months from your weekly route. Cancel a departure, move dates, change a port or plan dry dock — Riverdesk shows exactly which bookings are affected before anything changes."
+      },
+      {
+        "key": "rates",
+        "title": "Rates and policies",
+        "text": "Prices per season, category and occupancy, per person or per cabin, per night or per itinerary, in USD, EUR or EGP. Child bands, cancellation penalties, deposits and supplements such as gala dinners."
+      },
+      {
+        "key": "channels",
+        "title": "Channels",
+        "text": "Contracts per agency and platform: shared inventory, allotments that return to sale before departure, or on request. Who collects payment, credit limits, markup or commission. API keys and webhooks for online platforms."
+      },
+      {
+        "key": "payments",
+        "title": "Payments",
+        "text": "A ledger of every payment, refund and correction, in any currency with its exchange rate. Nothing is edited or deleted: mistakes are reversed."
+      },
+      {
+        "key": "guests",
+        "title": "Guests and manifests",
+        "text": "Who is aboard each departure, with cabins assigned automatically before the cut-off and moved by hand when needed. Manifests and rooming lists in PDF and Excel."
+      },
+      {
+        "key": "vacancy",
+        "title": "Vacancy sheet",
+        "text": "Free cabins for the coming weeks, as a PDF, Excel file or an image to send on WhatsApp to agencies not yet connected."
+      },
+      {
+        "key": "settings",
+        "title": "People and settings",
+        "text": "Invite staff by email with a role — owner, reservations, finance or read-only. Owners and finance use two-step sign-in. Company defaults for holds, deadlines and the voucher text."
+      }
+    ]
+  },
+  "channels": {
+    "title": "For agencies and channels",
+    "intro": "Riverdesk lets a cruise company sell through travel agencies and online platforms without losing control of its cabins.",
+    "contractsTitle": "Every channel on its own contract",
+    "contracts": [
+      {
+        "title": "Shared inventory",
+        "text": "The agency sells from the vessel's free cabins, up to an optional visible cap."
+      },
+      {
+        "title": "Allotments",
+        "text": "Cabins set aside for one agency on chosen departures; unused ones return to general sale a set number of days before departure."
+      },
+      {
+        "title": "On request",
+        "text": "The agency asks, the office answers within the agreed time — accept, decline or offer another date."
+      }
+    ],
+    "paymentTitle": "Payment the way you agreed",
+    "payment": [
+      "The channel collects from the guest and settles with you",
+      "The guest prepays you: the booking waits for its deposit",
+      "On credit, up to the agency's limit"
+    ],
+    "apiTitle": "The Channel API",
+    "apiText": "Online platforms connect through a documented REST API with OAuth client credentials. Availability and prices are live; holds expire on their own; bookings, guest changes, amendments and cancellations follow the same rules as the office. Every change is sent as a signed webhook, in order, and retried until delivered. A sandbox company is available for testing.",
+    "apiPoints": [
+      "Live availability and quotes",
+      "Holds, confirmations and requests",
+      "Amendments with the price and fee first",
+      "Signed webhooks and an event feed",
+      "Idempotent requests — safe to retry",
+      "Sandbox for testing"
+    ]
+  },
+  "security": {
+    "title": "Security and reliability",
+    "intro": "Your bookings, your guests' passports and your prices are trusted to Riverdesk. This is how they are protected.",
+    "items": [
+      {
+        "title": "Each company in its own space",
+        "text": "Every row of data belongs to one cruise company, and the database itself refuses to show it to anyone else — not just the application. Automated tests try to cross that line on every table, every time."
+      },
+      {
+        "title": "Passports encrypted, kept only as long as needed",
+        "text": "Passport numbers are encrypted before they are stored, never written to logs, events or messages to channels, and appear only in the passenger manifest. They are erased automatically 90 days after disembarkation."
+      },
+      {
+        "title": "Two-step sign-in and roles",
+        "text": "Owners and finance staff sign in with a code from an authenticator app. Each person has a role, and every action is checked on the server, not only hidden on the screen."
+      },
+      {
+        "title": "Everything recorded",
+        "text": "Every booking, change, payment and setting is written to an audit log with who did it and when — without personal data."
+      },
+      {
+        "title": "It cannot oversell",
+        "text": "Each cabin is counted on every leg of the cruise in the same step as the booking, under locks, and a reconciliation check runs every night. If anything is ever wrong, sales stop on that departure and the office is told."
+      },
+      {
+        "title": "Prepared for bad days",
+        "text": "Daily backups, a restore procedure that has been rehearsed, alerts when something goes wrong, and a nightly PDF of the next 14 days so the office can keep working even if the system is unreachable."
+      },
+      {
+        "title": "Data requests",
+        "text": "An owner can export everything held about one guest, or erase it, in a few clicks — and the request itself is recorded."
+      },
+      {
+        "title": "Hosted in Europe",
+        "text": "Riverdesk's database runs on Supabase in the EU (Ireland)."
+      }
+    ]
+  },
+  "docs": {
+    "title": "Documentation",
+    "intro": "Guides for owners, reservations staff and the developers of channels connecting to Riverdesk.",
+    "section": {
+      "getting-started": "Getting started & administration",
+      "staff-guide": "Staff guide",
+      "channel-api": "Channel API guide",
+      "concepts": "Concepts & glossary"
+    },
+    "sectionIntro": {
+      "getting-started": "Setting up a company, people and roles, going live, backups and outages.",
+      "staff-guide": "Every screen of the back office, step by step.",
+      "channel-api": "For agencies and platforms connecting their systems.",
+      "concepts": "How Riverdesk thinks about sailings, inventory and money — in plain words."
+    },
+    "previous": "Previous",
+    "next": "Next",
+    "onThisPage": "On this page",
+    "contents": "Contents",
+    "fallback": "This page has not been translated yet; it is shown in English."
+  }
+}

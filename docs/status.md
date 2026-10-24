@@ -55,6 +55,10 @@ The code lives in one repository (`github.com/desertcanvasart-dotcom/riverdesk`)
 - `docs/integration-nilecrz.md`: the guide for nilecrz's developers.
 - `docs/pilot/import-template.csv`: the template for importing the pilot vessel's existing bookings.
 
+## The public website
+
+The homepage and docs run at http://localhost:3200 (Arabic at `/ar`, English at `/en`) with `pnpm --filter @vs/website dev`. It is a separate site with no login and no database, so it can be put online on its own. Choosing hosting and a domain for it is part of item 5 above.
+
 ## How to look at it on your Mac
 
 1. Docker must be running, then `pnpm supabase:start` starts the local database.
