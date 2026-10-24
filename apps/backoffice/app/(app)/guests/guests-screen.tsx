@@ -11,6 +11,7 @@ import { addDaysIso, cairoTodayIso } from '../../../lib/dates';
 import { useErrorText } from '../../../lib/errors';
 import { formatDate } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
+import { CabinMap } from './cabin-map';
 
 const WINDOW = 14;
 
@@ -38,6 +39,7 @@ export function GuestsScreen({
   const [from, setFrom] = useState(() => cairoTodayIso());
   const [legId, setLegId] = useState<string | null>(initialLeg);
   const [notice, setNotice] = useState<string | null>(null);
+  const [view, setView] = useState<'list' | 'map'>('list');
   const departures = useQuery(
     trpc.guests.departures.queryOptions(
       { vesselId, from, to: addDaysIso(from, WINDOW - 1) },
@@ -51,6 +53,7 @@ export function GuestsScreen({
     Promise.all([
       queryClient.invalidateQueries({ queryKey: trpc.guests.manifest.queryKey() }),
       queryClient.invalidateQueries({ queryKey: trpc.guests.departures.queryKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.guests.cabinMap.queryKey() }),
     ]);
   const autoAssign = useMutation(
     trpc.guests.autoAssign.mutationOptions({
@@ -132,22 +135,47 @@ export function GuestsScreen({
                 </span>
               }
               actions={
-                canAssign && (
-                  <Button
-                    variant="secondary"
-                    disabled={autoAssign.isPending}
-                    onClick={() =>
-                      autoAssign.mutate({ vesselId: m.leg.vesselId, legIds: [m.leg.id] })
-                    }
-                  >
-                    {t('autoAssign')}
-                  </Button>
-                )
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex rounded-lg border border-line p-0.5 text-sm" role="group">
+                    {(['list', 'map'] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        aria-pressed={view === v}
+                        onClick={() => setView(v)}
+                        className={cx(
+                          'rounded-md px-3 py-1.5',
+                          view === v ? 'bg-brand text-brand-ink' : 'hover:bg-line/40',
+                        )}
+                      >
+                        {t(v === 'list' ? 'viewList' : 'viewMap')}
+                      </button>
+                    ))}
+                  </div>
+                  {canAssign && (
+                    <Button
+                      variant="secondary"
+                      disabled={autoAssign.isPending}
+                      onClick={() =>
+                        autoAssign.mutate({ vesselId: m.leg.vesselId, legIds: [m.leg.id] })
+                      }
+                    >
+                      {t('autoAssign')}
+                    </Button>
+                  )}
+                </div>
               }
             >
               {notice && <Alert tone="ok">{notice}</Alert>}
               {autoAssign.isError && <Alert tone="bad">{errorText(autoAssign.error)}</Alert>}
-              {m.parties.length === 0 ? (
+              {view === 'map' ? (
+                <CabinMap
+                  key={m.leg.id}
+                  legId={m.leg.id}
+                  canAssign={canAssign}
+                  onChanged={() => void refresh()}
+                />
+              ) : m.parties.length === 0 ? (
                 <Empty>{tc('none')}</Empty>
               ) : (
                 <ul className="divide-y divide-line">

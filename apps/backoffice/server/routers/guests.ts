@@ -5,6 +5,7 @@ import {
   autoAssignCabins,
   autoAssignCabinsInput,
   cabinOptions,
+  getCabinMap,
   getLegManifest,
   listDepartures,
 } from '@vs/engine';
@@ -21,6 +22,10 @@ export const guestsRouter = router({
   manifest: procedure('read')
     .input(z.object({ legId: z.uuid() }))
     .query(({ ctx, input }) => getLegManifest(backofficeDb(), ctx.engine, input.legId)),
+  /** Every cabin on the departure, deck by deck, with its party (Batch 8, step 5). */
+  cabinMap: procedure('read')
+    .input(z.object({ legId: z.uuid() }))
+    .query(({ ctx, input }) => getCabinMap(backofficeDb(), ctx.engine, input.legId)),
   cabinOptions: procedure('read')
     .input(z.object({ bookingCabinId: z.uuid() }))
     .query(({ ctx, input }) => cabinOptions(backofficeDb(), ctx.engine, input.bookingCabinId)),

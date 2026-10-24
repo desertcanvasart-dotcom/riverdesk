@@ -646,3 +646,10 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - Every plan or supplement change bumps the plan and emits `rate.changed`.
 - **Getting started** on Today (owners): for each active ship, ten steps in order with links (categories, cabins, route, itineraries, departures, seasons covering every sailing night, policies, a plan, every price, sold in the back office), plus inviting the team and the operations email. "Every price" = each active plan has a price for every category × season, × basis for per-person plans (single, double, triple up to the category's adults) and × active itinerary for package plans. It hides once all is done.
 - A test builds a company from nothing through these functions and gets a back-office quote at the end.
+
+## Batch 8, step 5: staff cabin map (2026-10-24)
+
+- On **Guests & manifests**, a **List / Cabin map** switch per departure. The map shows every cabin of the ship deck by deck (decks ordered by their lowest cabin number, not by name): free, guests (lead name, party size, boarded earlier / stays on), blocked (with the reason), out of service. Per category, the free / held / booked counts from the pool. No passport numbers or dates of birth.
+- Moving guests reuses the existing `cabinOptions` and `assignCabin` (owners and reservations, `guests.assign`): pick a party, the cabins that fit every night of its cruise light up, one click moves it for the whole cruise. Sales stay by category; holds and allotments are counts and have no cabin.
+- Engine: `getCabinMap(legId)` (backoffice/cabin-map.ts). No migration.
+- The list of fitting cabins is refetched after every move (a cached answer offered the party's own cabin).

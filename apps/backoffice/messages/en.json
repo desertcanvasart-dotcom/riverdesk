@@ -616,7 +616,9 @@
     "boards": "Boards {date} at {port}",
     "leaves": "leaves {date} at {port}",
     "pdf": "PDF",
-    "xlsx": "Excel"
+    "xlsx": "Excel",
+    "viewList": "List",
+    "viewMap": "Cabin map"
   },
   "vacancy": {
     "title": "Vacancy sheet",
@@ -1041,5 +1043,26 @@
       "bed_breakfast": "Bed and breakfast",
       "all_inclusive": "All inclusive"
     }
+  },
+  "cabinMap": {
+    "noCabins": "This ship has no cabins yet: add them on Ships & cabins.",
+    "state": {
+      "free": "Free",
+      "occupied": "Guests",
+      "blocked": "Blocked",
+      "out_of_service": "Out of service"
+    },
+    "count": "{free} free · {held} held · {booked} booked",
+    "waiting": "{n, plural, one {# party waits} other {# parties wait}} for a cabin. Pick one, then a highlighted cabin.",
+    "noName": "No name yet",
+    "moving": "Moving {ref} ({name}).",
+    "choices": "{n, plural, =0 {No free cabin fits on all its nights.} one {# cabin fits: highlighted in green.} other {# cabins fit: highlighted in green.}}",
+    "unassign": "Take off this cabin",
+    "noDeck": "No deck",
+    "guests": "{n, plural, one {# guest} other {# guests}}",
+    "boardedEarlier": "boarded earlier",
+    "staysLonger": "stays on",
+    "openBooking": "Open booking {ref}",
+    "readOnly": "Your role can view the map but not move guests."
   }
 }

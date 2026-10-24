@@ -33,6 +33,7 @@ export * from './backoffice/fleet';
 export * from './backoffice/routes';
 export * from './backoffice/policies';
 export * from './backoffice/plans';
+export * from './backoffice/cabin-map';
 export * from './backoffice/channels';
 export * from './backoffice/settings';
 export * from './backoffice/assignment';
