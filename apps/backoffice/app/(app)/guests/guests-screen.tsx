@@ -12,7 +12,7 @@ import { useErrorText } from '../../../lib/errors';
 import { formatDate } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 import { CabinMap } from './cabin-map';
-import { countryName } from '../../../components/country-select';
+import { CountryName } from '../../../components/country-select';
 
 const WINDOW = 14;
 
@@ -222,7 +222,7 @@ export function GuestsScreen({
                                 </span>
                                 {g.nationality && (
                                   <span className="text-xs text-muted">
-                                    {countryName(g.nationality, locale)}
+                                    <CountryName code={g.nationality} locale={locale} />
                                   </span>
                                 )}
                                 {g.dateOfBirth && (

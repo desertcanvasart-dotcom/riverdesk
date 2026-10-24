@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Select } from './ui';
 
 /** Where Nile cruise guests most often come from: listed first. */
@@ -12,6 +12,11 @@ const ALL =
   'AD AE AF AG AI AL AM AO AR AT AU AW AZ BA BB BD BE BF BG BH BI BJ BM BN BO BR BS BT BW BY BZ CA CD CF CG CH CI CL CM CN CO CR CU CV CY CZ DE DJ DK DM DO DZ EC EE EG ER ES ET FI FJ FM FR GA GB GD GE GH GM GN GQ GR GT GW GY HK HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP KE KG KH KI KM KN KP KR KW KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MH MK ML MM MN MO MR MT MU MV MW MX MY MZ NA NE NG NI NL NO NP NR NZ OM PA PE PG PH PK PL PS PT PW PY QA RO RS RU RW SA SB SC SD SE SG SI SK SL SM SN SO SR SS ST SV SY SZ TD TG TH TJ TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VN VU WS XK YE ZA ZM ZW'.split(
     ' ',
   );
+
+interface Country {
+  code: string;
+  name: string;
+}
 
 /** A country's name in the screen's language (the code when the browser does not know it). */
 export function countryName(code: string, locale: string): string {
@@ -35,19 +40,26 @@ export function CountrySelect({
 }) {
   const t = useTranslations('choices');
   const locale = useLocale();
-  const { first, rest } = useMemo(() => {
-    const names = new Intl.DisplayNames([locale.startsWith('ar') ? 'ar' : 'en'], {
-      type: 'region',
-    });
-    const name = (code: string) => names.of(code) ?? code;
+  // Country names come from the browser's Intl data, which differs from the server's: build the
+  // list after the page has loaded, or the first render would not match (hydration).
+  const [lists, setLists] = useState<{ first: Country[]; rest: Country[] } | null>(null);
+  useEffect(() => {
     const collator = new Intl.Collator(locale);
-    return {
-      first: FIRST.map((code) => ({ code, name: name(code) })),
+    setLists({
+      first: FIRST.map((code) => ({ code, name: countryName(code, locale) })),
       rest: ALL.filter((c) => !FIRST.includes(c))
-        .map((code) => ({ code, name: name(code) }))
+        .map((code) => ({ code, name: countryName(code, locale) }))
         .sort((a, b) => collator.compare(a.name, b.name)),
-    };
+    });
   }, [locale]);
+  if (!lists)
+    return (
+      <Select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{t('none')}</option>
+        {value && <option value={value}>{value}</option>}
+      </Select>
+    );
+  const { first, rest } = lists;
   return (
     <Select value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">{t('none')}</option>
@@ -67,4 +79,11 @@ export function CountrySelect({
       </optgroup>
     </Select>
   );
+}
+
+/** A guest's nationality as a country name, once the page has loaded (the code before that). */
+export function CountryName({ code, locale }: { code: string; locale: string }) {
+  const [name, setName] = useState(code);
+  useEffect(() => setName(countryName(code, locale)), [code, locale]);
+  return <>{name}</>;
 }

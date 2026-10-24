@@ -9,7 +9,7 @@ import { Alert, Badge, Button, Field, Input, Select } from '../../../../componen
 import { useErrorText } from '../../../../lib/errors';
 import { formatDate } from '../../../../lib/format';
 import { newRequestKey, useTRPC } from '../../../../lib/trpc';
-import { CountrySelect, countryName } from '../../../../components/country-select';
+import { CountrySelect, CountryName } from '../../../../components/country-select';
 
 interface Guest {
   id: string;
@@ -101,7 +101,9 @@ export function GuestsEditor({
                 </span>
                 {g.lead && <Badge tone="info">{t('lead')}</Badge>}
                 {g.nationality && (
-                  <span className="text-muted">{countryName(g.nationality, locale)}</span>
+                  <span className="text-muted">
+                    <CountryName code={g.nationality} locale={locale} />
+                  </span>
                 )}
                 {g.dateOfBirth && (
                   <span className="text-muted">{formatDate(g.dateOfBirth, locale, 'long')}</span>

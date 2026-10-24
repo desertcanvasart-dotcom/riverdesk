@@ -3,7 +3,8 @@
     "name": "Reservations",
     "signOut": "Sign out",
     "language": "العربية",
-    "menu": "Menu"
+    "menu": "Menu",
+    "close": "Close"
   },
   "nav": {
     "home": "Today",
@@ -20,7 +21,13 @@
     "vacancy": "Vacancy sheet",
     "settings": "Settings",
     "pilot": "Pilot",
-    "platform": "Platform"
+    "platform": "Platform",
+    "sections": {
+      "reservations": "Reservations",
+      "operations": "Operations",
+      "setup": "Setup",
+      "company": "Company"
+    }
   },
   "common": {
     "save": "Save",

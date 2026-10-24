@@ -3,7 +3,8 @@
     "name": "الحجوزات",
     "signOut": "تسجيل الخروج",
     "language": "English",
-    "menu": "القائمة"
+    "menu": "القائمة",
+    "close": "إغلاق"
   },
   "nav": {
     "home": "اليوم",
@@ -20,7 +21,13 @@
     "vacancy": "كشف الأماكن المتاحة",
     "settings": "الإعدادات",
     "pilot": "التشغيل التجريبي",
-    "platform": "المنصة"
+    "platform": "المنصة",
+    "sections": {
+      "reservations": "الحجوزات",
+      "operations": "التشغيل",
+      "setup": "الإعداد",
+      "company": "الشركة"
+    }
   },
   "common": {
     "save": "حفظ",

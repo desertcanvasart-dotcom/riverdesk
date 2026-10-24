@@ -17,6 +17,20 @@ Riverdesk is the reservations system for a Nile cruise company. It keeps one exa
 
 You only ever see the back office. The other two parts work behind it.
 
+## The menu
+
+The menu on the left (on a phone: **☰** at the top) groups the screens by what you are doing:
+
+| Section          | Screens                                                               |
+| ---------------- | --------------------------------------------------------------------- |
+| _(top)_          | **Today**                                                             |
+| **Reservations** | New booking, Bookings, Requests (with how many are waiting), Payments |
+| **Operations**   | Inventory, Guests & manifests, Vacancy sheet                          |
+| **Setup**        | Ships & cabins, Schedule, Rates & policies, Channels                  |
+| **Company**      | Settings, Pilot                                                       |
+
+Click a section's name to fold it away, for example **Setup** once your company is running; Riverdesk remembers this on your computer. The section of the screen you are on always stays open. Your name, role and **Sign out** are at the bottom of the menu.
+
 ## What a normal day looks like
 
 1. Open **Today**. It lists what needs doing, most urgent first: requests waiting for an answer, holds about to expire, deposits due, guest names missing, cabins to assign. While a ship is still being set up, owners also see **Getting started** there: each setup step, in order.

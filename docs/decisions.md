@@ -670,3 +670,9 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - Nationality is a country list (names from the browser in Arabic or English, the usual guest countries first); the guest record keeps the 2-letter code, so nothing changed underneath.
 - **Start from** lists fill a new port (19 Nile ports, including Lake Nasser stops), market (8 common markets with their usual proof setting) or season (8 usual names) with code and both names, still editable.
 - The browser tab now says Riverdesk, and new authenticator entries are named Riverdesk.
+
+## Grouped menu (2026-10-24, user request)
+
+- The back-office menu is grouped: Today on its own, then **Reservations** (New booking, Bookings, Requests, Payments), **Operations** (Inventory, Guests & manifests, Vacancy sheet), **Setup** (Ships & cabins, Schedule, Rates & policies, Channels) and **Company** (Settings, Pilot); Platform at the end for platform admins. Icons from `lucide-react` (only the ones used are bundled).
+- Sections fold; the choice is kept per computer (`localStorage`), and the section holding the open page always stays open. Requests shows how many are waiting. The top bar shows where you are (section › screen); the company name with the Riverdesk mark heads the menu, and the user, role and Sign out sit at its foot.
+- Country names are now built in the browser only: the server's and the browser's Intl data spell some names differently, which made New booking re-render (hydration mismatch).
