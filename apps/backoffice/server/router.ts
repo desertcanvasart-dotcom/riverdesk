@@ -4,6 +4,7 @@ import { bookRouter } from './routers/book';
 import { bookingsRouter } from './routers/bookings';
 import { channelsRouter } from './routers/channels';
 import { documentsRouter } from './routers/documents';
+import { fleetRouter } from './routers/fleet';
 import { guestsRouter } from './routers/guests';
 import { homeRouter } from './routers/home';
 import { inventoryRouter } from './routers/inventory';
@@ -24,6 +25,7 @@ export const appRouter = router({
   bookings: bookingsRouter,
   requests: requestsRouter,
   inventory: inventoryRouter,
+  fleet: fleetRouter,
   schedule: scheduleRouter,
   rates: ratesRouter,
   channels: channelsRouter,

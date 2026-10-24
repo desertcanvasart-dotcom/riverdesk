@@ -1,22 +1,22 @@
 ---
 title: Setting up your company
-summary: What is prepared for you, and the settings to check before the first booking.
+summary: What you set up yourself, what is prepared with you, and the settings to check before the first booking.
 ---
 
 # Setting up your company
 
-## What we prepare with you
+## What you set up, and what we prepare with you
 
-A new cruise company is added to Riverdesk by the Riverdesk team. We create the company and invite its first owner. We then work with you to enter:
+A new cruise company is added to Riverdesk by the Riverdesk team. We create the company and invite its first owner. Then:
 
-- **The vessel**: its cabins, each with a number and deck, grouped into categories such as Standard, Superior and Suites, with the most adults and guests each category takes.
+- **Your ships and cabins: you set them up yourself** on [Ships & cabins](/docs/staff-guide/ships-and-cabins). Each ship gets its cabin categories (such as Standard, Superior and Suites, with the most adults and guests each takes) and its cabins, each with a number and deck.
 - **The weekly route**: the stops in order with their days (for example Luxor, Esna, Edfu, Kom Ombo, Aswan), and the **itineraries** sold on it, such as 4 nights from Luxor or 3 nights from Aswan.
 - **Seasons, rates and policies**: prices per season and category, child bands, cancellation penalties, and deposit and balance rules.
-- **Channels**: each agency or platform that sells for you, with its contract.
+- **Channels**: each agency or platform that sells for you, with its contract ([Channels](/docs/staff-guide/channels)).
 
 Riverdesk then builds 18 months of departures from the route. From that moment the office can sell.
 
-> Rates can be changed on screen at any time ([Rates](/docs/staff-guide/rates)). New routes, itineraries, seasons and policies are set up with the Riverdesk team for now.
+> Rates can be changed on screen at any time ([Rates](/docs/staff-guide/rates)). New routes, itineraries, seasons and policies are set up with the Riverdesk team for now; screens for them are on the way.
 
 ## Settings to check before the first booking
 

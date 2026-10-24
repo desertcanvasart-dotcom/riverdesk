@@ -17,6 +17,8 @@ export const PERMISSIONS = {
   'guests.privacy': ['owner'],
   /** The pilot dashboard: whether the system is safe to keep running. */
   'pilot.view': ['owner'],
+  /** Ships, cabin categories: the company's own setup. */
+  'fleet.write': ['owner'],
   'schedule.write': ['owner'],
   'rates.write': ['owner'],
   'channels.write': ['owner'],

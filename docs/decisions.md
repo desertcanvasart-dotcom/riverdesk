@@ -607,3 +607,12 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - The back office reaches platform data only through four allow-listed SECURITY DEFINER functions (`vs.platform_is_admin`, `vs.platform_companies`, `vs.platform_create_company`, `vs.platform_reinvite_owner`, back office only). Each checks the admin list first. The company list returns counts only. The admin's email comes from the verified session, the same trust as `vs.claim_staff_invitation`.
 - Company creation lives in one SQL function, `platform.create_company`, used by both the command and the platform area.
 - Invited people create their own password at `/signup`. Supabase's email confirmation proves they own the address before the invitation is claimed. Forgotten passwords use Supabase's reset email. Both use PKCE links through `/auth/callback`; no `service_role` key is involved.
+
+## Batch 8, step 1: Ships & cabins screen (2026-10-24)
+
+- Companies set up their own fleet on **Ships & cabins** (`/fleet`): ships, cabin categories and cabins. It reuses the engine's setup functions; no migration was needed.
+- Who may change what: ships and categories need the new `fleet.write` (owners). Adding cabins keeps `inventory.write` (owners and reservations), the same rule as the existing cabin card on Inventory.
+- Codes (ship, category) cannot change after creation: they appear in references, exports and the Channel API. Names, type, guest limits, deck, view and beds can.
+- A category's guest limit can only go down when no booking still to sail (requested, held, offered or confirmed) has more guests than the new limit. Short-lived holds are not checked: they expire within minutes.
+- Many cabins are added in one transaction (`addCabins`, up to 200, typed as ranges like `101-120`): all or none. A number already on the ship refuses the whole batch and lists the numbers. Each cabin goes through the same capacity change as one cabin, so a ship that already has departures gets its availability raised on every later leg.
+- In Arabic the app keeps «المركب» for a vessel, as on the other screens.

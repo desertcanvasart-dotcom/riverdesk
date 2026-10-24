@@ -11,6 +11,7 @@
     "bookings": "Bookings",
     "requests": "Requests",
     "inventory": "Inventory",
+    "fleet": "Ships & cabins",
     "schedule": "Schedule",
     "rates": "Rates & policies",
     "channels": "Channels",
@@ -304,7 +305,7 @@
     "capacity": "Cabins and capacity",
     "cabin": "Cabin",
     "deck": "Deck",
-    "accessible": "Accessible",
+    "accessible": "Wheelchair accessible",
     "addCabin": "Add cabin",
     "removeCabin": "Remove from service",
     "recategorise": "Change category",
@@ -312,7 +313,19 @@
     "number": "Number",
     "until": "until {date}",
     "legend": "free / pool",
-    "category": "Category"
+    "category": "Category",
+    "addCabins": "Add cabins",
+    "numbers": "Cabin numbers",
+    "numbersHint": "One or many, with ranges: 101-120, 201, A01-A08.",
+    "numbersCount": "{n, plural, one {# cabin} other {# cabins}} will be added.",
+    "numbersTaken": "Already on this ship: {numbers}. Nothing was added.",
+    "noCabins": "No cabins yet. Add them with “Add cabins”: you can type a whole range at once.",
+    "numbersError": {
+      "empty": "Type at least one number.",
+      "invalid": "“{part}” is not a cabin number or a range like 101-120.",
+      "tooMany": "At most 200 cabins at a time.",
+      "repeat": "{part} appears twice."
+    }
   },
   "schedule": {
     "title": "Schedule",
@@ -688,6 +701,63 @@
       "emailTaken": "That email already has an open invitation.",
       "hasOwner": "This company already has an owner.",
       "failed": "That did not work. Try again."
+    }
+  },
+  "fleet": {
+    "title": "Ships & cabins",
+    "subtitle": "Your ships, their cabin categories and every cabin. Set these up first: schedules, rates and bookings build on them.",
+    "addShip": "Add ship",
+    "editShip": "Edit ship",
+    "edit": "Edit",
+    "noShips": "No ships yet. Start with “Add ship”.",
+    "noShipsReadOnly": "No ships yet. An owner adds them here.",
+    "code": "Code",
+    "type": "Type",
+    "types": {
+      "cruise_ship": "Cruise ship",
+      "dahabiya": "Dahabiya",
+      "steam": "Steam ship"
+    },
+    "shipName": "Ship name",
+    "shipCodeHint": "Short, in capitals, e.g. NILEQ. Used in reports; cannot change later.",
+    "codeFixed": "The code cannot change.",
+    "maxGuests": "Guests on board (maximum)",
+    "maxGuestsHint": "The ship's licensed limit.",
+    "cabinsBeds": "Cabins · beds",
+    "cabinsBedsValue": "{cabins} · {beds}",
+    "categories": "Cabin categories",
+    "addCategory": "Add category",
+    "editCategory": "Edit category",
+    "noCategories": "No categories yet. A category is a kind of cabin sold at one price, e.g. Standard, Deluxe, Suite.",
+    "categoryName": "Name",
+    "details": "Deck · view · beds",
+    "guests": "Guests",
+    "guestsValue": "{adults} adults, {max} in total",
+    "extraBed": "Extra bed",
+    "cabins": "Cabins",
+    "nameEn": "Name in English",
+    "nameAr": "Name in Arabic",
+    "categoryCodeHint": "Short, in capitals, e.g. STD or SUITE.",
+    "sortOrder": "Order",
+    "sortOrderHint": "Lower numbers are listed first.",
+    "maxAdults": "Adults (maximum)",
+    "maxOccupancy": "Guests in total (maximum)",
+    "maxOccupancyHint": "Adults and children together.",
+    "deck": "Deck",
+    "view": "View",
+    "bedConfig": "Beds",
+    "bedConfigHint": "e.g. Twin or double",
+    "extraBedAllowed": "Extra bed possible",
+    "next": {
+      "categories": "Next: add the ship's cabin categories.",
+      "cabins": "Next: add the cabins, with their numbers.",
+      "schedule": "Ship and cabins are ready. Next: the route and sailing dates,",
+      "scheduleLink": "on the Schedule screen."
+    },
+    "errors": {
+      "codeTaken": "That code is already used. Choose another.",
+      "occupancyInUse": "{n, plural, one {A booking still to sail has} other {# bookings still to sail have}} more guests than the new limit. Amend {n, plural, one {it} other {them}} first.",
+      "limit": "Must be at least the number of adults."
     }
   }
 }

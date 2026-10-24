@@ -22,7 +22,7 @@ import { addDaysIso, cairoTodayIso } from '../../../lib/dates';
 import { useErrorText } from '../../../lib/errors';
 import { formatDate } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
-import { CapacityCard } from './capacity-card';
+import { CapacityCard } from '../../../components/capacity-card';
 
 interface Category {
   id: string;

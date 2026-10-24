@@ -42,5 +42,6 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - A quote can back several holds; make quotes single-use per hold if channels misuse them.
 - Charters (spec test 9) remain out of the MVP.
 
-- Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them.
+- Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them. Batch 8 builds them step by step (step 1, ships and cabins, done 2026-10-24).
+- Ships: take a ship out of service (deactivate) once it has no future departures; delete a category that was never used.
 - Website: a contact or demo-request form (today a mailto link), a custom domain and hosting, privacy-friendly analytics if wanted, and docs search.

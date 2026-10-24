@@ -14,6 +14,7 @@ const NAV = [
   ['bookings', '/bookings'],
   ['requests', '/requests'],
   ['inventory', '/inventory'],
+  ['fleet', '/fleet'],
   ['schedule', '/schedule'],
   ['rates', '/rates'],
   ['channels', '/channels'],
