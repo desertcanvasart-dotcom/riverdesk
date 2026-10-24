@@ -4,7 +4,7 @@ This page is written to be read by you, not by a machine. It says what exists, w
 
 ## In one paragraph
 
-The vessel-system MVP is built. All the planned batches (Part 0, then Batches 0 to 7) are finished, tested, and pushed to GitHub, and the automatic checks (CI) pass. The database on Supabase (the "hosted" one) has every change applied, up to migration 0009. What is left is not programming. It is setting up accounts and services that only you can create, then going through the go-live checklist. Point-in-time recovery is now enabled and verified (2026-10-24). The next step is choosing hosting.
+The vessel-system MVP is built. All the planned batches (Part 0, then Batches 0 to 7) are finished, tested, and pushed to GitHub, and the automatic checks (CI) pass. The database on Supabase (the "hosted" one) has every change applied, up to migration 0009. What is left is not programming. It is setting up accounts and services that only you can create, then going through the go-live checklist. Point-in-time recovery is now enabled and verified (2026-10-24). Hosting is chosen: **Railway**. The deployment recipes are ready, and your step-by-step guide is `docs/deploy-railway.md`. The domain is **riverdsk.com**: `riverdsk.com` for the website, `app.riverdsk.com` for the back office, `api.riverdsk.com` for the API.
 
 ## Exactly where we stopped
 

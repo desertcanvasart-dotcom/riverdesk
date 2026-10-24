@@ -106,6 +106,10 @@ pnpm db:reset    # drops everything owned by vs_owner, then migrates and seeds (
 
 `reset` and `seed` refuse to run against a non-local host.
 
+## Deploying (Railway)
+
+The four services run on Railway. Setup, variables per service, domains and checks are in [`docs/deploy-railway.md`](deploy-railway.md). Every push to `main` redeploys; **Deployments → Rollback** in Railway returns to a previous version.
+
 ## Hosted Supabase
 
 - Real values live in `.env.hosted` (git-ignored, mode 600). Use it with `VS_ENV_FILE=.env.hosted`. The file holds no `service_role` key, and none is needed.

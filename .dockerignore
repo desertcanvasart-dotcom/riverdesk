@@ -1,0 +1,12 @@
+# Secrets never enter an image: Railway passes settings as environment variables.
+.env
+.env.*
+!.env.example
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+.git
+docs/screenshots
+supabase/.temp
+*.log

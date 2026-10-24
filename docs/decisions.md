@@ -591,3 +591,12 @@ You chose the public name **Riverdesk** ("vessel-system" stays the code name), c
 - **First sign-in:** the two-step screen now prints the setup key under the QR code, for people who type it instead of scanning.
 - **Not built yet:** a contact form and analytics. "Request a demo" is a mailto link, shown only when a contact email is configured.
   Reason: the user asked for a homepage, a presentation of the application and detailed docs (2026-10-24). It is outside the MVP spec but explicitly requested.
+
+**2026-10-24 · Hosting on Railway: four services from one repository.**
+You chose Railway. The website, back office, API and worker each run as a Railway service, built from their own recipe in `deploy/<service>.Dockerfile` and configured by `deploy/railway.<service>.json` (build, health check, restart on failure). The database stays on Supabase (EU). Each image installs only its app and the workspace packages it uses. `.dockerignore` keeps every `.env` file out of images, and secrets reach the services only as Railway variables.
+
+- **API and worker** run their TypeScript with `tsx`, which is now a dependency of both. Bundling them is still in the backlog: it is not needed for correctness.
+- **The worker image** installs Chromium for the PDFs.
+- **The back office** has `/api/health` for Railway's health check.
+  Step-by-step instructions are in `docs/deploy-railway.md`.
+  Reason: your choice of provider (2026-10-24). One provider for every program keeps deploys, logs and rollbacks in one place.
