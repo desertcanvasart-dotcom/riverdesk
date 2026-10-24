@@ -140,3 +140,49 @@ Rotate a runtime password: change it in the env file, then run `pnpm db:migrate`
 ## Break-glass
 
 To inspect every tenant, connect as `postgres` and run `set role vs_owner`. The owner bypasses RLS. Record what you did and why in the incident notes.
+
+## Backups and restore
+
+**What Supabase keeps (checked 2026-10-24 with `supabase backups list --project-ref nwbjuamzkguqmcxsxkkl`):** daily physical backups (WAL-G), the latest from 06:09 UTC that day. **Point-in-time recovery is not enabled.** It is a paid add-on: enable it (7 days) in the Supabase dashboard → Database → Backups before go-live, then re-run the command and check `"pitr_enabled": true`.
+
+**Restore from a Supabase backup (the real path):** Dashboard → Database → Backups → pick a backup (or a point in time once PITR is on) → Restore. The restore replaces the project's database, including `auth` (staff logins), `vs` and `graphile_worker`. Afterwards:
+
+1. `VS_ENV_FILE=.env.hosted pnpm db:check-roles`: all four logins must say `ok`.
+2. `VS_ENV_FILE=.env.hosted pnpm db:migrate`: it applies nothing, or the migrations newer than the backup.
+3. Pilot dashboard: invariants hold, no oversells.
+4. Restart the worker. Holds that expired during the outage are expired on its first run.
+
+**Logical restore drill (done 2026-10-24).** It proves the dump of the application schemas restores cleanly with ownership, grants, RLS and data intact, and it times it:
+
+```bash
+# dump (admin connection; never print it)
+pg_dump -Fc -n vs -n vs_migrations -f vs.dump "$DATABASE_URL_ADMIN"
+# restore into an empty database that has btree_gist in schema extensions
+createdb restore_drill
+psql -d restore_drill -c "create schema extensions; create extension btree_gist with schema extensions; grant create on database restore_drill to vs_owner;"
+pg_restore -d restore_drill --role=vs_owner --no-owner -j 4 --exit-on-error vs.dump
+```
+
+| Source                                                     | Dump | Size   | Restore | Check                                                                                            |
+| ---------------------------------------------------------- | ---- | ------ | ------- | ------------------------------------------------------------------------------------------------ |
+| Hosted (eu-west-1, schema only: no companies yet)          | 13 s | 0.3 MB | 1 s     | 8 migrations present                                                                             |
+| Local, 1,034 companies, 6,551 bookings, 116,768 audit rows | 9 s  | 41 MB  | 11 s    | Row counts, 56 RLS policies, grants and the invariant check identical between source and restore |
+
+A restore into a separate scratch Supabase project (spec wording) needs a second project on the account. Repeat this drill against it once one exists, and record the timings here.
+
+## Go-live checklist
+
+Tick each line, with a date and initials, before the pilot vessel takes its first real booking.
+
+- [ ] **Secrets rotated** since development: database passwords (`vs_backoffice`, `vs_api`, `vs_worker`, admin), `API_TOKEN_SECRET`, `FIELD_KEYS` (new key current, old key kept for decryption), the nilecrz client secret (rotate: add the second secret, switch, revoke the old one), webhook signing secrets.
+- [ ] **No development values on production:** `SEED_TOTP_SECRET` unset, demo users absent, `VS_ENV=hosted`.
+- [ ] **MFA on:** every owner and finance user has enrolled TOTP (they cannot work without it), and reservations users are encouraged to.
+- [ ] **Roles reviewed** on Settings: one or two owners, no shared logins, read-only for anyone who only looks. Remove leavers.
+- [ ] **Backups verified:** PITR enabled and shown by `supabase backups list`. The restore drill above was repeated within the last 30 days.
+- [ ] **Monitoring live:** `SENTRY_DSN` set on the API, worker and back office. The `alert:` rule notifies the operations inbox. A test alert was received.
+- [ ] **Outage pack arriving:** `SMTP_URL` and `MAIL_FROM` set, Settings → operations email filled in, and the first 02:00 UTC pack received and opened.
+- [ ] **Worker running** with Chromium installed (`playwright install chromium`). A voucher downloads in Arabic and English.
+- [ ] **nilecrz sandbox flow passed against production configuration:** token, availability, quote, hold, confirm, guests, amend, cancel, events and a signed webhook, all on the sandbox company with production settings (API URL, rate limits, TLS).
+- [ ] **Pilot import done:** `--dry-run` reviewed with the reservations manager, the real run's report kept, and conflicts resolved by hand.
+- [ ] **Staff trained on the action list:** each reservations user has taken a phone booking, answered a request, recorded a payment and printed a voucher. They know Today is the first screen each morning.
+- [ ] **Pilot dashboard green:** invariants hold, 0 oversells.

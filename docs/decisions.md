@@ -577,3 +577,7 @@ Reason: spec Batch 7 § Pilot import. Rule 1: no second write path, even for a o
 
 **2026-10-24 · The pilot dashboard is owner only and reads live data.**
 `/pilot` shows the invariant check for the company, oversold buckets (must be 0; emergency-block overcommit is shown apart, since it is covered and sales are stopped), request response times (median and 90th percentile, from the audit log), open exceptions and 30-day bookings by channel.
+
+**2026-10-24 · The restore drill is a logical dump and restore; PITR is still to be enabled.**
+The hosted project has daily physical backups, and point-in-time recovery is off (a paid add-on). The drill dumped the application schemas and restored them as `vs_owner` into a scratch database. It was run against hosted (schema only, since there are no companies yet) and against the local database (1,034 companies). Counts, policies, grants and the invariant check matched. The steps and timings are in the runbook. A restore into a second Supabase project, and enabling PITR, need account changes: they are on the go-live checklist.
+Reason: spec Batch 7 § Backups.
