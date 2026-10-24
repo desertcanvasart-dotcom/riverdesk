@@ -11,12 +11,12 @@ A new cruise company is added to Riverdesk by the Riverdesk team. We create the 
 
 - **Your ships and cabins: you set them up yourself** on [Ships & cabins](/docs/staff-guide/ships-and-cabins). Each ship gets its cabin categories (such as Standard, Superior and Suites, with the most adults and guests each takes) and its cabins, each with a number and deck.
 - **The weekly route: you set it up yourself** on [Schedule](/docs/staff-guide/schedule): the stops in order with their days (for example Luxor, Esna, Edfu, Kom Ombo, Aswan), and the **itineraries** sold on it, such as 4 nights from Luxor or 3 nights from Aswan.
-- **Seasons, rates and policies**: prices per season and category, child bands, cancellation penalties, and deposit and balance rules.
+- **Seasons and policies: you set them up yourself** on [Rates & policies](/docs/staff-guide/rates): seasons, child bands, cancellation penalties, and deposit and balance rules. **Rate plans and prices** per season and category are set up with you.
 - **Channels**: each agency or platform that sells for you, with its contract ([Channels](/docs/staff-guide/channels)).
 
 Riverdesk then builds 18 months of departures from the route. From that moment the office can sell.
 
-> Rates can be changed on screen at any time ([Rates](/docs/staff-guide/rates)). Seasons and policies are set up with the Riverdesk team for now; screens for them are on the way.
+> Rates can be changed on screen at any time ([Rates](/docs/staff-guide/rates)). New rate plans are set up with the Riverdesk team for now; a screen for them is on the way.
 
 ## Settings to check before the first booking
 

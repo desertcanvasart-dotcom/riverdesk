@@ -20,6 +20,8 @@ import {
 import { useErrorText } from '../../../lib/errors';
 import { formatDate, formatMoney, minorToInput, parseMoney } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
+import { PoliciesSection } from './policies-section';
+import { SeasonsCard } from './seasons-card';
 
 interface Category {
   id: string;
@@ -267,54 +269,8 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
         )}
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card title={t('cancellation')}>
-          {data?.policies.cancellation.map((p) => (
-            <div key={p.id} className="mb-2 text-sm">
-              <p className="font-medium">{p.name}</p>
-              <ul className="text-muted">
-                {p.rules.map((r) => (
-                  <li key={r.fromDays}>
-                    {t('daysBefore', { n: r.fromDays })}: {t('penalty', { p: r.penaltyBps / 100 })}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </Card>
-        <Card title={t('children')}>
-          {data?.policies.children.map((p) => (
-            <div key={p.id} className="mb-2 text-sm">
-              <p className="font-medium">{p.name}</p>
-              <ul className="text-muted">
-                {p.bands.map((b) => (
-                  <li key={b.ageFrom}>
-                    {t('band', { from: b.ageFrom, to: b.ageTo })}:{' '}
-                    {b.basis === 'free'
-                      ? t('free')
-                      : b.basis === 'percent_of_adult'
-                        ? t('percent', { p: (b.percentBps ?? 0) / 100 })
-                        : t('fixed')}
-                    {b.requiresTwoAdults && ` (${t('twoAdults')})`}
-                  </li>
-                ))}
-                <li>{t('adultFrom', { n: p.adultFromAge })}</li>
-              </ul>
-            </div>
-          ))}
-        </Card>
-        <Card title={t('payment')}>
-          {data?.policies.payment.map((p) => (
-            <p key={p.id} className="mb-2 text-sm">
-              <span className="font-medium">{p.name}</span>
-              <span className="block text-muted">
-                {t('deposit', { p: p.depositBps / 100 })} ·{' '}
-                {t('balanceDue', { n: p.balanceDueDays })}
-              </span>
-            </p>
-          ))}
-        </Card>
-      </div>
+      {vesselId && <SeasonsCard vesselId={vesselId} canWrite={canWrite} />}
+      <PoliciesSection canWrite={canWrite} />
 
       {adding && plan && <SupplementDialog ratePlanId={plan.id} onClose={() => setAdding(false)} />}
     </div>

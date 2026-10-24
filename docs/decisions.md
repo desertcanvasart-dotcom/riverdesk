@@ -626,3 +626,13 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - The stop rules return codes (`first_stop_day0`, `cycle_returns`, …) instead of English sentences; the back office translates them. The route editor fixes day 0 and the closing stop (same port, last day, boarding) so most mistakes cannot be typed.
 - The editor's single **Board / leave** tick sets both flags (`embark_allowed`, `disembark_allowed`); routes with only one of them can still exist and are shown as boarding stops.
 - Arabic terms follow the docs: route = «المسار», itinerary = «خط السير».
+
+## Batch 8, step 3: seasons and policies (2026-10-24)
+
+- On **Rates & policies**: **Seasons** for the selected ship, and the company's **Cancellation**, **Children** and **Payment** policies, replacing the read-only cards. Owners only (`rates.write`). No migration was needed.
+- Policies are edited in place: quotes and bookings already keep a copy of their policies (`quote.policies`, revision snapshot), so an edit changes new quotes only. A test proves an existing quote keeps its terms.
+- Every season or policy change bumps the affected rate plans' `version` and emits `rate.changed` (with a `cause` in the data), like a price change, so channels refresh. Season changes touch every plan of the ship; a policy change touches the plans using it.
+- Seasons: code fixed after creation; dates replaceable; overlapping dates refused (also within one season); delete only without rates or quotes. The card lists **sailing nights no season covers** (from today, live legs), since those cannot be priced.
+- Child bands: the editor types only each band's last age, so bands cannot leave gaps; the engine still checks coverage (`bands_gap`, `bands_end`).
+- Cancellation: a 0-day step is required; days must differ. Amendment fees are edited with the policy.
+- A policy used by a rate plan cannot be deleted. Errors return stable reasons the screen translates.

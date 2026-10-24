@@ -24,11 +24,11 @@ export function formatNumber(value: number, locale: string): string {
   return new Intl.NumberFormat(tag(locale)).format(value);
 }
 
-/** A Cairo calendar date 'YYYY-MM-DD'. */
+/** A Cairo calendar date 'YYYY-MM-DD'. 'year' adds the year without the weekday (date ranges). */
 export function formatDate(
   date: string,
   locale: string,
-  style: 'short' | 'long' = 'short',
+  style: 'short' | 'long' | 'year' = 'short',
 ): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
   return new Intl.DateTimeFormat(tag(locale), {
@@ -36,7 +36,7 @@ export function formatDate(
     weekday: style === 'long' ? 'short' : undefined,
     day: 'numeric',
     month: 'short',
-    year: style === 'long' ? 'numeric' : undefined,
+    year: style === 'short' ? undefined : 'numeric',
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 

@@ -1,10 +1,31 @@
 import { z } from 'zod';
 import {
+  addCancellationPolicy,
+  addChildPolicy,
+  addPaymentPolicy,
+  addSeason,
+  createCancellationPolicyInput,
+  createChildPolicyInput,
+  createPaymentPolicyInput,
+  createSeasonInput,
   createSupplement,
   createSupplementInput,
+  deletePolicy,
+  deletePolicyInput,
+  deleteSeason,
+  getPolicies,
   getRatesSetup,
+  getSeasons,
   setRates,
   setRatesInput,
+  updateCancellationPolicy,
+  updateCancellationPolicyInput,
+  updateChildPolicy,
+  updateChildPolicyInput,
+  updatePaymentPolicy,
+  updatePaymentPolicyInput,
+  updateSeason,
+  updateSeasonInput,
 } from '@vs/engine';
 import { backofficeDb } from '../db';
 import { procedure, router } from '../trpc';
@@ -19,4 +40,40 @@ export const ratesRouter = router({
   addSupplement: procedure('rates.write')
     .input(createSupplementInput)
     .mutation(({ ctx, input }) => createSupplement(backofficeDb(), ctx.engine, input)),
+
+  // Seasons and policies (Batch 8, step 3)
+  seasons: procedure('read')
+    .input(z.object({ vesselId: z.uuid() }))
+    .query(({ ctx, input }) => getSeasons(backofficeDb(), ctx.engine, input.vesselId)),
+  addSeason: procedure('rates.write')
+    .input(createSeasonInput)
+    .mutation(({ ctx, input }) => addSeason(backofficeDb(), ctx.engine, input)),
+  updateSeason: procedure('rates.write')
+    .input(updateSeasonInput)
+    .mutation(({ ctx, input }) => updateSeason(backofficeDb(), ctx.engine, input)),
+  deleteSeason: procedure('rates.write')
+    .input(z.object({ seasonId: z.uuid() }))
+    .mutation(({ ctx, input }) => deleteSeason(backofficeDb(), ctx.engine, input.seasonId)),
+  policies: procedure('read').query(({ ctx }) => getPolicies(backofficeDb(), ctx.engine)),
+  addChildPolicy: procedure('rates.write')
+    .input(createChildPolicyInput)
+    .mutation(({ ctx, input }) => addChildPolicy(backofficeDb(), ctx.engine, input)),
+  updateChildPolicy: procedure('rates.write')
+    .input(updateChildPolicyInput)
+    .mutation(({ ctx, input }) => updateChildPolicy(backofficeDb(), ctx.engine, input)),
+  addCancellationPolicy: procedure('rates.write')
+    .input(createCancellationPolicyInput)
+    .mutation(({ ctx, input }) => addCancellationPolicy(backofficeDb(), ctx.engine, input)),
+  updateCancellationPolicy: procedure('rates.write')
+    .input(updateCancellationPolicyInput)
+    .mutation(({ ctx, input }) => updateCancellationPolicy(backofficeDb(), ctx.engine, input)),
+  addPaymentPolicy: procedure('rates.write')
+    .input(createPaymentPolicyInput)
+    .mutation(({ ctx, input }) => addPaymentPolicy(backofficeDb(), ctx.engine, input)),
+  updatePaymentPolicy: procedure('rates.write')
+    .input(updatePaymentPolicyInput)
+    .mutation(({ ctx, input }) => updatePaymentPolicy(backofficeDb(), ctx.engine, input)),
+  deletePolicy: procedure('rates.write')
+    .input(deletePolicyInput)
+    .mutation(({ ctx, input }) => deletePolicy(backofficeDb(), ctx.engine, input)),
 });
