@@ -226,8 +226,6 @@ export const createPaymentPolicyInput = z.object({
   name: z.string().min(1).max(100),
   depositBps: bps.default(2500),
   balanceDueDays: z.number().int().min(0).default(30),
-  bankTransferHoldHours: z.number().int().positive().default(24),
-  cardHoldMinutes: z.number().int().positive().default(30),
   autoCancelOverdue: z.boolean().default(false),
   autoCancelAfterDays: z.number().int().min(0).optional(),
 });
@@ -246,8 +244,6 @@ export async function createPaymentPolicy(
         name: data.name,
         deposit_bps: data.depositBps,
         balance_due_days: data.balanceDueDays,
-        bank_transfer_hold_hours: data.bankTransferHoldHours,
-        card_hold_minutes: data.cardHoldMinutes,
         auto_cancel_overdue: data.autoCancelOverdue,
         auto_cancel_after_days: data.autoCancelAfterDays ?? null,
       })

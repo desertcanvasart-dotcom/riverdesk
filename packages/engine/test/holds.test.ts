@@ -282,6 +282,32 @@ describe('holds and confirmation', () => {
     await releaseHold(w.db, w.ctx, { holdId: second.holdId });
   });
 
+  it("prepaid: the payment hold follows the company's Unpaid booking held setting", async () => {
+    const sailing = await w.sailing('LXR-4', 42);
+    await owner().query(
+      `update vs.operator_setting set payment_hold_hours = 36 where operator_id = $1`,
+      [w.ctx.operatorId],
+    );
+    try {
+      const hold = await createHold(w.db, w.ctx, {
+        channelId: w.channels.backOffice,
+        quoteId: await w.quote(w.channels.backOffice, sailing, [{ cat: 'SUP' }]),
+        kind: 'option',
+      });
+      await confirmHold(w.db, w.ctx, { holdId: hold.holdId, guests: lead });
+      const { rows } = await owner().query<{ hours: number }>(
+        `select round(extract(epoch from expires_at - now()) / 3600)::int as hours from vs.hold where id = $1`,
+        [hold.holdId],
+      );
+      expect(rows[0]!.hours).toBe(36);
+    } finally {
+      await owner().query(
+        `update vs.operator_setting set payment_hold_hours = 24 where operator_id = $1`,
+        [w.ctx.operatorId],
+      );
+    }
+  });
+
   it('prepaid: confirm keeps the cabins on a 24 h payment hold; payment confirms; expiry releases', async () => {
     const sailing = await w.sailing('LXR-4', 35);
     const [leg] = await legsOf(sailing);

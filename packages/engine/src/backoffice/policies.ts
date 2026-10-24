@@ -134,14 +134,11 @@ export async function getPolicies(db: VsDatabase, ctx: EngineContext) {
       plans: number;
       depositBps: number;
       balanceDueDays: number;
-      bankTransferHoldHours: number;
-      cardHoldMinutes: number;
       autoCancelOverdue: boolean;
       autoCancelAfterDays: number | null;
     }>`
       select p.id, p.name, p.deposit_bps as "depositBps", p.balance_due_days as "balanceDueDays",
-             p.bank_transfer_hold_hours as "bankTransferHoldHours",
-             p.card_hold_minutes as "cardHoldMinutes", p.auto_cancel_overdue as "autoCancelOverdue",
+             p.auto_cancel_overdue as "autoCancelOverdue",
              p.auto_cancel_after_days as "autoCancelAfterDays",
              (select count(*)::int from vs.rate_plan r where r.payment_policy_id = p.id) as plans
       from vs.payment_policy p order by p.name`.execute(tx);
@@ -601,8 +598,6 @@ function paymentRow(data: PaymentInput) {
     name: data.name,
     deposit_bps: data.depositBps,
     balance_due_days: data.balanceDueDays,
-    bank_transfer_hold_hours: data.bankTransferHoldHours,
-    card_hold_minutes: data.cardHoldMinutes,
     auto_cancel_overdue: data.autoCancelOverdue,
     auto_cancel_after_days: data.autoCancelOverdue ? (data.autoCancelAfterDays ?? null) : null,
   };

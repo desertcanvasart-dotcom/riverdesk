@@ -70,5 +70,5 @@ The step for **0 days** is required: it covers the last days and a no-show. **Am
 ### Payment
 
 - **Deposit %** taken at confirmation, and the **balance due** a number of days before embarkation. Bookings made later pay in full.
-- **Bank transfer hold** (hours) and **card payment hold** (minutes): how long cabins wait for a payment.
+- How long an unpaid booking keeps its cabins is not part of the policy: it is the company's **Unpaid booking held** setting in **Settings**.
 - **Cancel unpaid bookings automatically** after a number of days past the balance date. When it is off, overdue bookings only appear on **Today**.

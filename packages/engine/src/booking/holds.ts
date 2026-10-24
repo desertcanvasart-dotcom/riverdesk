@@ -50,9 +50,9 @@ export async function assertSailingOpen(tx: Tx, sailingId: string) {
   return legs;
 }
 
-/** Bank-transfer payment hold length from the quote's payment policy snapshot. */
-export function paymentHoldHours(quote: Quote): number {
-  return (quote.policies.payment as { bank_transfer_hold_hours: number }).bank_transfer_hold_hours;
+/** When an unpaid prepaid booking lets its cabins go: the company's "Unpaid booking held" setting. */
+export function paymentHoldExpiry() {
+  return sql<Date>`now() + make_interval(hours => (select payment_hold_hours from vs.operator_setting))`;
 }
 
 /** Inserts the hold row and takes its cabins on every leg (held += n). */
@@ -392,7 +392,7 @@ export async function confirmHold(
           .set({
             kind: 'payment',
             booking_id: booking.id,
-            expires_at: sql<Date>`now() + make_interval(hours => ${paymentHoldHours(quote)})`,
+            expires_at: paymentHoldExpiry(),
           })
           .where('id', '=', data.holdId)
           .where('status', '=', 'active')

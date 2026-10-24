@@ -674,5 +674,10 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 ## Grouped menu (2026-10-24, user request)
 
 - The back-office menu is grouped: Today on its own, then **Reservations** (New booking, Bookings, Requests, Payments), **Operations** (Inventory, Guests & manifests, Vacancy sheet), **Setup** (Ships & cabins, Schedule, Rates & policies, Channels) and **Company** (Settings, Pilot); Platform at the end for platform admins. Icons from `lucide-react` (only the ones used are bundled).
-- Sections fold; the choice is kept per computer (`localStorage`), and the section holding the open page always stays open. Requests shows how many are waiting. The top bar shows where you are (section › screen); the company name with the Riverdesk mark heads the menu, and the user, role and Sign out sit at its foot.
+- Sections fold; the choice is kept per computer (`localStorage`), and opening a page unfolds its section (since 2026-10-25 a section can be folded while you are on one of its pages). Requests shows how many are waiting. The top bar shows where you are (section › screen); the company name with the Riverdesk mark heads the menu, and the user, role and Sign out sit at its foot.
 - Country names are now built in the browser only: the server's and the browser's Intl data spell some names differently, which made New booking re-render (hydration mismatch).
+
+## Website redesign, guides and the unpaid-booking hold (2026-10-25, user request)
+
+- The public website and docs were redesigned (Inter + Tajawal for Arabic, a Nile palette, icons, framed screenshots), with docs search, an outline, callouts and eight bilingual step-by-step guides. The owner supplied the Arabic wording of the marketing pages, Getting started and the guides; "شركات المراكب النيلية" and "الشركات" are the agreed terms.
+- One unpaid-booking hold: a prepaid (direct) booking keeps its cabins for the company's **Unpaid booking held** setting (`operator_setting.payment_hold_hours`). The payment policy's bank-transfer and card holds were stored but never what staff set in Settings; migration 0012 drops them. Holds already running keep their expiry.

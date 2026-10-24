@@ -66,7 +66,7 @@ Open **Rates & policies** and choose the same ship. Add seasons, then policies, 
 
 2. **Add a cancellation policy.** In the **Cancellation** card, press **+ Add**. Each step keeps a share of the booking from a number of days before embarkation: 0% from 60 days, 25% from 30, 100% from 0. The 0-day step is required.
 3. **Add a child policy.** In the **Children** card, press **+ Add**. Set **Adult from age** (usually 12), the **Children per cabin (maximum)**, and the **Age bands**: for example under 2 free, 2 to 5 at 25% and 6 to 11 at 50% of the adult price.
-4. **Add a payment policy.** In the **Payment** card, press **+ Add**. Set the **Deposit %** taken at confirmation (25%, say), the **Balance due (days before embarkation)** (30), and how long cabins wait for a transfer or card payment.
+4. **Add a payment policy.** In the **Payment** card, press **+ Add**. Set the **Deposit %** taken at confirmation (25%, say), the **Balance due (days before embarkation)** (30). How long an unpaid booking keeps its cabins is a company setting, **Unpaid booking held** in **Settings**.
 
 Policies are shared by all your ships. Bookings keep the policy they were sold with; a change applies to new quotes only.
 

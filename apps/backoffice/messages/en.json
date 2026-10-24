@@ -906,7 +906,6 @@
     "twoAdults": "with two adults",
     "adultsFrom": "Adult from age {n} · at most {max} children per cabin",
     "depositLine": "{p}% deposit · balance {n} days before embarkation",
-    "holdLine": "Bank transfer held {h} h · card payment held {m} min",
     "autoCancelLine": "Unpaid bookings cancelled {n} days after the balance is due",
     "basis": {
       "free": "Free",
@@ -955,10 +954,6 @@
     "depositPercent": "Deposit %",
     "balanceDueDays": "Balance due (days before embarkation)",
     "balanceDueDaysHint": "Bookings made later pay in full.",
-    "bankHours": "Bank transfer hold (hours)",
-    "bankHoursHint": "How long cabins wait for a transfer.",
-    "cardMinutes": "Card payment hold (minutes)",
-    "cardMinutesHint": "How long cabins wait for an online payment.",
     "autoCancel": "Cancel unpaid bookings automatically",
     "autoCancelDays": "Cancel after (days past the balance due date)",
     "autoCancelDaysHint": "Off: overdue bookings only appear on Today.",
@@ -990,7 +985,8 @@
     "ruleAlways": "At any time: {p}% penalty",
     "bandOne": "Age {n}",
     "startFrom": "Start from a usual season",
-    "ownSeason": "Another season (type it below)"
+    "ownSeason": "Another season (type it below)",
+    "holdInSettings": "How long an unpaid booking keeps its cabins is set for the whole company, in Settings → “Unpaid booking held”."
   },
   "setup": {
     "title": "Getting started",

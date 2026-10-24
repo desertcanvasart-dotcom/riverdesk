@@ -26,7 +26,7 @@ import {
   bookHoldLines,
   loadContract,
   openHold,
-  paymentHoldHours,
+  paymentHoldExpiry,
 } from './holds';
 import { takeUnits } from './units';
 
@@ -158,7 +158,7 @@ export async function acceptRequest(
             contract,
             kind: 'payment',
             bookingId: booking.id,
-            expiresAt: sql<Date>`now() + make_interval(hours => ${paymentHoldHours(quote)})`,
+            expiresAt: paymentHoldExpiry(),
           });
           await bookingEvent(tx, ctx, booking.id, 'request.decided', {
             decision: 'accepted',
@@ -367,7 +367,7 @@ export async function acceptOffer(
             prepaid
               ? {
                   kind: 'payment',
-                  expires_at: sql<Date>`now() + make_interval(hours => ${paymentHoldHours(quote)})`,
+                  expires_at: paymentHoldExpiry(),
                 }
               : { status: 'confirmed', ended_at: sql<Date>`now()` },
           )

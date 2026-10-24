@@ -51,8 +51,6 @@ interface PaymentPolicy {
   plans: number;
   depositBps: number;
   balanceDueDays: number;
-  bankTransferHoldHours: number;
-  cardHoldMinutes: number;
   autoCancelOverdue: boolean;
   autoCancelAfterDays: number | null;
 }
@@ -197,7 +195,6 @@ export function PoliciesSection({ canWrite }: { canWrite: boolean }) {
               {header(p)}
               <ul className="text-muted">
                 <li>{t('depositLine', { p: bpsToPercent(p.depositBps), n: p.balanceDueDays })}</li>
-                <li>{t('holdLine', { h: p.bankTransferHoldHours, m: p.cardHoldMinutes })}</li>
                 {p.autoCancelOverdue && (
                   <li>{t('autoCancelLine', { n: p.autoCancelAfterDays ?? 0 })}</li>
                 )}
@@ -799,8 +796,6 @@ function PaymentDialog({
             name: String(form.get('name')).trim(),
             depositBps,
             balanceDueDays: Number(form.get('balanceDueDays')),
-            bankTransferHoldHours: Number(form.get('bankHours')),
-            cardHoldMinutes: Number(form.get('cardMinutes')),
             autoCancelOverdue: autoCancel,
             autoCancelAfterDays: autoCancel ? Number(form.get('autoCancelDays')) : undefined,
           };
@@ -836,25 +831,8 @@ function PaymentDialog({
               defaultValue={policy?.balanceDueDays ?? 30}
             />
           </Field>
-          <Field label={t('bankHours')} hint={t('bankHoursHint')}>
-            <Input
-              name="bankHours"
-              type="number"
-              min={1}
-              required
-              defaultValue={policy?.bankTransferHoldHours ?? 24}
-            />
-          </Field>
-          <Field label={t('cardMinutes')} hint={t('cardMinutesHint')}>
-            <Input
-              name="cardMinutes"
-              type="number"
-              min={1}
-              required
-              defaultValue={policy?.cardHoldMinutes ?? 30}
-            />
-          </Field>
         </div>
+        <p className="text-sm text-muted">{t('holdInSettings')}</p>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

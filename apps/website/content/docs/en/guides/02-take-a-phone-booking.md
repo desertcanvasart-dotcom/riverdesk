@@ -50,7 +50,7 @@ If someone else takes the last cabin at the same moment, you see _Not enough cab
 | An agency that collects payment or has credit | **Confirmed**           | Nothing more; send the agency copy of the voucher             |
 | An agency on request                          | **Requested**           | Answer it on Requests before the deadline                     |
 
-A direct booking keeps its cabins for the bank transfer hold in its payment policy, 24 hours unless an owner changed it. The booking page shows when the hold expires. As soon as the deposit is recorded, the booking becomes **Confirmed**. If nothing is paid in time, the cabins go back on sale.
+A direct booking keeps its cabins for the company's **Unpaid booking held** setting, 24 hours unless an owner changed it in **Settings**. The booking page shows when the hold expires. As soon as the deposit is recorded, the booking becomes **Confirmed**. If nothing is paid in time, the cabins go back on sale.
 
 ![The booking page](/screens/{locale}/guide-booking.jpg 'A new booking with its sailing, total, payments due and guests')
 

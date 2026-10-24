@@ -333,8 +333,6 @@ async function policySnapshot(
       name: payment.name,
       deposit_bps: payment.deposit_bps,
       balance_due_days: payment.balance_due_days,
-      bank_transfer_hold_hours: payment.bank_transfer_hold_hours,
-      card_hold_minutes: payment.card_hold_minutes,
       auto_cancel_overdue: payment.auto_cancel_overdue,
       auto_cancel_after_days: payment.auto_cancel_after_days,
     },

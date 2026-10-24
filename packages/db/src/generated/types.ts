@@ -562,8 +562,6 @@ export interface PaymentPolicy {
   auto_cancel_after_days: number | null;
   auto_cancel_overdue: Generated<boolean>;
   balance_due_days: Generated<number>;
-  bank_transfer_hold_hours: Generated<number>;
-  card_hold_minutes: Generated<number>;
   created_at: Generated<Timestamp>;
   deposit_bps: Generated<number>;
   id: Generated<string>;
