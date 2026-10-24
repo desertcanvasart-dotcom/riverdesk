@@ -43,6 +43,7 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - Charters (spec test 9) remain out of the MVP.
 
 - Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them. Batch 8 builds them step by step (step 1 ships and cabins, step 2 ports, routes and itineraries: done 2026-10-24).
+- **Batch 8 step 5 (agreed 2026-10-24, after step 4): staff cabin map.** Per departure, cabins drawn deck by deck, coloured free / held / booked / blocked, with the guest name; click a cabin to assign or move a booking. Sales stay by category. Later options, not agreed: deck-plan drawings with cabins placed on them; guests or agents choosing exact cabins (guaranteed cabins, see Out of MVP scope).
 - Routes: board-only or leave-only stops in the editor (today one tick sets both); itineraries spanning more than one extra cycle (the engine allows up to 8).
 - Ships: take a ship out of service (deactivate) once it has no future departures; delete a category that was never used.
 - Website: a contact or demo-request form (today a mailto link), a custom domain and hosting, privacy-friendly analytics if wanted, and docs search.
