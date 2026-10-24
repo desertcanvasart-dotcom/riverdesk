@@ -20,7 +20,9 @@
     "glossary": "Glossary",
     "app": "Riverdesk app",
     "apiReference": "API reference",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "guides": "Step-by-step guides",
+    "madeFor": "Made for the Nile, in Arabic and English."
   },
   "cta": {
     "demo": "Request a demo",
@@ -103,7 +105,34 @@
       "A nightly PDF so the office keeps working during an outage"
     ],
     "finalTitle": "See it with your own departures",
-    "finalText": "Set Riverdesk up yourself, guided step by step, or with us. Either way we import your existing future bookings."
+    "finalText": "Set Riverdesk up yourself, guided step by step, or with us. Either way we import your existing future bookings.",
+    "stats": [
+      {
+        "value": "0",
+        "label": "cabins sold twice — checked every night"
+      },
+      {
+        "value": "< 1 min",
+        "label": "to take a phone booking"
+      },
+      {
+        "value": "18",
+        "label": "months of departures, generated for you"
+      },
+      {
+        "value": "2",
+        "label": "languages on every screen and document"
+      }
+    ],
+    "pillarsKicker": "Why Riverdesk",
+    "howKicker": "Up and running",
+    "channelsKicker": "Agencies and platforms",
+    "trustKicker": "Security",
+    "problemKicker": "The old way",
+    "learnMore": "Learn more",
+    "guidesTitle": "Learn it in an afternoon",
+    "guidesText": "Step-by-step guides with real screenshots walk your team through every task, in Arabic and English.",
+    "guidesCta": "Browse the guides"
   },
   "features": {
     "title": "Features",
@@ -174,7 +203,9 @@
         "title": "People and settings",
         "text": "Invite staff by email with a role — owner, reservations, finance or read-only. Owners and finance use two-step sign-in. Your markets (who each price is for, and who must show residency or ID), and company defaults for holds, deadlines and the voucher text."
       }
-    ]
+    ],
+    "jump": "Jump to",
+    "kicker": "The back office"
   },
   "channels": {
     "title": "For agencies and channels",
@@ -209,7 +240,8 @@
       "Signed webhooks and an event feed",
       "Idempotent requests — safe to retry",
       "Sandbox for testing"
-    ]
+    ],
+    "kicker": "For partners"
   },
   "security": {
     "title": "Security and reliability",
@@ -247,7 +279,8 @@
         "title": "Hosted in Europe",
         "text": "Riverdesk's database runs on Supabase in the EU (Ireland)."
       }
-    ]
+    ],
+    "kicker": "Trust"
   },
   "docs": {
     "title": "Documentation",
@@ -256,18 +289,41 @@
       "getting-started": "Getting started & administration",
       "staff-guide": "Staff guide",
       "channel-api": "Channel API guide",
-      "concepts": "Concepts & glossary"
+      "concepts": "Concepts & glossary",
+      "guides": "Step-by-step guides"
     },
     "sectionIntro": {
       "getting-started": "Setting up a company, people and roles, going live, backups and outages.",
       "staff-guide": "Every screen of the back office, step by step.",
       "channel-api": "For agencies and platforms connecting their systems.",
-      "concepts": "How Riverdesk thinks about sailings, inventory and money — in plain words."
+      "concepts": "How Riverdesk thinks about sailings, inventory and money — in plain words.",
+      "guides": "Real tasks from start to finish — setting up, booking, payments, departures and bad days."
     },
     "previous": "Previous",
     "next": "Next",
     "onThisPage": "On this page",
     "contents": "Contents",
-    "fallback": "This page has not been translated yet; it is shown in English."
+    "fallback": "This page has not been translated yet; it is shown in English.",
+    "searchPlaceholder": "Search the docs…",
+    "searchEmpty": "No page matches “{q}”.",
+    "searchHint": "Try “deposit”, “allotment” or “cabin map”.",
+    "searchLabel": "Search",
+    "startHere": "Start here",
+    "startHereText": "New to Riverdesk? These pages take you from your first sign-in to your first confirmed booking.",
+    "guidesTitle": "Step-by-step guides",
+    "guidesText": "Each guide follows one real task from start to finish, with screenshots from the app and the reasons behind each step.",
+    "browse": "Browse by topic",
+    "pages": "{count, plural, one {# page} other {# pages}}",
+    "minRead": "{n} min read",
+    "who": "For",
+    "time": "Time",
+    "home": "Docs",
+    "step": "Step {n}",
+    "devTitle": "Connecting a booking platform?",
+    "devText": "The Channel API guide explains sign-in for systems, live availability and quotes, holds and bookings, and signed webhooks — with examples you can copy.",
+    "devCta": "Open the Channel API guide",
+    "apiRef": "Live API reference",
+    "allPages": "All pages",
+    "guide": "Guide"
   }
 }

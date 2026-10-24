@@ -12,7 +12,8 @@
     "test": "vitest run",
     "screenshots": "tsx scripts/screenshots.ts",
     "usability": "tsx scripts/usability.ts",
-    "website-shots": "tsx scripts/website-shots.ts"
+    "website-shots": "tsx scripts/website-shots.ts",
+    "guide-shots": "tsx scripts/guide-shots.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

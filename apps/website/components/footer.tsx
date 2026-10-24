@@ -6,52 +6,68 @@ import { Logo } from './logo';
 export function Footer() {
   const t = useTranslations('footer');
   const n = useTranslations('nav');
+  const col = 'flex flex-col gap-2.5 text-sm';
+  const link = 'text-white/65 transition-colors hover:text-white';
   return (
-    <footer className="mt-20 border-t border-line bg-surface">
-      <div className="container-site grid gap-8 py-10 sm:grid-cols-[2fr_1fr_1fr_1fr]">
+    <footer className="band-deep mt-24">
+      <div className="container-site grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
         <div>
-          <Logo />
-          <p className="mt-3 max-w-sm text-sm text-muted">{t('tagline')}</p>
+          <Logo light />
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/65">{t('tagline')}</p>
         </div>
-        <div className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">{t('product')}</span>
-          <Link href="/features" className="text-muted hover:text-ink">
+        <div className={col}>
+          <span className="mb-1 text-xs font-semibold tracking-wider text-white/45 uppercase">
+            {t('product')}
+          </span>
+          <Link href="/features" className={link}>
             {n('features')}
           </Link>
-          <Link href="/channels" className="text-muted hover:text-ink">
+          <Link href="/channels" className={link}>
             {n('channels')}
           </Link>
-          <Link href="/security" className="text-muted hover:text-ink">
+          <Link href="/security" className={link}>
             {n('security')}
           </Link>
         </div>
-        <div className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">{n('docs')}</span>
-          <Link href="/docs/getting-started/overview" className="text-muted hover:text-ink">
+        <div className={col}>
+          <span className="mb-1 text-xs font-semibold tracking-wider text-white/45 uppercase">
+            {n('docs')}
+          </span>
+          <Link href="/docs/getting-started/overview" className={link}>
             {t('gettingStarted')}
           </Link>
-          <Link href="/docs/staff-guide/today" className="text-muted hover:text-ink">
+          <Link href="/docs/guides/set-up-your-company" className={link}>
+            {t('guides')}
+          </Link>
+          <Link href="/docs/staff-guide/today" className={link}>
             {t('staffGuide')}
           </Link>
-          <Link href="/docs/channel-api/overview" className="text-muted hover:text-ink">
+          <Link href="/docs/channel-api/overview" className={link}>
             {t('apiGuide')}
           </Link>
-          <Link href="/docs/concepts/glossary" className="text-muted hover:text-ink">
+          <Link href="/docs/concepts/glossary" className={link}>
             {t('glossary')}
           </Link>
         </div>
-        <div className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">{t('app')}</span>
-          <a href={site.appUrl} className="text-muted hover:text-ink">
+        <div className={col}>
+          <span className="mb-1 text-xs font-semibold tracking-wider text-white/45 uppercase">
+            {t('app')}
+          </span>
+          <a href={site.appUrl} className={link}>
             {n('signIn')}
           </a>
-          <a href={site.apiDocsUrl} className="text-muted hover:text-ink">
+          <a href={site.apiDocsUrl} className={link}>
             {t('apiReference')}
           </a>
         </div>
       </div>
-      <div className="container-site border-t border-line py-4 text-xs text-muted">
-        © {new Date().getFullYear()} Riverdesk · {t('rights')}
+      <div className="border-t border-white/10">
+        <div className="container-site flex flex-wrap justify-between gap-2 py-5 text-xs text-white/50">
+          <span>
+            © {new Date().getFullYear()} Riverdesk · {t('rights')}
+          </span>
+          <span>{t('madeFor')}</span>
+        </div>
       </div>
     </footer>
   );

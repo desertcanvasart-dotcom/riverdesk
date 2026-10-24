@@ -1,114 +1,264 @@
+import {
+  ArrowRight,
+  BellRing,
+  CalendarCheck2,
+  CircleAlert,
+  Compass,
+  Copy,
+  FileStack,
+  FileText,
+  Languages,
+  LockKeyhole,
+  Network,
+  PhoneCall,
+  ShieldCheck,
+  type LucideIcon,
+} from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { DemoButtons, secondaryButton } from '../../components/cta';
+import { DemoButtons, Kicker, secondaryButton } from '../../components/cta';
 import { Screen } from '../../components/screen';
 import { Link } from '../../i18n/routing';
 
 type Item = { title: string; text: string };
+type Stat = { value: string; label: string };
+
+const PROBLEM_ICONS: LucideIcon[] = [Copy, CircleAlert, FileStack];
+const PILLAR_ICONS: LucideIcon[] = [ShieldCheck, PhoneCall, Network, Languages, FileText, BellRing];
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('home');
   const c = await getTranslations('cta');
+  const num = (n: number) => n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en');
   return (
     <>
-      <section className="container-site grid items-center gap-10 py-14 lg:grid-cols-[1fr_1.1fr] lg:py-20">
-        <div>
-          <p className="text-sm font-semibold text-brand">{t('eyebrow')}</p>
-          <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            {t('title')}
-          </h1>
-          <p className="mt-5 text-lg leading-relaxed text-muted">{t('subtitle')}</p>
-          <div className="mt-8">
-            <DemoButtons />
+      <section className="band-deep relative overflow-hidden">
+        <div className="band-waves absolute inset-0" aria-hidden />
+        <div className="container-site relative grid items-center gap-12 pt-16 pb-28 lg:grid-cols-[1fr_1.15fr] lg:pt-24 lg:pb-36">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white/80">
+              <span className="size-1.5 rounded-full bg-[#7fe0d6]" />
+              {t('eyebrow')}
+            </span>
+            <h1 className="mt-5 text-4xl leading-[1.1] font-bold tracking-tight text-balance text-white sm:text-5xl lg:text-[3.4rem]">
+              {t('title')}
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-white/70">
+              {t('subtitle')}
+            </p>
+            <div className="mt-9">
+              <DemoButtons dark />
+            </div>
+          </div>
+          <div className="relative">
+            <div
+              className="absolute -inset-6 rounded-[2rem] bg-[#4fbcbc]/10 blur-2xl"
+              aria-hidden
+            />
+            <Screen dark src={`/screens/${locale}/desktop-book.jpg`} alt={t('pillars.1.title')} />
+            <Screen
+              phone
+              src={`/screens/${locale}/phone-today.jpg`}
+              alt={t('pillars.5.title')}
+              className="absolute -bottom-14 w-28 sm:w-36 ltr:-right-3 rtl:-left-3 lg:ltr:-right-8 lg:rtl:-left-8"
+            />
           </div>
         </div>
-        <div className="relative">
-          <Screen src={`/screens/${locale}/desktop-book.jpg`} alt={t('pillars.1.title')} />
+      </section>
+
+      <section className="container-site relative -mt-14">
+        <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-lift)] lg:grid-cols-4">
+          {(t.raw('stats') as Stat[]).map((s, i) => (
+            <div
+              key={s.label}
+              className={`p-6 ${i > 0 ? 'border-line lg:border-s' : ''} ${i % 2 === 1 ? 'border-s' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''}`}
+            >
+              <dt className="sr-only">{s.label}</dt>
+              <dd>
+                <span className="block text-3xl font-bold tracking-tight text-brand" dir="ltr">
+                  {s.value}
+                </span>
+                <span className="mt-1 block text-sm leading-snug text-muted">{s.label}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className="container-site py-24">
+        <div className="max-w-2xl">
+          <Kicker>{t('problemKicker')}</Kicker>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+            {t('problemTitle')}
+          </h2>
+        </div>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {(t.raw('problems') as Item[]).map((p, i) => {
+            const Icon = PROBLEM_ICONS[i]!;
+            return (
+              <div
+                key={p.title}
+                className="rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-card)]"
+              >
+                <span className="flex size-10 items-center justify-center rounded-xl bg-bad-bg text-bad">
+                  <Icon aria-hidden className="size-5" />
+                </span>
+                <p className="mt-4 text-lg font-semibold">{p.title}</p>
+                <p className="mt-2 leading-relaxed text-muted">{p.text}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="border-y border-line bg-surface py-24">
+        <div className="container-site">
+          <div className="max-w-2xl">
+            <Kicker>{t('pillarsKicker')}</Kicker>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+              {t('pillarsTitle')}
+            </h2>
+          </div>
+          <div className="mt-12 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            {(t.raw('pillars') as Item[]).map((p, i) => {
+              const Icon = PILLAR_ICONS[i]!;
+              return (
+                <div key={p.title}>
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand ring-1 ring-brand/15">
+                    <Icon aria-hidden className="size-6" />
+                  </span>
+                  <p className="mt-5 text-lg font-semibold">{p.title}</p>
+                  <p className="mt-2 leading-relaxed text-muted">{p.text}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="container-site py-24">
+        <div className="grid items-start gap-12 lg:grid-cols-[1fr_1.1fr]">
+          <div>
+            <Kicker>{t('howKicker')}</Kicker>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t('howTitle')}</h2>
+            <ol className="mt-10 flex flex-col">
+              {(t.raw('how') as Item[]).map((step, i, all) => (
+                <li key={step.title} className="relative flex gap-5 pb-10 last:pb-0">
+                  {i < all.length - 1 && (
+                    <span
+                      className="absolute top-12 bottom-0 w-px bg-line ltr:left-5 rtl:right-5"
+                      aria-hidden
+                    />
+                  )}
+                  <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-brand font-bold text-brand-ink shadow-sm">
+                    {num(i + 1)}
+                  </span>
+                  <div>
+                    <p className="text-lg font-semibold">{step.title}</p>
+                    <p className="mt-2 leading-relaxed text-muted">{step.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
           <Screen
-            phone
-            src={`/screens/${locale}/phone-today.jpg`}
-            alt={t('pillars.5.title')}
-            className="absolute -bottom-8 w-32 sm:w-40 ltr:-left-4 rtl:-right-4"
+            src={`/screens/${locale}/guide-getting-started.jpg`}
+            alt={t('how.0.title')}
+            className="lg:mt-16"
           />
         </div>
       </section>
 
-      <section className="border-y border-line bg-surface py-14">
-        <div className="container-site">
-          <h2 className="text-2xl font-bold">{t('problemTitle')}</h2>
-          <div className="mt-6 grid gap-6 sm:grid-cols-3">
-            {(t.raw('problems') as Item[]).map((p) => (
-              <div key={p.title}>
-                <p className="font-semibold text-bad">{p.title}</p>
-                <p className="mt-1 text-muted">{p.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="container-site py-16">
-        <h2 className="text-3xl font-bold">{t('pillarsTitle')}</h2>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(t.raw('pillars') as Item[]).map((p) => (
-            <div key={p.title} className="rounded-2xl border border-line bg-surface p-6">
-              <p className="text-lg font-semibold">{p.title}</p>
-              <p className="mt-2 leading-relaxed text-muted">{p.text}</p>
+      <section className="border-y border-line bg-surface py-24">
+        <div className="container-site grid items-center gap-12 lg:grid-cols-2">
+          <div className="lg:order-2">
+            <Kicker>{t('channelsKicker')}</Kicker>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+              {t('channelsTitle')}
+            </h2>
+            <p className="mt-5 text-lg leading-relaxed text-muted">{t('channelsText')}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/channels" className={secondaryButton}>
+                {c('apiGuide')}
+                <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+              </Link>
             </div>
-          ))}
+          </div>
+          <Screen src={`/screens/${locale}/desktop-channels.jpg`} alt={t('channelsTitle')} />
         </div>
       </section>
 
-      <section className="container-site py-6">
-        <h2 className="text-3xl font-bold">{t('howTitle')}</h2>
-        <ol className="mt-8 grid gap-6 md:grid-cols-3">
-          {(t.raw('how') as Item[]).map((step, i) => (
-            <li key={step.title} className="relative rounded-2xl border border-line bg-surface p-6">
-              <span className="flex size-9 items-center justify-center rounded-full bg-brand font-bold text-brand-ink">
-                {(i + 1).toLocaleString(locale === 'ar' ? 'ar-EG' : 'en')}
-              </span>
-              <p className="mt-4 text-lg font-semibold">{step.title}</p>
-              <p className="mt-2 leading-relaxed text-muted">{step.text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="container-site grid items-center gap-10 py-16 lg:grid-cols-2">
-        <div>
-          <h2 className="text-3xl font-bold">{t('channelsTitle')}</h2>
-          <p className="mt-4 text-lg leading-relaxed text-muted">{t('channelsText')}</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/channels" className={secondaryButton}>
-              {c('apiGuide')}
+      <section className="container-site py-24">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <div>
+            <Kicker>{t('trustKicker')}</Kicker>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              {t('trustTitle')}
+            </h2>
+            <Link
+              href="/security"
+              className="mt-6 inline-flex items-center gap-2 font-semibold text-brand hover:underline"
+            >
+              {t('learnMore')}
+              <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
             </Link>
           </div>
-        </div>
-        <Screen src={`/screens/${locale}/desktop-channels.jpg`} alt={t('channelsTitle')} />
-      </section>
-
-      <section className="border-y border-line bg-surface py-14">
-        <div className="container-site">
-          <h2 className="text-2xl font-bold">{t('trustTitle')}</h2>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {(t.raw('trust') as string[]).map((line) => (
-              <li key={line} className="flex gap-2">
-                <span className="text-ok" aria-hidden="true">
-                  ✓
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {(t.raw('trust') as string[]).map((line, i) => (
+              <li
+                key={line}
+                className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-card)]"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ok-bg text-ok">
+                  {i % 2 === 0 ? (
+                    <LockKeyhole aria-hidden className="size-4" />
+                  ) : (
+                    <ShieldCheck aria-hidden className="size-4" />
+                  )}
                 </span>
-                <span>{line}</span>
+                <span className="leading-relaxed">{line}</span>
               </li>
             ))}
           </ul>
         </div>
       </section>
 
-      <section className="container-site py-16 text-center">
-        <h2 className="text-3xl font-bold">{t('finalTitle')}</h2>
-        <p className="mx-auto mt-3 max-w-xl text-lg text-muted">{t('finalText')}</p>
-        <div className="mt-8 flex justify-center">
-          <DemoButtons second="docs" />
+      <section className="container-site">
+        <Link
+          href="/docs"
+          className="group flex flex-col items-start gap-6 rounded-3xl border border-line bg-sand-soft/60 p-8 transition hover:border-sand sm:flex-row sm:items-center sm:p-10"
+        >
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-surface text-sand shadow-[var(--shadow-card)]">
+            <Compass aria-hidden className="size-7" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-xl font-bold">{t('guidesTitle')}</span>
+            <span className="mt-1 block leading-relaxed text-muted">{t('guidesText')}</span>
+          </span>
+          <span className="inline-flex items-center gap-2 font-semibold text-ink">
+            {t('guidesCta')}
+            <ArrowRight
+              aria-hidden
+              className="size-4 transition group-hover:translate-x-1 rtl:-scale-x-100 rtl:group-hover:-translate-x-1"
+            />
+          </span>
+        </Link>
+      </section>
+
+      <section className="container-site mt-24">
+        <div className="band-deep relative overflow-hidden rounded-3xl px-6 py-16 text-center sm:px-12">
+          <div className="band-waves absolute inset-0" aria-hidden />
+          <div className="relative">
+            <CalendarCheck2 aria-hidden className="mx-auto size-10 text-[#7fe0d6]" />
+            <h2 className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {t('finalTitle')}
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">{t('finalText')}</p>
+            <div className="mt-9 flex justify-center">
+              <DemoButtons second="docs" dark />
+            </div>
+          </div>
         </div>
       </section>
     </>

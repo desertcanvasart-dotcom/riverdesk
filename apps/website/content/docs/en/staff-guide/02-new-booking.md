@@ -22,11 +22,11 @@ You land on the new booking. Its reference (for example `VS-26-00610`) is what t
 
 ## What happens next
 
-| Booked for                                    | Result                                                                                                                                                                                                            |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Direct guest                                  | The booking is **waiting for payment**. Its cabins are held for 24 hours (a company setting). Record the deposit on the booking and it becomes **confirmed**. If nothing is paid in time, the cabins are released |
-| An agency that collects payment or has credit | **Confirmed** at once                                                                                                                                                                                             |
-| An agency on request                          | Sent as a **request**: the button reads _Send request_, and the office answers it on Requests                                                                                                                     |
+| Booked for                                    | Result                                                                                                                                                                                                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Direct guest                                  | The booking is **waiting for payment**. Its cabins are held for the payment policy's bank-transfer hold, 24 hours by default. Record the deposit on the booking and it becomes **confirmed**. If nothing is paid in time, the cabins are released |
+| An agency that collects payment or has credit | **Confirmed** at once                                                                                                                                                                                                                             |
+| An agency on request                          | Sent as a **request**: the button reads _Send request_, and the office answers it on Requests                                                                                                                                                     |
 
 ## Good to know
 
