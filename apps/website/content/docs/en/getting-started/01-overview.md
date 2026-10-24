@@ -29,7 +29,7 @@ The menu on the left (on a phone: **☰** at the top) groups the screens by what
 | **Setup**        | Ships & cabins, Schedule, Rates & policies, Channels                  |
 | **Company**      | Settings, Pilot                                                       |
 
-Click a section's name to fold it away, for example **Setup** once your company is running; Riverdesk remembers this on your computer. The section of the screen you are on always stays open. Your name, role and **Sign out** are at the bottom of the menu.
+Click a section's name to fold it away, for example **Setup** once your company is running; Riverdesk remembers this on your computer. Opening a screen in a folded section unfolds it. Your name, role and **Sign out** are at the bottom of the menu.
 
 ## What a normal day looks like
 
