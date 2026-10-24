@@ -10,16 +10,19 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   const next = request.nextUrl.searchParams.get('next') ?? '/';
-  const target = request.nextUrl.clone();
-  target.search = '';
-  target.pathname = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  const target = next.startsWith('/') && !next.startsWith('//') ? next : '/';
   if (code) {
     const supabase = await supabaseServer();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(target);
+    if (!error) return to(target);
   }
-  const expired = request.nextUrl.clone();
-  expired.pathname = '/login';
-  expired.search = '?link=expired';
-  return NextResponse.redirect(expired);
+  return to('/login?link=expired');
+}
+
+/**
+ * A redirect by path only: behind Railway's proxy the request URL carries the server's own
+ * address (0.0.0.0:3000), so the browser resolves the path against the address it used.
+ */
+function to(path: string) {
+  return new NextResponse(null, { status: 307, headers: { Location: path } });
 }
