@@ -462,11 +462,17 @@ export async function createDemoPricing(db: VsDatabase, ctx: EngineContext, vess
   }
 
   const allCategories = categories.map((c) => c.id);
-  const nilecrz = await createChannel(db, ctx, {
-    code: 'nilecrz',
-    name: 'nilecrz',
-    type: 'portal',
-  });
+  // A company with several demo vessels keeps one nilecrz channel, with a contract per vessel.
+  const existingNilecrz = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx.selectFrom('channel').select('id').where('code', '=', 'nilecrz').executeTakeFirst(),
+  );
+  const nilecrz =
+    existingNilecrz ??
+    (await createChannel(db, ctx, {
+      code: 'nilecrz',
+      name: 'nilecrz',
+      type: 'portal',
+    }));
   await createContract(db, ctx, {
     channelId: nilecrz.id,
     vesselId,
