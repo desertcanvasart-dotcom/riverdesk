@@ -34,3 +34,4 @@ export * from './backoffice/assignment';
 export * from './backoffice/manifest';
 export * from './documents/requests';
 export * from './documents/data';
+export * from './backoffice/privacy';

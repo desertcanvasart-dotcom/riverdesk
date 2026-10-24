@@ -4,6 +4,9 @@ import {
   applyAmendmentInput,
   cancelBooking,
   cancelBookingInput,
+  eraseGuest,
+  exportGuestData,
+  guestRequestInput,
   getBookingDetail,
   previewCancellation,
   quoteAmendment,
@@ -43,6 +46,12 @@ export const bookingsRouter = router({
   applyAmendment: procedure('bookings.write')
     .input(applyAmendmentInput)
     .mutation(({ ctx, input }) => applyAmendment(backofficeDb(), ctx.engine, input)),
+  exportGuest: procedure('guests.privacy')
+    .input(guestRequestInput)
+    .mutation(({ ctx, input }) => exportGuestData(backofficeDb(), ctx.engine, input)),
+  eraseGuest: procedure('guests.privacy')
+    .input(guestRequestInput)
+    .mutation(({ ctx, input }) => eraseGuest(backofficeDb(), ctx.engine, input)),
   guests: procedure('bookings.write')
     .input(upsertGuestsInput)
     .mutation(({ ctx, input }) => upsertGuests(backofficeDb(), ctx.engine, input)),

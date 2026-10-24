@@ -13,6 +13,8 @@ export const PERMISSIONS = {
   /** Manifests carry passport numbers: only the people who board guests. */
   manifests: ['owner', 'reservations'],
   'guests.assign': ['owner', 'reservations'],
+  /** Data subject requests: export or erase one guest's personal data. */
+  'guests.privacy': ['owner'],
   'schedule.write': ['owner'],
   'rates.write': ['owner'],
   'channels.write': ['owner'],

@@ -558,3 +558,7 @@ The Batch 6 screens replace it: Today, inventory, bookings, schedule, guests and
 
 **2026-10-24 · Arabic screens use Arabic-Indic digits everywhere.**
 The back office formats with `ar-EG` (the language cookie stays `ar`; code checks `startsWith('ar')`), and numeric placeholders in the Arabic messages are `{x, number}`. Counts, times and percentages now match money and dates, which already used `ar-EG`.
+
+**2026-10-24 · Erasing a guest keeps the guest row and blanks the personal data.**
+An owner can export everything held about one guest (a JSON file, passport included, since the request comes from that person) or erase it. Erasure replaces the name with "Erased Guest" and removes nationality, date of birth and passport, so the cabin's occupancy and the booking's accounts still add up. Both actions are audited without values.
+Reason: spec § Data subject requests. Deleting the row would change the booked occupancy that prices and manifests depend on.

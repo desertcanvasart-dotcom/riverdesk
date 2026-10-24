@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { Dialog } from '../../../../components/dialog';
 import { Alert, Badge, Button, Field, Input, Select } from '../../../../components/ui';
 import { useErrorText } from '../../../../lib/errors';
 import { formatDate } from '../../../../lib/format';
@@ -49,11 +50,13 @@ const toDraft = (g: Guest): Draft => ({
 export function GuestsEditor({
   bookingId,
   canEdit,
+  canPrivacy = false,
   cabins,
   guests,
 }: {
   bookingId: string;
   canEdit: boolean;
+  canPrivacy?: boolean;
   cabins: number[];
   guests: Guest[];
 }) {
@@ -107,6 +110,9 @@ export function GuestsEditor({
                 <Badge tone={g.hasPassport ? 'ok' : 'warn'}>
                   {g.hasPassport ? t('passportOnFile') : t('noPassport')}
                 </Badge>
+                {canPrivacy && (
+                  <PrivacyActions guestId={g.id} name={`${g.firstName} ${g.lastName}`} />
+                )}
               </li>
             ))}
           </ul>
@@ -255,5 +261,70 @@ export function GuestsEditor({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Owner only: a data subject's export (JSON file) or erasure. */
+function PrivacyActions({ guestId, name }: { guestId: string; name: string }) {
+  const t = useTranslations('bookings');
+  const tc = useTranslations('common');
+  const trpc = useTRPC();
+  const router = useRouter();
+  const errorText = useErrorText();
+  const [confirming, setConfirming] = useState(false);
+  const exportData = useMutation(
+    trpc.bookings.exportGuest.mutationOptions({
+      onSuccess: (data) => {
+        const url = URL.createObjectURL(
+          new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+        );
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `guest-${guestId}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+    }),
+  );
+  const erase = useMutation(
+    trpc.bookings.eraseGuest.mutationOptions({
+      onSuccess: () => {
+        setConfirming(false);
+        router.refresh();
+      },
+    }),
+  );
+  return (
+    <span className="ms-auto flex gap-1">
+      <Button
+        variant="ghost"
+        disabled={exportData.isPending}
+        onClick={() => exportData.mutate({ guestId })}
+      >
+        {t('exportData')}
+      </Button>
+      <Button variant="ghost" onClick={() => setConfirming(true)}>
+        {t('erase')}
+      </Button>
+      <Dialog open={confirming} onClose={() => setConfirming(false)} title={t('eraseTitle')}>
+        <p className="mb-2 font-medium">{name}</p>
+        <Alert tone="warn">{t('eraseHelp')}</Alert>
+        {(erase.isError || exportData.isError) && (
+          <Alert tone="bad">{errorText(erase.error ?? exportData.error)}</Alert>
+        )}
+        <div className="mt-3 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setConfirming(false)}>
+            {tc('close')}
+          </Button>
+          <Button
+            variant="danger"
+            disabled={erase.isPending}
+            onClick={() => erase.mutate({ guestId })}
+          >
+            {t('erase')}
+          </Button>
+        </div>
+      </Dialog>
+    </span>
   );
 }

@@ -226,7 +226,11 @@
     "applied": "Changed. Revision {n}.",
     "nothingToChange": "Nothing changed.",
     "comingNext": "Documents arrive with the documents screen.",
-    "revHeader": "Rev"
+    "revHeader": "Rev",
+    "exportData": "Export data",
+    "erase": "Erase",
+    "eraseTitle": "Erase this guest's personal data?",
+    "eraseHelp": "The name is replaced and nationality, date of birth and passport are removed. This cannot be undone. Use it for a data deletion request."
   },
   "requests": {
     "title": "Requests",

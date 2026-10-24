@@ -164,6 +164,7 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
           <GuestsEditor
             bookingId={booking.id}
             canEdit={canWrite && editable}
+            canPrivacy={profile.permissions.includes('guests.privacy')}
             cabins={booking.cabins.map((c) => c.index)}
             guests={booking.guests}
           />
