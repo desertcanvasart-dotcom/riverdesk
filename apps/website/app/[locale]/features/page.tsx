@@ -85,7 +85,11 @@ export default async function Features({ params }: { params: Promise<{ locale: s
                   <Icon aria-hidden className="size-6" />
                 </span>
                 <h2 className="mt-5 text-2xl font-bold tracking-tight sm:text-3xl">{f.title}</h2>
-                <p className="mt-4 text-lg leading-relaxed text-muted">{f.text}</p>
+                {f.text.split('\n\n').map((para) => (
+                  <p key={para} className="mt-4 text-lg leading-relaxed text-muted">
+                    {para}
+                  </p>
+                ))}
                 <Link
                   href={`/docs/staff-guide/${doc}`}
                   className="mt-6 inline-flex items-center gap-2 font-semibold text-brand hover:underline"
