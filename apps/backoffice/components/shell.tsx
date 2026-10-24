@@ -56,7 +56,7 @@ interface Item {
 
 /**
  * The menu, grouped by what people do: take reservations, run departures, set the company up.
- * Today stands alone at the top. Sections fold; the one holding the open page stays open.
+ * Today stands alone at the top. Sections fold; opening a page unfolds its section.
  */
 const SECTIONS: { key: string | null; items: Item[] }[] = [
   { key: null, items: [{ key: 'home', href: '/', icon: House }] },
@@ -141,8 +141,7 @@ export function Shell({
   const current = sections
     .flatMap((s) => s.items.map((i) => ({ ...i, section: s.key })))
     .find((i) => isActive(i.href));
-  const toggle = (key: string) => {
-    const next = folded.includes(key) ? folded.filter((k) => k !== key) : [...folded, key];
+  const save = (next: string[]) => {
     setFolded(next);
     try {
       localStorage.setItem(FOLDED, JSON.stringify(next));
@@ -150,12 +149,28 @@ export function Shell({
       // Private windows: folding still works for this page.
     }
   };
+  const toggle = (key: string) =>
+    save(folded.includes(key) ? folded.filter((k) => k !== key) : [...folded, key]);
+  // Opening a page unfolds its section once; after that it folds like any other.
+  const currentSection = current?.section;
+  useEffect(() => {
+    if (!currentSection) return;
+    setFolded((f) => {
+      if (!f.includes(currentSection)) return f;
+      const next = f.filter((k) => k !== currentSection);
+      try {
+        localStorage.setItem(FOLDED, JSON.stringify(next));
+      } catch {
+        // As above.
+      }
+      return next;
+    });
+  }, [path, currentSection]);
 
   const nav = (
     <nav className="flex flex-col gap-4 px-3 py-2" aria-label={t('app.menu')}>
       {sections.map((section) => {
-        const holdsCurrent = section.items.some((i) => isActive(i.href));
-        const shut = section.key !== null && folded.includes(section.key) && !holdsCurrent;
+        const shut = section.key !== null && folded.includes(section.key);
         return (
           <div key={section.key ?? 'top'}>
             {section.key && (
