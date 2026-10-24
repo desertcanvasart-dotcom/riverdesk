@@ -255,7 +255,7 @@ export function parseCsv(text: string): ImportRow[] {
   if (record.some((f) => f.trim())) records.push(record);
   const [header, ...body] = records;
   if (!header) return [];
-  const names = header.map((h) => h.trim().replace(/^﻿/, ''));
+  const names = header.map((h) => h.trim().replace(/^\uFEFF/, ''));
   const missing = IMPORT_COLUMNS.filter((c) => !names.includes(c));
   if (missing.length) throw new Error(`Missing columns: ${missing.join(', ')}`);
   return body
