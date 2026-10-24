@@ -143,7 +143,7 @@ To inspect every tenant, connect as `postgres` and run `set role vs_owner`. The 
 
 ## Backups and restore
 
-**What Supabase keeps (checked 2026-10-24 with `supabase backups list --project-ref nwbjuamzkguqmcxsxkkl`):** daily physical backups (WAL-G), the latest from 06:09 UTC that day. **Point-in-time recovery is not enabled.** It is a paid add-on: enable it (7 days) in the Supabase dashboard → Database → Backups before go-live, then re-run the command and check `"pitr_enabled": true`.
+**What Supabase keeps (checked 2026-10-24 with `supabase backups list --project-ref nwbjuamzkguqmcxsxkkl`):** daily physical backups (WAL-G). **Point-in-time recovery is enabled** (7 days; turned on and verified 2026-10-24: `"pitr_enabled": true`, restorable from 2026-10-23 17:29 UTC, and all four role logins `ok` afterwards). Re-run the command whenever backups are checked.
 
 **Restore from a Supabase backup (the real path):** Dashboard → Database → Backups → pick a backup (or a point in time once PITR is on) → Restore. The restore replaces the project's database, including `auth` (staff logins), `vs` and `graphile_worker`. Afterwards:
 
@@ -178,7 +178,8 @@ Tick each line, with a date and initials, before the pilot vessel takes its firs
 - [ ] **No development values on production:** `SEED_TOTP_SECRET` unset, demo users absent, `VS_ENV=hosted`.
 - [ ] **MFA on:** every owner and finance user has enrolled TOTP (they cannot work without it), and reservations users are encouraged to.
 - [ ] **Roles reviewed** on Settings: one or two owners, no shared logins, read-only for anyone who only looks. Remove leavers.
-- [ ] **Backups verified:** PITR enabled and shown by `supabase backups list`. The restore drill above was repeated within the last 30 days.
+- [x] **Backups verified (PITR):** enabled and shown by `supabase backups list`, 2026-10-24.
+- [ ] **Restore drill:** repeated into a scratch Supabase project within the last 30 days.
 - [ ] **Monitoring live:** `SENTRY_DSN` set on the API, worker and back office. The `alert:` rule notifies the operations inbox. A test alert was received.
 - [ ] **Outage pack arriving:** `SMTP_URL` and `MAIL_FROM` set, Settings → operations email filled in, and the first 02:00 UTC pack received and opened.
 - [ ] **Worker running** with Chromium installed (`playwright install chromium`). A voucher downloads in Arabic and English.

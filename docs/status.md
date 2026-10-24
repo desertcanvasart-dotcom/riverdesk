@@ -4,7 +4,7 @@ This page is written to be read by you, not by a machine. It says what exists, w
 
 ## In one paragraph
 
-The vessel-system MVP is built. All the planned batches (Part 0, then Batches 0 to 7) are finished, tested, and pushed to GitHub, and the automatic checks (CI) pass. The database on Supabase (the "hosted" one) has every change applied, up to migration 0009. What is left is not programming. It is setting up accounts and services that only you can create, then going through the go-live checklist. We stopped while you were enabling **point-in-time recovery** on Supabase.
+The vessel-system MVP is built. All the planned batches (Part 0, then Batches 0 to 7) are finished, tested, and pushed to GitHub, and the automatic checks (CI) pass. The database on Supabase (the "hosted" one) has every change applied, up to migration 0009. What is left is not programming. It is setting up accounts and services that only you can create, then going through the go-live checklist. Point-in-time recovery is now enabled and verified (2026-10-24). The next step is choosing hosting.
 
 ## Exactly where we stopped
 
@@ -22,7 +22,7 @@ You were about to enable point-in-time recovery (PITR) in the Supabase dashboard
 
 | #   | Item                                                    | Why it matters                                                                                        | My recommendation                                                                                                                           |
 | --- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Enable PITR** (in progress)                           | Lets us undo a disaster to the minute, not to last night                                              | 7 days of retention                                                                                                                         |
+| 1   | ~~Enable PITR~~ **done 2026-10-24**                     | Lets us undo a disaster to the minute, not to last night                                              | 7 days of retention                                                                                                                         |
 | 2   | **Sentry account** (error tracking)                     | When something breaks on the live system, we see it at once, with personal data removed               | One Sentry project per environment. Put the key (`SENTRY_DSN`) in `.env.hosted` yourself, never in chat                                     |
 | 3   | **An email (SMTP) account**                             | The nightly "outage pack" PDF is emailed to the office, so staff can still work if the system is down | Use your mail provider's SMTP. Set `SMTP_URL` and `MAIL_FROM` in `.env.hosted`, and the operations email on the Settings screen             |
 | 4   | **A scratch Supabase project**                          | To rehearse a full restore into a fresh project, as the spec asks                                     | Create it near go-live, run the drill, then delete it                                                                                       |
