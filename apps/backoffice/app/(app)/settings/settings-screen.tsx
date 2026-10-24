@@ -57,6 +57,7 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
         defaultLocale: operator.data.defaultLocale,
         ...Object.fromEntries(NUMBERS.map((k) => [k, String(operator.data[k])])),
         emergencyPhone: operator.data.emergencyPhone ?? '',
+        opsEmail: operator.data.opsEmail ?? '',
         voucherNoteEn: operator.data.voucherNoteEn ?? '',
         voucherNoteAr: operator.data.voucherNoteAr ?? '',
       });
@@ -229,6 +230,7 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
               defaultLocale: form.defaultLocale === 'en' ? 'en' : 'ar',
               ...numbers,
               emergencyPhone: form.emergencyPhone || null,
+              opsEmail: form.opsEmail || null,
               voucherNoteEn: form.voucherNoteEn || null,
               voucherNoteAr: form.voucherNoteAr || null,
             });
@@ -278,6 +280,15 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
           <div>
             <h3 className="mb-2 text-sm font-medium">{t('voucherSection')}</h3>
             <div className="grid gap-3 sm:grid-cols-3">
+              <Field label={t('opsEmail')}>
+                <Input
+                  type="email"
+                  dir="ltr"
+                  disabled={!canWrite}
+                  value={form.opsEmail ?? ''}
+                  onChange={(e) => setForm({ ...form, opsEmail: e.target.value })}
+                />
+              </Field>
               <Field label={t('emergencyPhone')}>
                 <Input
                   dir="ltr"

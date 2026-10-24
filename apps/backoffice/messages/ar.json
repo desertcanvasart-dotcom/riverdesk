@@ -549,7 +549,8 @@
     "emergencyPhone": "رقم الطوارئ (يظهر في القسائم)",
     "voucherNoteEn": "ملاحظة القسيمة (بالإنجليزية): نقطة الصعود والتعليمات",
     "voucherNoteAr": "ملاحظة القسيمة (بالعربية)",
-    "voucherSection": "في كل قسيمة"
+    "voucherSection": "في كل قسيمة",
+    "opsEmail": "بريد العمليات (حزمة الطوارئ الليلية)"
   },
   "documents": {
     "title": "المستندات",
@@ -566,7 +567,8 @@
     "download": "تنزيل",
     "language": "اللغة",
     "recent": "الأحدث",
-    "expires": "متاح حتى {when}"
+    "expires": "متاح حتى {when}",
+    "outage_pack": "حزمة الطوارئ (١٤ يومًا)"
   },
   "guests": {
     "title": "الضيوف والكشوف",

@@ -1,21 +1,27 @@
 import type { Task } from 'graphile-worker';
 import {
+  activeVesselIds,
   bookingDocumentData,
   completeDocument,
+  createPendingDocument,
   failDocument,
   getLegManifest,
+  getOperatorSettings,
   loadPendingDocument,
+  outagePackData,
   pruneDocuments,
   vacancyData,
   type EngineContext,
   type PendingDocument,
   type VsDatabase,
 } from '@vs/engine';
-import { captureError, systemActor, type Logger } from '@vs/shared';
+import { captureError, systemActor, type Config, type Logger } from '@vs/shared';
+import { mailer } from '../documents/mail';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import {
   bookingDocumentHtml,
   manifestHtml,
+  outagePackHtml,
   roomingHtml,
   vacancyHtml,
 } from '../documents/templates';
@@ -84,6 +90,15 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
             : await htmlToPdf(vacancyHtml(data, locale));
       break;
     }
+    case 'outage_pack': {
+      const from = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(
+        new Date(),
+      );
+      const data = await outagePackData(db, ctx, { vesselId: doc.entityId, from });
+      base = `outage-pack-${from}`;
+      content = await htmlToPdf(outagePackHtml(data, locale));
+      break;
+    }
     default:
       throw new Error(`Unknown document kind ${doc.kind}`);
   }
@@ -128,4 +143,47 @@ export function renderDocumentTask(db: VsDatabase, logger: Logger): Task {
 /** Hourly: expired documents are deleted (manifests live a day). */
 export function pruneDocumentsTask(db: VsDatabase, logger: Logger): Task {
   return () => forEachOperator(db, logger, 'prune_documents', (ctx) => pruneDocuments(db, ctx));
+}
+
+/**
+ * Nightly (spec § Availability, fallback for staff): for every active vessel, a PDF with the next
+ * 14 days' availability and departure manifests, stored as a document and emailed to the
+ * company's operations address. If the system is down the next day, staff still have it.
+ */
+export function outagePackTask(db: VsDatabase, logger: Logger, config: Config): Task {
+  return () =>
+    forEachOperator(db, logger, 'outage_pack', async (ctx) => {
+      const settings = await getOperatorSettings(db, ctx);
+      let sent = 0;
+      let stored = 0;
+      for (const vesselId of await activeVesselIds(db, ctx)) {
+        const doc = await createPendingDocument(db, ctx, {
+          kind: 'outage_pack',
+          vesselId,
+          locale: settings.defaultLocale === 'en' ? 'en' : 'ar',
+        });
+        const file = await renderDocument(db, ctx, doc);
+        await completeDocument(db, ctx, doc.id, file);
+        stored += 1;
+        const mail = mailer(config);
+        if (mail && settings.opsEmail) {
+          await mail.sendMail({
+            from: config.MAIL_FROM ?? 'vessel-system <no-reply@localhost>',
+            to: settings.opsEmail,
+            subject: `${settings.name}: ${file.filename}`,
+            text: 'Availability and departure manifests for the next 14 days, in case the system is unavailable. Delete after use.',
+            attachments: [
+              { filename: file.filename, content: file.content, contentType: file.contentType },
+            ],
+          });
+          sent += 1;
+        }
+      }
+      if (stored > 0 && sent === 0)
+        logger.warn(
+          { operatorId: ctx.operatorId },
+          'outage pack stored but not emailed (no SMTP_URL or ops email)',
+        );
+      return { stored, sent };
+    });
 }

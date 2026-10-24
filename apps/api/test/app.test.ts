@@ -50,4 +50,28 @@ describe('api', () => {
     expect(docs.statusCode).toBe(200);
     expect(docs.body).toContain('vessel-system Channel API');
   });
+
+  it('answers 503 with Retry-After when the database is unreachable (outage fallback)', async () => {
+    const down = openDatabase('vs_api', { config: { ...testConfig(), DATABASE_PORT: 1 }, max: 1 });
+    const app = buildApp({ db: down, logger, tokenSecret: Buffer.alloc(32, 1) });
+    try {
+      const health = await app.inject({ method: 'GET', url: '/health' });
+      expect(health.statusCode).toBe(503);
+      const token = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        payload: {
+          grant_type: 'client_credentials',
+          client_id: 'vsc_0123456789abcdef0123',
+          client_secret: 'a-secret-long-enough',
+        },
+      });
+      expect(token.statusCode).toBe(503);
+      expect(token.headers['retry-after']).toBe('30');
+      expect(token.json()).toMatchObject({ error: { code: 'SERVICE_UNAVAILABLE' } });
+    } finally {
+      await app.close();
+      await down.close();
+    }
+  });
 });

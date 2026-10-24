@@ -566,3 +566,7 @@ Reason: spec § Data subject requests. Deleting the row would change the booked 
 **2026-10-24 · Error tracking is Sentry, optional by configuration; alerts are tracked messages from a worker job.**
 `SENTRY_DSN` turns it on for the API, worker and back office. The SDK collects no user data, cookies, headers, query strings or bodies, and a scrubber deep-redacts everything else. Only unexpected errors are sent: domain refusals are normal answers. The five alert conditions are checked every 5 minutes per company. Each one is logged at error level and sent as `alert:<name>`, with one fingerprint per alert so Sentry groups the repeats. No extra service runs: the queries use the existing database.
 Reason: spec Batch 7 § Observability.
+
+**2026-10-24 · The outage pack carries manifests without passport numbers.**
+The nightly `outage_pack` job (02:00 UTC) builds one PDF per active vessel: 14 days of free cabins, then each departure's guests with cabin, category and nationality. It is stored as a document (kept a week; staff can also make one now from the vacancy page) and emailed to the company's operations address when `SMTP_URL` is set. Passport numbers are left out because the pack travels by email: the passport manifest stays a one-day download behind the `manifests` permission. The API's outage behaviour (503 with `Retry-After: 30`) now has its own test against an unreachable database.
+Reason: spec § Availability (fallback for staff) and § Sensitive data.

@@ -3,6 +3,7 @@ import { openDatabase, type VsDatabase } from '@vs/engine';
 import {
   connectionString,
   createLogger,
+  loadConfig,
   roleConnection,
   type Config,
   type Logger,
@@ -18,7 +19,7 @@ import {
   expireRequestsTask,
   releaseAllotmentsTask,
 } from './tasks/booking-jobs';
-import { pruneDocumentsTask, renderDocumentTask } from './tasks/document-jobs';
+import { outagePackTask, pruneDocumentsTask, renderDocumentTask } from './tasks/document-jobs';
 import { nightlyInvariants } from './tasks/nightly-invariants';
 import { pruneRateLimitsTask, webhooksTask } from './tasks/webhook-jobs';
 
@@ -43,9 +44,15 @@ export const CRONTAB = [
   '30 1 * * * erase_passports ?max=1',
   '41 * * * * prune_documents ?max=1',
   '*/5 * * * * health_alerts ?max=1',
+  // 02:00 UTC is 04:00–05:00 in Cairo: the pack is in the inbox before the office opens.
+  '0 2 * * * outage_pack ?max=1',
 ].join('\n');
 
-export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
+export function buildTaskList(
+  db: VsDatabase,
+  logger: Logger,
+  config: Config = loadConfig(),
+): TaskList {
   return {
     expire_holds: expireHoldsTask(db, logger),
     expire_requests: expireRequestsTask(db, logger),
@@ -59,6 +66,7 @@ export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
     erase_passports: erasePassportsTask(db, logger),
     prune_documents: pruneDocumentsTask(db, logger),
     health_alerts: healthAlertsTask(db, logger),
+    outage_pack: outagePackTask(db, logger, config),
     render_document: renderDocumentTask(db, logger),
   };
 }
@@ -84,7 +92,7 @@ export async function startWorker(
     concurrency: 2,
     noHandleSignals: true,
     pollInterval: 2_000,
-    taskList: buildTaskList(db, logger),
+    taskList: buildTaskList(db, logger, config),
     crontab: CRONTAB,
   });
   logger.info('worker started');

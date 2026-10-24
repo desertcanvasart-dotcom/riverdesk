@@ -35,6 +35,7 @@ export const requestDocumentInput = z.union([
     locale,
     format: z.enum(['pdf', 'xlsx']),
   }),
+  z.object({ kind: z.literal('outage_pack'), vesselId: z.uuid(), locale }),
   z.object({
     kind: z.literal('vacancy_sheet'),
     vesselId: z.uuid(),
@@ -61,7 +62,7 @@ export async function requestDocument(
         : {
             entity: 'vessel',
             entityId: data.vesselId,
-            format: data.format,
+            format: data.kind === 'vacancy_sheet' ? data.format : 'pdf',
             table: 'vessel' as const,
           };
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
@@ -75,7 +76,7 @@ export async function requestDocument(
       insert into vs.document (operator_id, kind, format, locale, variant, entity, entity_id, params, requested_by, expires_at)
       values (${ctx.operatorId}, ${data.kind}, ${target.format}, ${data.locale}, ${'variant' in data ? data.variant : 'full'},
               ${target.entity}, ${target.entityId},
-              ${JSON.stringify('vesselId' in data ? { from: data.from, weeks: data.weeks } : {})}::jsonb,
+              ${JSON.stringify('from' in data ? { from: data.from, weeks: data.weeks } : {})}::jsonb,
               ${ctx.actor.type === 'staff' ? ctx.actor.id : null},
               -- Manifests carry passport numbers: they live a day, other documents a week.
               now() + case when ${data.kind} = 'manifest' then interval '1 day' else interval '7 days' end)
@@ -195,6 +196,38 @@ export interface PendingDocument {
   variant: 'full' | 'agent';
   entityId: string;
   params: { from?: string; weeks?: number };
+}
+
+/** Worker side: a pending document it renders itself (the nightly outage pack). */
+export async function createPendingDocument(
+  db: VsDatabase,
+  ctx: EngineContext,
+  input: { kind: 'outage_pack'; vesselId: string; locale: 'ar' | 'en' },
+): Promise<PendingDocument> {
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    const row = await tx
+      .insertInto('document')
+      .values({
+        operator_id: ctx.operatorId,
+        kind: input.kind,
+        format: 'pdf',
+        locale: input.locale,
+        entity: 'vessel',
+        entity_id: input.vesselId,
+        expires_at: sql<Date>`now() + interval '7 days'`,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return {
+      id: row.id,
+      kind: input.kind,
+      format: 'pdf',
+      locale: input.locale,
+      variant: 'full',
+      entityId: input.vesselId,
+      params: {},
+    };
+  });
 }
 
 export async function loadPendingDocument(db: VsDatabase, ctx: EngineContext, documentId: string) {

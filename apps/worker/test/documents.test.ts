@@ -5,6 +5,7 @@ import { createOperator, owner, testConfig } from '@vs/db/testing';
 import {
   createDemoPricing,
   createDemoVessel,
+  createPendingDocument,
   downloadDocument,
   generateSchedule,
   getDocumentStatus,
@@ -15,6 +16,7 @@ import {
 } from '@vs/engine';
 import { addDays, connectionString, createLogger, roleConnection, systemActor } from '@vs/shared';
 import { closeRenderer } from '../src/documents/render';
+import { renderDocument } from '../src/tasks/document-jobs';
 import { buildTaskList } from '../src/worker';
 
 const logger = createLogger('documents-test', { level: 'silent' });
@@ -139,6 +141,22 @@ describe('documents (requested by staff, rendered by the worker)', () => {
       format: 'xlsx',
     });
     expect(xlsx.content.subarray(0, 2).toString()).toBe('PK');
+  }, 60_000);
+
+  it('builds the nightly outage pack: 14 days of availability and departure manifests', async () => {
+    const vesselId = (
+      await owner().query<{ id: string }>(`select id from vs.vessel where operator_id = $1`, [
+        ctx.operatorId,
+      ])
+    ).rows[0]!.id;
+    const doc = await createPendingDocument(worker, ctx, {
+      kind: 'outage_pack',
+      vesselId,
+      locale: 'ar',
+    });
+    const file = await renderDocument(worker, ctx, doc);
+    expect(file.content.subarray(0, 4).toString()).toBe('%PDF');
+    expect(file.filename).toMatch(/^outage-pack-\d{4}-\d{2}-\d{2}-ar\.pdf$/);
   }, 60_000);
 
   it('refuses to queue a document of another company', async () => {

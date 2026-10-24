@@ -19,9 +19,11 @@
     "@vs/shared": "workspace:*",
     "exceljs": "^4.4.0",
     "graphile-worker": "^0.18.0",
+    "nodemailer": "^10.2.1",
     "playwright": "^1.64.1"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.2",
     "@vs/db": "workspace:*"
   }
 }

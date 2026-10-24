@@ -17,6 +17,12 @@ export const envSchema = z.object({
   VS_ENV: z.enum(['local', 'ci', 'hosted']).default('local'),
   /** Error tracking (Sentry). Unset: errors are only logged. */
   SENTRY_DSN: z.url().optional(),
+  /** Outgoing mail for the nightly outage pack: smtp(s)://user:password@host:port. */
+  SMTP_URL: z
+    .string()
+    .regex(/^smtps?:\/\//)
+    .optional(),
+  MAIL_FROM: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
   DATABASE_URL_ADMIN: z.string().optional(),

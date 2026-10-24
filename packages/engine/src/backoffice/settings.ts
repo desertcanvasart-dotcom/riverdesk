@@ -177,6 +177,7 @@ export async function getOperatorSettings(db: VsDatabase, ctx: EngineContext) {
         'allotment_release_days as allotmentReleaseDays',
         'passport_retention_days as passportRetentionDays',
         'emergency_phone as emergencyPhone',
+        'ops_email as opsEmail',
         'voucher_note_en as voucherNoteEn',
         'voucher_note_ar as voucherNoteAr',
       ])
@@ -200,6 +201,7 @@ export const updateOperatorSettingsInput = z
     allotmentReleaseDays: z.number().int().min(0).max(365),
     passportRetentionDays: z.number().int().min(1).max(3650),
     emergencyPhone: z.string().trim().max(50).nullable(),
+    opsEmail: z.union([z.email(), z.literal('')]).nullable(),
     voucherNoteEn: z.string().trim().max(2000).nullable(),
     voucherNoteAr: z.string().trim().max(2000).nullable(),
   })
@@ -235,6 +237,7 @@ export async function updateOperatorSettings(
       allotment_release_days: data.allotmentReleaseDays,
       passport_retention_days: data.passportRetentionDays,
       emergency_phone: data.emergencyPhone === '' ? null : data.emergencyPhone,
+      ops_email: data.opsEmail === '' ? null : data.opsEmail,
       voucher_note_en: data.voucherNoteEn === '' ? null : data.voucherNoteEn,
       voucher_note_ar: data.voucherNoteAr === '' ? null : data.voucherNoteAr,
     };

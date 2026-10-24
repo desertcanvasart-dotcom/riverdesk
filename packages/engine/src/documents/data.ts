@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { VsDatabase } from '@vs/db';
 import { addDays, type BusinessDate } from '@vs/shared';
+import { getLegManifest, type LegManifest } from '../backoffice/manifest';
 import { getBookingDetail } from '../backoffice/reads';
 import { getAvailability } from '../inventory/availability';
 import type { EngineContext } from '../internal';
@@ -340,4 +341,56 @@ export async function vacancyData(
       })),
     };
   });
+}
+
+export interface OutagePackData {
+  vacancy: VacancyData;
+  /** Who is aboard each departure in the period: names and cabins, no passport numbers. */
+  manifests: LegManifest[];
+  opsEmail: string | null;
+}
+
+/** The nightly fallback (spec § Availability): 14 days of availability and departure manifests. */
+export async function outagePackData(
+  db: VsDatabase,
+  ctx: EngineContext,
+  input: { vesselId: string; from: string },
+): Promise<OutagePackData> {
+  const vacancy = await vacancyData(db, ctx, {
+    vesselId: input.vesselId,
+    from: input.from,
+    weeks: 2,
+  });
+  const { legIds, opsEmail } = await db.withTenantTx(
+    ctx.operatorId,
+    ctx.actor,
+    async ({ db: tx }) => {
+      const legs = await tx
+        .selectFrom('leg')
+        .select('id')
+        .where('vessel_id', '=', input.vesselId)
+        .where('status', '=', 'open')
+        .where('depart_date', '>=', input.from)
+        .where('depart_date', '<=', vacancy.to)
+        .orderBy('depart_date')
+        .execute();
+      const settings = await tx
+        .selectFrom('operator_setting')
+        .select('ops_email')
+        .executeTakeFirstOrThrow();
+      return { legIds: legs.map((l) => l.id), opsEmail: settings.ops_email };
+    },
+  );
+  const manifests: LegManifest[] = [];
+  for (const legId of legIds) manifests.push(await getLegManifest(db, ctx, legId));
+  return { vacancy, manifests, opsEmail };
+}
+
+/** Vessels whose outage pack goes out tonight: every active vessel of the company. */
+export async function activeVesselIds(db: VsDatabase, ctx: EngineContext): Promise<string[]> {
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) =>
+    (await tx.selectFrom('vessel').select('id').where('active', '=', true).execute()).map(
+      (v) => v.id,
+    ),
+  );
 }

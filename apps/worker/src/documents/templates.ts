@@ -1,4 +1,4 @@
-import type { BookingDocumentData, LegManifest, VacancyData } from '@vs/engine';
+import type { BookingDocumentData, LegManifest, OutagePackData, VacancyData } from '@vs/engine';
 import { e, ltr, page } from './html';
 import { date, money, number, today, translator, type Locale } from './i18n';
 
@@ -237,9 +237,9 @@ ${m.parties
   });
 }
 
-export function vacancyHtml(v: VacancyData, locale: Locale): string {
+function vacancyTable(v: VacancyData, locale: Locale): string {
   const t = translator(locale);
-  const body = `
+  return `
 <p class="muted">${e(v.vessel)} · ${date(v.from, locale, 'short')} – ${date(v.to, locale, 'short')}</p>
 <table><thead><tr><th>${t('embark')}</th><th>${t('cruise')}</th>${v.categories
     .map(
@@ -259,7 +259,51 @@ ${v.categories
   .join('')}</tr>`,
   )
   .join('')}
-</tbody></table>
+</tbody></table>`;
+}
+
+export function vacancyHtml(v: VacancyData, locale: Locale): string {
+  const t = translator(locale);
+  const body = `${vacancyTable(v, locale)}
 <footer>${t('free')} · ${t('issued')}: ${date(today(), locale, 'short')}</footer>`;
   return page({ locale, title: t('vacancy_sheet'), operator: v.operator, body, landscape: true });
+}
+
+/**
+ * The nightly outage pack: 14 days of free cabins, then who is aboard each departure (names,
+ * nationality and cabin; no passport numbers, since it travels by email).
+ */
+export function outagePackHtml(d: OutagePackData, locale: Locale): string {
+  const t = translator(locale);
+  const departures = d.manifests
+    .map((m) => {
+      const from = locale === 'ar' ? m.leg.from.nameAr : m.leg.from.nameEn;
+      const to = locale === 'ar' ? m.leg.to.nameAr : m.leg.to.nameEn;
+      const rows = m.parties
+        .map(
+          (
+            p,
+          ) => `<tr><td>${p.cabin ? ltr(p.cabin.number) : `<span class="muted">${t('notAssigned')}</span>`}</td>
+<td>${e(locale === 'ar' ? p.category.nameAr : p.category.nameEn)}</td>
+<td>${p.guests.map((g) => `${e(`${g.firstName} ${g.lastName}`)}${g.nationality ? ` ${ltr(g.nationality)}` : ''}`).join('<br>') || '—'}</td>
+<td>${ltr(p.ref)}</td><td>${e(p.channel)}</td></tr>`,
+        )
+        .join('');
+      const guests = m.parties.reduce((n, p) => n + p.guests.length, 0);
+      return `<section style="break-before: page">
+<h2>${t('departure')}: ${date(m.leg.departDate, locale)} · ${t('sailFrom', { from: e(from), to: e(to) })}</h2>
+<p class="muted">${t('totalGuests', { n: number(guests, locale) })}</p>
+<table><thead><tr><th>${t('cabin')}</th><th>${t('category')}</th><th>${t('guests')}</th><th>${t('booking')}</th><th>${t('bookedBy')}</th></tr></thead>
+<tbody>${rows}</tbody></table></section>`;
+    })
+    .join('');
+  const body = `${vacancyTable(d.vacancy, locale)}${departures}
+<footer>${t('issued')}: ${date(today(), locale, 'short')}</footer>`;
+  return page({
+    locale,
+    title: t('outage_pack'),
+    operator: d.vacancy.operator,
+    body,
+    landscape: true,
+  });
 }

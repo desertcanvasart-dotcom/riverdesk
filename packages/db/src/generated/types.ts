@@ -514,6 +514,7 @@ export interface OperatorSetting {
   emergency_phone: string | null;
   offer_hold_hours: Generated<number>;
   operator_id: string;
+  ops_email: string | null;
   option_hold_hours: Generated<number>;
   passport_retention_days: Generated<number>;
   payment_hold_hours: Generated<number>;

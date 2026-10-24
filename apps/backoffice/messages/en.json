@@ -549,7 +549,8 @@
     "emergencyPhone": "Emergency phone (on vouchers)",
     "voucherNoteEn": "Voucher note (English): boarding point, instructions",
     "voucherNoteAr": "Voucher note (Arabic)",
-    "voucherSection": "On every voucher"
+    "voucherSection": "On every voucher",
+    "opsEmail": "Operations email (nightly outage pack)"
   },
   "documents": {
     "title": "Documents",
@@ -566,7 +567,8 @@
     "download": "Download",
     "language": "Language",
     "recent": "Recent",
-    "expires": "Kept until {when}"
+    "expires": "Kept until {when}",
+    "outage_pack": "Outage pack (14 days)"
   },
   "guests": {
     "title": "Guests & manifests",

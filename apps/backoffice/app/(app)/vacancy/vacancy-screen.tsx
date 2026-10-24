@@ -65,6 +65,11 @@ export function VacancyScreen({
                   input: { kind: 'vacancy_sheet', vesselId, from, weeks, format: 'xlsx' },
                 },
                 {
+                  key: 'outage',
+                  label: td('outage_pack'),
+                  input: { kind: 'outage_pack', vesselId },
+                },
+                {
                   key: 'png',
                   label: t('png'),
                   input: { kind: 'vacancy_sheet', vesselId, from, weeks, format: 'png' },
