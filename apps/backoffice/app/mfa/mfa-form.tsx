@@ -30,7 +30,9 @@ export function MfaForm({
       if (verified) return setFactor({ id: verified.id });
       const enrolled = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: `vessel-system ${new Date().toISOString().slice(0, 10)}`,
+        // What the authenticator app shows next to the code.
+        issuer: 'Riverdesk',
+        friendlyName: `Riverdesk ${new Date().toISOString().slice(0, 10)}`,
       });
       if (enrolled.data)
         setFactor({

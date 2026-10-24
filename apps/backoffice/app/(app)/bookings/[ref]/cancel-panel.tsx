@@ -5,10 +5,12 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Dialog } from '../../../../components/dialog';
-import { Alert, Button, Field, Input } from '../../../../components/ui';
+import { Alert, Button, Field } from '../../../../components/ui';
 import { useErrorText } from '../../../../lib/errors';
 import { formatMoney } from '../../../../lib/format';
 import { newRequestKey, useTRPC } from '../../../../lib/trpc';
+import { ChoiceField } from '../../../../components/choice-field';
+import { useReasons } from '../../../../lib/choices';
 
 /** The penalty is shown before anything is cancelled. */
 export function CancelPanel({ bookingId, bookingRef }: { bookingId: string; bookingRef: string }) {
@@ -20,6 +22,7 @@ export function CancelPanel({ bookingId, bookingRef }: { bookingId: string; book
   const errorText = useErrorText();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const reasons = useReasons('cancel');
   const requestKey = useMemo(() => newRequestKey(), [open]);
   const preview = useQuery(
     trpc.bookings.cancelPreview.queryOptions({ bookingId }, { enabled: open }),
@@ -64,11 +67,13 @@ export function CancelPanel({ bookingId, bookingRef }: { bookingId: string; book
             </Alert>
           ) : null}
           <Field label={t('cancelReason')}>
-            <Input
+            <ChoiceField
               required
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              allowEmpty={false}
               maxLength={500}
+              choices={reasons}
+              value={reason}
+              onChange={setReason}
             />
           </Field>
           {cancel.isError && <Alert tone="bad">{errorText(cancel.error)}</Alert>}

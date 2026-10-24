@@ -31,7 +31,7 @@ A **category** is a kind of cabin sold at one price, such as Standard, Deluxe or
 - **Name** in English and Arabic: what guests see on vouchers.
 - **Code**: short, such as `STD` or `SUITE`. Cannot change later.
 - **Adults (maximum)** and **guests in total (maximum)**: for example 2 adults and 3 guests in total means two adults and one child.
-- **Deck, view, beds** (optional): shown to staff and agencies.
+- **Deck, view, beds** (optional): pick from the usual ones (Main deck, River view, Twin beds…) or choose **Other…** and type your own. Shown to staff and agencies, in their language.
 - **Extra bed possible**, and the **order** in which categories are listed.
 
 You can lower a guest limit only if no booking still to sail has more guests than the new limit. Riverdesk tells you how many bookings to amend first.

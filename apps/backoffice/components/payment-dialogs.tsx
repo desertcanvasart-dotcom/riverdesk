@@ -19,6 +19,8 @@ export const METHODS = [
   'gateway',
 ] as const;
 import { CURRENCIES } from '@vs/shared/money';
+import { ChoiceField } from './choice-field';
+import { useReasons } from '../lib/choices';
 
 /** Finds a booking by reference when the dialog was not opened from one. */
 function useBookingByRef(initialRef: string) {
@@ -354,6 +356,7 @@ export function ReverseDialog({
   const trpc = useTRPC();
   const errorText = useErrorText();
   const [reason, setReason] = useState('');
+  const reasons = useReasons('reversal');
   const reverse = useMutation(trpc.payments.reverse.mutationOptions({ onSuccess: onDone }));
   return (
     <Dialog open onClose={onClose} title={t('reverseTitle')}>
@@ -366,11 +369,13 @@ export function ReverseDialog({
       >
         <Alert tone="warn">{t('reverseHelp')}</Alert>
         <Field label={tc('reason')}>
-          <Input
+          <ChoiceField
             required
+            allowEmpty={false}
             maxLength={500}
+            choices={reasons}
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={setReason}
           />
         </Field>
         {reverse.isError && <Alert tone="bad">{errorText(reverse.error)}</Alert>}

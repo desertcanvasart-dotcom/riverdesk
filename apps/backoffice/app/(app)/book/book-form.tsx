@@ -21,6 +21,7 @@ import { usePriceLineLabel } from '../../../lib/price-lines';
 import { formatDate, formatMoney } from '../../../lib/format';
 import { newRequestKey, useTRPC } from '../../../lib/trpc';
 import { useMarkets } from '../../../lib/markets';
+import { CountrySelect } from '../../../components/country-select';
 
 interface Category {
   id: string;
@@ -426,14 +427,9 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
               />
             </Field>
             <Field label={t('nationality')}>
-              <Input
-                maxLength={2}
-                dir="ltr"
-                className="uppercase"
+              <CountrySelect
                 value={guest.nationality}
-                onChange={(e) =>
-                  setGuest({ ...guest, nationality: e.target.value.replace(/[^a-z]/gi, '') })
-                }
+                onChange={(nationality) => setGuest({ ...guest, nationality })}
               />
             </Field>
             {channel?.type !== 'back_office' && (

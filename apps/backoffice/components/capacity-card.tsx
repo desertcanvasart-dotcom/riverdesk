@@ -10,6 +10,8 @@ import { cairoTodayIso } from '../lib/dates';
 import { useErrorText } from '../lib/errors';
 import { formatDate } from '../lib/format';
 import { useTRPC } from '../lib/trpc';
+import { ChoiceField } from './choice-field';
+import { useChoiceLabel, useChoices, useReasons } from '../lib/choices';
 
 interface Category {
   id: string;
@@ -34,6 +36,7 @@ export function CapacityCard({
   const locale = useLocale();
   const trpc = useTRPC();
   const cabins = useQuery(trpc.schedule.cabins.queryOptions({ vesselId }));
+  const choiceLabel = useChoiceLabel();
   const [change, setChange] = useState<Change | null>(null);
   const code = (id: string | null) => categories.find((c) => c.id === id)?.code ?? '—';
   return (
@@ -62,7 +65,7 @@ export function CapacityCard({
                 </span>
               )}
             </Td>
-            <Td>{c.deck ?? '—'}</Td>
+            <Td>{choiceLabel('deck', c.deck) || '—'}</Td>
             <Td>
               {canWrite && c.categoryId && !c.until && (
                 <div className="flex gap-1">
@@ -90,6 +93,7 @@ export function CapacityCard({
         vesselId={vesselId}
         change={change}
         categories={categories}
+        decks={cabins.data?.map((c) => c.deck) ?? []}
         onClose={() => setChange(null)}
       />
     </Card>
@@ -100,11 +104,14 @@ function CapacityDialog({
   vesselId,
   change,
   categories,
+  decks,
   onClose,
 }: {
   vesselId: string;
   change: Change | null;
   categories: Category[];
+  /** Deck names already on this ship, offered with the usual ones. */
+  decks: (string | null)[];
   onClose: () => void;
 }) {
   const t = useTranslations('inventory');
@@ -118,6 +125,8 @@ function CapacityDialog({
   const [deck, setDeck] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [reason, setReason] = useState('');
+  const reasons = useReasons('capacity');
+  const deckChoices = useChoices('deck', decks);
   const done = {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: trpc.schedule.cabins.queryKey() });
@@ -194,7 +203,7 @@ function CapacityDialog({
             )}
             <div className="grid grid-cols-2 items-end gap-3">
               <Field label={t('deck')}>
-                <Input value={deck} onChange={(e) => setDeck(e.target.value)} />
+                <ChoiceField maxLength={50} choices={deckChoices} value={deck} onChange={setDeck} />
               </Field>
               <label className="flex min-h-10 items-center gap-2 text-sm">
                 <input
@@ -228,11 +237,13 @@ function CapacityDialog({
           />
         </Field>
         <Field label={t('reason')}>
-          <Input
+          <ChoiceField
             required
+            allowEmpty={false}
             maxLength={500}
+            choices={reasons}
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={setReason}
           />
         </Field>
         {failed && (

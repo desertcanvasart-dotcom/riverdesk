@@ -857,7 +857,10 @@
       "route_in_use": "This route already has itineraries or departures, so its stops cannot change and it cannot be deleted.",
       "itinerary_in_use": "This itinerary already has sailings or rates: pause it instead.",
       "port_in_use": "This port is on a running route. End or change that route first."
-    }
+    },
+    "startFrom": "Start from a Nile port",
+    "startFromHint": "Fills in the code and both names; you can still change them.",
+    "ownPort": "Another port (type it below)"
   },
   "policies": {
     "seasons": "Seasons",
@@ -978,7 +981,9 @@
     },
     "ruleLast": "Less than {n} days before, or no-show: {p}% penalty",
     "ruleAlways": "At any time: {p}% penalty",
-    "bandOne": "Age {n}"
+    "bandOne": "Age {n}",
+    "startFrom": "Start from a usual season",
+    "ownSeason": "Another season (type it below)"
   },
   "setup": {
     "title": "Getting started",
@@ -1094,6 +1099,85 @@
       "market_in_use": "Rate plans or bookings use this market: switch it off instead.",
       "unknown_market": "That market is not offered: choose another or switch it on in Settings."
     },
-    "editRow": "Edit"
+    "editRow": "Edit",
+    "startFrom": "Start from a common market",
+    "ownMarket": "Another market (type it below)"
+  },
+  "choices": {
+    "none": "—",
+    "choose": "Choose…",
+    "other": "Other…",
+    "typeIt": "Type it",
+    "commonCountries": "Most common",
+    "allCountries": "All countries",
+    "deck": {
+      "lower": "Lower deck",
+      "main": "Main deck",
+      "middle": "Middle deck",
+      "upper": "Upper deck",
+      "promenade": "Promenade deck",
+      "sun": "Sun deck"
+    },
+    "view": {
+      "river": "River view",
+      "panoramic": "Panoramic window",
+      "balcony": "Private balcony",
+      "french": "French balcony",
+      "window": "Window",
+      "porthole": "Porthole"
+    },
+    "bed": {
+      "twin": "Twin beds",
+      "double": "Double bed",
+      "twinOrDouble": "Twin or double",
+      "king": "King bed",
+      "triple": "Triple",
+      "twinSofa": "Twin + sofa bed"
+    },
+    "reasons": {
+      "block": {
+        "maintenance": "Maintenance or repair",
+        "group": "Held for a group",
+        "crew": "Crew or staff use",
+        "vip": "Held for a VIP or guest of the company",
+        "complaint": "Out of use after a complaint"
+      },
+      "capacity": {
+        "initialSetup": "Initial setup",
+        "refit": "Refit or renovation",
+        "newCabins": "New cabins added",
+        "retired": "Cabin retired",
+        "reclassified": "Cabin reclassified"
+      },
+      "schedule": {
+        "lowWater": "Low water level",
+        "lock": "Esna lock closure or delay",
+        "weather": "Weather",
+        "technical": "Technical problem",
+        "charter": "Ship chartered",
+        "lowDemand": "Low demand",
+        "authorities": "Authorities' instruction"
+      },
+      "cancel": {
+        "guestRequest": "Guest asked to cancel",
+        "agencyRequest": "Agency asked to cancel",
+        "unpaid": "Not paid in time",
+        "duplicate": "Duplicate booking",
+        "sailingCancelled": "Sailing cancelled",
+        "medical": "Illness or medical reason"
+      },
+      "decline": {
+        "full": "No cabins left in that category",
+        "priceNotAccepted": "Price or terms not accepted",
+        "datesUnavailable": "Dates not available",
+        "groupTooLarge": "Group too large for the ship"
+      },
+      "reversal": {
+        "wrongAmount": "Wrong amount entered",
+        "wrongBooking": "Recorded on the wrong booking",
+        "bounced": "Payment bounced or was returned",
+        "duplicatePayment": "Recorded twice"
+      }
+    }
   }
 }

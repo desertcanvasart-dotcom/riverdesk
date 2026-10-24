@@ -4,7 +4,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Dialog } from '../../../components/dialog';
-import { Alert, Badge, Button, Card, Field, Input, Table, Td } from '../../../components/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Field,
+  Input,
+  Select,
+  Table,
+  Td,
+} from '../../../components/ui';
+import { COMMON_MARKETS, usePickName } from '../../../lib/choices';
 import { useErrorText } from '../../../lib/errors';
 import { useMarkets } from '../../../lib/markets';
 import { useTRPC } from '../../../lib/trpc';
@@ -135,6 +146,10 @@ function MarketDialog({
     },
   };
   const add = useMutation(trpc.settings.addMarket.mutationOptions(done));
+  const { markets } = useMarkets();
+  const pickName = usePickName();
+  const [preset, setPreset] = useState<(typeof COMMON_MARKETS)[number] | null>(null);
+  const k = preset?.[0] ?? '';
   const update = useMutation(trpc.settings.updateMarket.mutationOptions(done));
   const failed = add.error ?? update.error;
   return (
@@ -155,12 +170,43 @@ function MarketDialog({
           else add.mutate({ code: String(form.get('code')).trim().toLowerCase(), ...fields });
         }}
       >
+        {!market && (
+          <Field label={t('startFrom')}>
+            <Select
+              value={k}
+              onChange={(e) =>
+                setPreset(COMMON_MARKETS.find((x) => x[0] === e.target.value) ?? null)
+              }
+            >
+              <option value="">{t('ownMarket')}</option>
+              {COMMON_MARKETS.filter((x) => !markets.some((m) => m.code === x[0])).map((x) => (
+                <option key={x[0]} value={x[0]}>
+                  {pickName(x)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('nameEn')}>
-            <Input name="nameEn" required maxLength={100} dir="ltr" defaultValue={market?.nameEn} />
+            <Input
+              key={`en-${k}`}
+              name="nameEn"
+              required
+              maxLength={100}
+              dir="ltr"
+              defaultValue={market?.nameEn ?? preset?.[1]}
+            />
           </Field>
           <Field label={t('nameAr')}>
-            <Input name="nameAr" required maxLength={100} dir="rtl" defaultValue={market?.nameAr} />
+            <Input
+              key={`ar-${k}`}
+              name="nameAr"
+              required
+              maxLength={100}
+              dir="rtl"
+              defaultValue={market?.nameAr ?? preset?.[2]}
+            />
           </Field>
           <Field label={t('code')} hint={market ? t('codeFixed') : t('codeHint')}>
             <Input
@@ -170,7 +216,8 @@ function MarketDialog({
               className="lowercase"
               pattern="[A-Za-z][A-Za-z_]{1,31}"
               disabled={Boolean(market)}
-              defaultValue={market?.code}
+              key={`code-${k}`}
+              defaultValue={market?.code ?? preset?.[0]}
             />
           </Field>
           <Field label={t('order')}>
@@ -186,10 +233,11 @@ function MarketDialog({
         </div>
         <label className="flex items-start gap-2 text-sm">
           <input
+            key={`proof-${k}`}
             type="checkbox"
             name="proof"
             className="mt-0.5 size-4"
-            defaultChecked={market?.needsResidencyProof ?? true}
+            defaultChecked={market?.needsResidencyProof ?? preset?.[3] ?? true}
           />
           <span>
             {t('proofLabel')}

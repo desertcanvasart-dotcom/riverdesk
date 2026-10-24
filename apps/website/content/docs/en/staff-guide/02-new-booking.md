@@ -15,7 +15,7 @@ The booking screen is built for the phone call: you can confirm a booking in abo
 2. **Market**: who the price is for, from your list in [Settings](/docs/staff-guide/settings), such as _International_ or _Egyptian resident_. Only markets this channel sells appear. When a market needs proof, the screen says so and the voucher reminds the guest to bring residency or ID.
 3. **Cabins**: the category, the number of adults, and the **ages of children on the embark date** (for example `4, 8`). Add a cabin for each extra room.
 4. **Sailings**: pick the itinerary (for example _LXR-4_), then tap a sailing. Each sailing shows how many cabins of your categories are free. Sailings that cannot take your cabins are greyed out. Use **Earlier / Later** to move through the dates.
-5. **Lead guest**: first and last name; nationality if you know it.
+5. **Lead guest**: first and last name; nationality if you know it, picked from the list of countries (the usual ones first).
 6. Check the **price lines and total**, then press **Confirm booking**.
 
 You land on the new booking. Its reference (for example `VS-26-00610`) is what the guest quotes from then on.

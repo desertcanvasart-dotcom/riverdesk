@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog } from '../../../components/dialog';
-import { Alert, Badge, Button, Card, Empty, Field, Input, Select } from '../../../components/ui';
+import { Alert, Badge, Button, Card, Empty, Field, Select } from '../../../components/ui';
 import { addDaysIso } from '../../../lib/dates';
 import { useErrorText } from '../../../lib/errors';
 import { formatDate, formatDateTime, formatMoney } from '../../../lib/format';
 import { statusTone } from '../../../lib/status';
 import { newRequestKey, useTRPC } from '../../../lib/trpc';
+import { ChoiceField } from '../../../components/choice-field';
+import { useReasons } from '../../../lib/choices';
 
 /** Ticks every 30 s so the SLA countdowns stay current. */
 function useNow(intervalMs = 30_000) {
@@ -162,6 +164,7 @@ function DeclineDialog({
   const trpc = useTRPC();
   const errorText = useErrorText();
   const [reason, setReason] = useState('');
+  const reasons = useReasons('decline');
   const decline = useMutation(
     trpc.requests.decline.mutationOptions({
       onSuccess: () => {
@@ -181,11 +184,13 @@ function DeclineDialog({
         }}
       >
         <Field label={t('declineReason')}>
-          <Input
+          <ChoiceField
             required
+            allowEmpty={false}
             maxLength={500}
+            choices={reasons}
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={setReason}
           />
         </Field>
         {decline.isError && <Alert tone="bad">{errorText(decline.error)}</Alert>}

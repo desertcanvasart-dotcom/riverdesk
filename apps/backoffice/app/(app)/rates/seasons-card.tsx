@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Dialog } from '../../../components/dialog';
-import { Alert, Badge, Button, Card, Field, Input } from '../../../components/ui';
+import { Alert, Badge, Button, Card, Field, Input, Select } from '../../../components/ui';
+import { COMMON_SEASONS, usePickName } from '../../../lib/choices';
 import { formatDate } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 import { usePolicyError } from './policy-errors';
@@ -140,6 +141,7 @@ function SeasonDialog({
   const trpc = useTRPC();
   const policyError = usePolicyError();
   const [code, setCode] = useState(season?.code ?? '');
+  const pickName = usePickName();
   const [name, setName] = useState(season?.name ?? '');
   const [periods, setPeriods] = useState(season?.periods ?? [{ from: '', to: '' }]);
   const add = useMutation(trpc.rates.addSeason.mutationOptions());
@@ -174,6 +176,26 @@ function SeasonDialog({
           }
         }}
       >
+        {!season && (
+          <Field label={t('startFrom')}>
+            <Select
+              value=""
+              onChange={(e) => {
+                const row = COMMON_SEASONS.find((x) => x[0] === e.target.value);
+                if (!row) return;
+                setName(pickName(row));
+                setCode(row[0]);
+              }}
+            >
+              <option value="">{t('ownSeason')}</option>
+              {COMMON_SEASONS.map((x) => (
+                <option key={x[0]} value={x[0]}>
+                  {pickName(x)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('seasonName')} hint={t('seasonNameHint')}>
             <Input

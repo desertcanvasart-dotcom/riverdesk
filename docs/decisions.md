@@ -662,3 +662,11 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - Currencies: SAR, AED, QAR, CHF, CAD, AUD (2 decimals) and KWD, BHD, OMR (3 decimals) next to USD, EUR, EGP, GBP. One table in `@vs/shared/money` (`decimalsOf`, `minorToDecimal`, `decimalToMinor`, exported to the browser as `@vs/shared/money`) drives the back-office formatting and price fields, PDFs and the bookings import; amounts stay integer minor units (1.250 KWD = 1250). The API's Money is already minor units with any 3-letter code.
 - Each rate plan has its own currency, so each market can be sold in its own currency; amounts are never converted.
 - Fixed while testing: after creating a rate plan, the Rates screen now selects the new plan once the list has it (it fell back to the first plan).
+
+## Pick lists instead of typing (2026-10-24, user request)
+
+- A shared **pick-or-type** field (`ChoiceField`): the usual answers in a list, plus **Other…** to type one. Used for a category's deck, view and beds and the deck of new cabins (with the ship's own deck names added), and for every reason field: schedule changes, blocks, cabin changes, cancellations, declined requests and payment reversals.
+- Deck, view and beds are stored in English (as agencies and vouchers read them) and shown in the screen's language; a typed value is shown as typed. Reasons are stored as the words picked.
+- Nationality is a country list (names from the browser in Arabic or English, the usual guest countries first); the guest record keeps the 2-letter code, so nothing changed underneath.
+- **Start from** lists fill a new port (19 Nile ports, including Lake Nasser stops), market (8 common markets with their usual proof setting) or season (8 usual names) with code and both names, still editable.
+- The browser tab now says Riverdesk, and new authenticator entries are named Riverdesk.

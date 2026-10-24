@@ -23,6 +23,8 @@ import { formatDate, formatDateTime } from '../../../lib/format';
 import { statusTone } from '../../../lib/status';
 import { useTRPC } from '../../../lib/trpc';
 import { RoutesSection } from './routes-section';
+import { ChoiceField } from '../../../components/choice-field';
+import { useReasons } from '../../../lib/choices';
 
 const WINDOW = 28;
 type Kind = 'cancel' | 'shift' | 'port_change' | 'dry_dock';
@@ -235,6 +237,7 @@ function ExceptionDialog({
   const trpc = useTRPC();
   const errorText = useErrorText();
   const [reason, setReason] = useState('');
+  const reasons = useReasons('schedule');
   const [days, setDays] = useState(1);
   const [fromPortId, setFromPortId] = useState('');
   const [toPortId, setToPortId] = useState('');
@@ -344,11 +347,13 @@ function ExceptionDialog({
           </div>
         )}
         <Field label={tc('reason')}>
-          <Input
+          <ChoiceField
             required
+            allowEmpty={false}
             maxLength={500}
+            choices={reasons}
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={setReason}
           />
         </Field>
 

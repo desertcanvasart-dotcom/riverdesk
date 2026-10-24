@@ -19,6 +19,8 @@ import {
   Td,
   cx,
 } from '../../../components/ui';
+import { ChoiceField } from '../../../components/choice-field';
+import { useChoiceLabel, useChoices } from '../../../lib/choices';
 import { useErrorText } from '../../../lib/errors';
 import { useTRPC } from '../../../lib/trpc';
 
@@ -75,6 +77,7 @@ export function FleetScreen({
   const locale = useLocale();
   const trpc = useTRPC();
   const fleet = useQuery(trpc.fleet.list.queryOptions());
+  const choiceLabel = useChoiceLabel();
   const [picked, setPicked] = useState<string | null>(null);
   const [vesselDialog, setVesselDialog] = useState<'add' | 'edit' | null>(null);
   const [categoryDialog, setCategoryDialog] = useState<Category | 'add' | null>(null);
@@ -163,7 +166,13 @@ export function FleetScreen({
                     </Td>
                     <Td>{locale.startsWith('ar') ? c.nameAr : c.nameEn}</Td>
                     <Td className="text-muted">
-                      {[c.deck, c.view, c.bedConfig].filter(Boolean).join(' · ') || '—'}
+                      {[
+                        choiceLabel('deck', c.deck),
+                        choiceLabel('view', c.view),
+                        choiceLabel('bed', c.bedConfig),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || '—'}
                     </Td>
                     <Td>
                       {t('guestsValue', { adults: c.maxAdults, max: c.maxOccupancy })}
@@ -208,6 +217,7 @@ export function FleetScreen({
           vesselId={vessel.id}
           category={categoryDialog}
           nextSort={(vessel.categories.at(-1)?.sortOrder ?? 0) + 10}
+          decks={vessel.categories.map((c) => c.deck)}
           onClose={() => setCategoryDialog(null)}
         />
       )}
@@ -362,13 +372,19 @@ function CategoryDialog({
   vesselId,
   category,
   nextSort,
+  decks,
   onClose,
 }: {
   vesselId: string;
   category: Category | 'add' | null;
   nextSort: number;
+  /** Deck names this ship already uses, offered next to the usual ones. */
+  decks: (string | null)[];
   onClose: () => void;
 }) {
+  const deckChoices = useChoices('deck', decks);
+  const viewChoices = useChoices('view');
+  const bedChoices = useChoices('bed');
   const t = useTranslations('fleet');
   const tc = useTranslations('common');
   const trpc = useTRPC();
@@ -483,13 +499,28 @@ function CategoryDialog({
             />
           </Field>
           <Field label={t('deck')}>
-            <Input name="deck" maxLength={50} defaultValue={editing?.deck ?? ''} />
+            <ChoiceField
+              name="deck"
+              maxLength={50}
+              choices={deckChoices}
+              defaultValue={editing?.deck ?? ''}
+            />
           </Field>
           <Field label={t('view')}>
-            <Input name="view" maxLength={50} defaultValue={editing?.view ?? ''} />
+            <ChoiceField
+              name="view"
+              maxLength={50}
+              choices={viewChoices}
+              defaultValue={editing?.view ?? ''}
+            />
           </Field>
-          <Field label={t('bedConfig')} hint={t('bedConfigHint')}>
-            <Input name="bedConfig" maxLength={50} defaultValue={editing?.bedConfig ?? ''} />
+          <Field label={t('bedConfig')}>
+            <ChoiceField
+              name="bedConfig"
+              maxLength={50}
+              choices={bedChoices}
+              defaultValue={editing?.bedConfig ?? ''}
+            />
           </Field>
           <label className="flex min-h-10 items-center gap-2 self-end text-sm">
             <input

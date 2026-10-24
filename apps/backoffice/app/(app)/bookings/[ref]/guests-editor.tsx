@@ -9,6 +9,7 @@ import { Alert, Badge, Button, Field, Input, Select } from '../../../../componen
 import { useErrorText } from '../../../../lib/errors';
 import { formatDate } from '../../../../lib/format';
 import { newRequestKey, useTRPC } from '../../../../lib/trpc';
+import { CountrySelect, countryName } from '../../../../components/country-select';
 
 interface Guest {
   id: string;
@@ -100,9 +101,7 @@ export function GuestsEditor({
                 </span>
                 {g.lead && <Badge tone="info">{t('lead')}</Badge>}
                 {g.nationality && (
-                  <span className="text-muted" dir="ltr">
-                    {g.nationality}
-                  </span>
+                  <span className="text-muted">{countryName(g.nationality, locale)}</span>
                 )}
                 {g.dateOfBirth && (
                   <span className="text-muted">{formatDate(g.dateOfBirth, locale, 'long')}</span>
@@ -183,12 +182,9 @@ export function GuestsEditor({
             />
           </Field>
           <Field label={tb('nationality')}>
-            <Input
-              dir="ltr"
-              maxLength={2}
-              className="uppercase"
+            <CountrySelect
               value={d.nationality}
-              onChange={(e) => update(i, { nationality: e.target.value.replace(/[^a-z]/gi, '') })}
+              onChange={(nationality) => update(i, { nationality })}
             />
           </Field>
           <Field label={t('dob')}>

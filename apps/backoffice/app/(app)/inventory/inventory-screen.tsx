@@ -23,6 +23,8 @@ import { useErrorText } from '../../../lib/errors';
 import { formatDate } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 import { CapacityCard } from '../../../components/capacity-card';
+import { ChoiceField } from '../../../components/choice-field';
+import { useReasons } from '../../../lib/choices';
 
 interface Category {
   id: string;
@@ -243,6 +245,7 @@ function ActionDialog({
   const [categoryId, setCategoryId] = useState('');
   const [count, setCount] = useState(1);
   const [reason, setReason] = useState('');
+  const reasons = useReasons('block');
   const options = { onSuccess: onDone };
   const block = useMutation(trpc.inventory.block.mutationOptions(options));
   const emergency = useMutation(trpc.inventory.emergencyBlock.mutationOptions(options));
@@ -304,11 +307,13 @@ function ActionDialog({
           )}
         </div>
         <Field label={t('reason')}>
-          <Input
+          <ChoiceField
             required
+            allowEmpty={false}
             maxLength={500}
+            choices={reasons}
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={setReason}
           />
         </Field>
         {running?.isError && <Alert tone="bad">{errorText(running.error)}</Alert>}

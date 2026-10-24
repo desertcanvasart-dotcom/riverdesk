@@ -12,6 +12,7 @@ import { useErrorText } from '../../../lib/errors';
 import { formatDate } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 import { CabinMap } from './cabin-map';
+import { countryName } from '../../../components/country-select';
 
 const WINDOW = 14;
 
@@ -220,8 +221,8 @@ export function GuestsScreen({
                                   {g.firstName} {g.lastName}
                                 </span>
                                 {g.nationality && (
-                                  <span className="text-xs text-muted" dir="ltr">
-                                    {g.nationality}
+                                  <span className="text-xs text-muted">
+                                    {countryName(g.nationality, locale)}
                                   </span>
                                 )}
                                 {g.dateOfBirth && (
