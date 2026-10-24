@@ -174,7 +174,7 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
               <Td>
                 <span className="font-medium">{c.code}</span>
                 <span className="block text-xs text-muted">
-                  {locale === 'ar' ? c.name_ar : c.name_en}
+                  {locale.startsWith('ar') ? c.name_ar : c.name_en}
                 </span>
               </Td>
               {bases.map((b) => {
@@ -248,7 +248,7 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
                   <Td>
                     <span className="font-medium">{s.code}</span>
                     <span className="block text-xs text-muted">
-                      {locale === 'ar' ? s.nameAr : s.nameEn}
+                      {locale.startsWith('ar') ? s.nameAr : s.nameEn}
                     </span>
                   </Td>
                   <Td>

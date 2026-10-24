@@ -143,7 +143,7 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
     guest.lastName.trim() &&
     !create.isPending;
 
-  const categoryName = (c: Category) => (locale === 'ar' ? c.name_ar : c.name_en);
+  const categoryName = (c: Category) => (locale.startsWith('ar') ? c.name_ar : c.name_en);
   const marketLabel = (m: string) => (t.has(`market_${m}`) ? t(`market_${m}`) : m);
 
   return (

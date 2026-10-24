@@ -10,7 +10,9 @@ export default getRequestConfig(async () => {
   const value = (await cookies()).get(LOCALE_COOKIE)?.value;
   const locale: Locale = value === 'en' ? 'en' : 'ar';
   return {
-    locale,
+    // Egyptian Arabic for formatting: Arabic-Indic digits everywhere, like money and dates.
+    // Code compares with startsWith('ar').
+    locale: locale === 'ar' ? 'ar-EG' : 'en',
     timeZone: 'Africa/Cairo',
     messages: (await import(`../messages/${locale}.json`)).default,
   };

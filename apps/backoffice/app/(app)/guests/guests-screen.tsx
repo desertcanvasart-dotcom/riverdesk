@@ -124,8 +124,8 @@ export function GuestsScreen({
               title={
                 <span>
                   {formatDate(m.leg.departDate, locale, 'long')} ·{' '}
-                  {locale === 'ar' ? m.leg.from.nameAr : m.leg.from.nameEn} –{' '}
-                  {locale === 'ar' ? m.leg.to.nameAr : m.leg.to.nameEn}
+                  {locale.startsWith('ar') ? m.leg.from.nameAr : m.leg.from.nameEn} –{' '}
+                  {locale.startsWith('ar') ? m.leg.to.nameAr : m.leg.to.nameEn}
                   <span className="block text-sm font-normal text-muted">
                     {t('guestsCount', { n: m.parties.reduce((n, p) => n + p.guests.length, 0) })}
                   </span>
@@ -168,7 +168,7 @@ export function GuestsScreen({
                           </Link>
                           <span className="text-muted">{p.channel}</span>
                           <Badge tone="neutral">
-                            {locale === 'ar' ? p.category.nameAr : p.category.nameEn}
+                            {locale.startsWith('ar') ? p.category.nameAr : p.category.nameEn}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted">

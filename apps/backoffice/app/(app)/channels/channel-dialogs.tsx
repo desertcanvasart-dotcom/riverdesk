@@ -271,7 +271,7 @@ export function ContractDialog({
             >
               {(['none', 'markup', 'commission'] as const).map((k) => (
                 <option key={k} value={k}>
-                  {t(`adjustment_${k}`, { p: form.percent })}
+                  {t(`adjustment_${k}`, { p: Number(form.percent) || 0 })}
                 </option>
               ))}
             </Select>
@@ -414,7 +414,7 @@ export function AllotmentDialog({
             ))}
           </div>
         </fieldset>
-        <Field label={t('releaseDays', { n: releaseDays || '…' })}>
+        <Field label={t('releaseDays', { n: Number(releaseDays) || 0 })}>
           <Input
             type="number"
             min={0}

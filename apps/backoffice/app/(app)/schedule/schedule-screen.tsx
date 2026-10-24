@@ -70,7 +70,7 @@ export function ScheduleScreen({
   };
   const portName = (code: string) => {
     const port = data?.ports.find((p) => p.code === code);
-    return port ? (locale === 'ar' ? port.name_ar : port.name_en) : code;
+    return port ? (locale.startsWith('ar') ? port.name_ar : port.name_en) : code;
   };
 
   return (
@@ -209,7 +209,7 @@ export function ScheduleScreen({
                       {p.code}
                     </span>
                     <span className="block text-xs text-muted">
-                      {locale === 'ar' ? p.nameAr : p.nameEn}
+                      {locale.startsWith('ar') ? p.nameAr : p.nameEn}
                     </span>
                   </Td>
                   <Td>{p.nights}</Td>
@@ -318,7 +318,7 @@ function ExceptionDialog({
           ? t('portChange')
           : t('dryDock');
   const portLabel = (port: (typeof ports)[number]) =>
-    `${port.code} · ${locale === 'ar' ? port.name_ar : port.name_en}`;
+    `${port.code} · ${locale.startsWith('ar') ? port.name_ar : port.name_en}`;
 
   return (
     <Dialog

@@ -555,3 +555,6 @@ The Batch 6 screens replace it: Today, inventory, bookings, schedule, guests and
 
 **2026-10-24 · Screens are checked at 375 px in both languages by a script, and the phone booking is timed.**
 `pnpm --filter @vs/backoffice screenshots` signs in as the demo owner and captures every screen in Arabic and English at 375 px. It fails if a page scrolls sideways or has the wrong text direction. The images go to `docs/screenshots/batch-6/` and are not committed. `pnpm --filter @vs/backoffice usability` plays a phone booking at human pace (about 1 s per tap, about 8 characters a second): 9.6 s and 6 taps locally, against the 60 s target. Itinerary chips on the booking screen keep the sailing list short on a phone.
+
+**2026-10-24 · Arabic screens use Arabic-Indic digits everywhere.**
+The back office formats with `ar-EG` (the language cookie stays `ar`; code checks `startsWith('ar')`), and numeric placeholders in the Arabic messages are `{x, number}`. Counts, times and percentages now match money and dates, which already used `ar-EG`.

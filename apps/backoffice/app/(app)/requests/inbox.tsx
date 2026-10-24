@@ -26,7 +26,7 @@ function remaining(ms: number, locale: string) {
   const minutes = Math.max(0, Math.round(ms / 60_000));
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  const fmt = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-GB');
+  const fmt = new Intl.NumberFormat(locale.startsWith('ar') ? 'ar-EG' : 'en-GB');
   return h > 0
     ? `${fmt.format(h)}:${fmt.format(m).padStart(2, fmt.format(0))}`
     : `${fmt.format(m)} min`;

@@ -98,7 +98,7 @@ export function InventoryScreen({ vessels, canWrite }: { vessels: Vessel[]; canW
               canWrite ? '' : null,
               t('leg'),
               ...categories.map((c) => (
-                <span key={c.id} title={locale === 'ar' ? c.name_ar : c.name_en}>
+                <span key={c.id} title={locale.startsWith('ar') ? c.name_ar : c.name_en}>
                   {c.code}
                 </span>
               )),

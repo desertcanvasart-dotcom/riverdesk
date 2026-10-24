@@ -2,7 +2,7 @@
  * Locale-aware formatting. Money arrives as integer minor units and is formatted from a decimal
  * string (Intl accepts exact decimal strings), so no float ever touches an amount.
  */
-const tag = (locale: string) => (locale === 'ar' ? 'ar-EG' : 'en-GB');
+const tag = (locale: string) => (locale.startsWith('ar') ? 'ar-EG' : 'en-GB');
 
 export function formatMoney(
   amount: bigint | number | string,

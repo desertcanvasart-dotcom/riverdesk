@@ -107,7 +107,7 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
                     {t('cabin')} {c.index + 1} · {c.categoryCode}{' '}
                     {category && (
                       <span className="text-muted">
-                        {locale === 'ar' ? category.name_ar : category.name_en}
+                        {locale.startsWith('ar') ? category.name_ar : category.name_en}
                       </span>
                     )}
                   </span>
@@ -233,7 +233,7 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
         )}
 
         <Card title={t('revisions')}>
-          <Table head={[t('rev', { n: '#' }), t('reasonLabel'), tc('total'), t('by'), t('when')]}>
+          <Table head={[t('revHeader'), t('reasonLabel'), tc('total'), t('by'), t('when')]}>
             {booking.revisions.map((r) => (
               <tr key={r.rev}>
                 <Td>{r.rev}</Td>

@@ -86,8 +86,9 @@ export function VacancyScreen({
                 <Td className="whitespace-nowrap">
                   <span className="font-medium">{formatDate(s.embarkDate, locale)}</span>
                   <span className="block text-xs text-muted">
-                    {s.embark[locale === 'ar' ? 'ar' : 'en']} –{' '}
-                    {s.disembark[locale === 'ar' ? 'ar' : 'en']} · {tc('nights', { n: s.nights })}
+                    {s.embark[locale.startsWith('ar') ? 'ar' : 'en']} –{' '}
+                    {s.disembark[locale.startsWith('ar') ? 'ar' : 'en']} ·{' '}
+                    {tc('nights', { n: s.nights })}
                   </span>
                 </Td>
                 {v.categories.map((c) => {

@@ -16,7 +16,7 @@ export function LocaleSwitch() {
       disabled={pending}
       onClick={() =>
         start(async () => {
-          await switchLocale(locale === 'ar' ? 'en' : 'ar');
+          await switchLocale(locale.startsWith('ar') ? 'en' : 'ar');
           router.refresh();
         })
       }

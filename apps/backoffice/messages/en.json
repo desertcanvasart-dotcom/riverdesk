@@ -225,7 +225,8 @@
     "applyChange": "Apply change",
     "applied": "Changed. Revision {n}.",
     "nothingToChange": "Nothing changed.",
-    "comingNext": "Documents arrive with the documents screen."
+    "comingNext": "Documents arrive with the documents screen.",
+    "revHeader": "Rev"
   },
   "requests": {
     "title": "Requests",

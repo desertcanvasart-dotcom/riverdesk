@@ -10,7 +10,7 @@ export const viewport = { width: 'device-width', initialScale: 1 };
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
   return (
-    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <html lang={locale} dir={locale.startsWith('ar') ? 'rtl' : 'ltr'}>
       <body className="min-h-dvh antialiased">
         <NextIntlClientProvider messages={await getMessages()}>
           <Providers>{children}</Providers>
