@@ -4,10 +4,18 @@ import { loadConfig, required } from '@vs/shared';
 import { getSession } from '../../server/session';
 import { MfaForm } from './mfa-form';
 
-export default async function MfaPage() {
+export default async function MfaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect('/login');
-  if (!session.needsMfa) redirect('/');
+  // `next`: a page on this site that asked for the code (e.g. the new-password form).
+  const { next: asked } = await searchParams;
+  const next = asked?.startsWith('/') && !asked.startsWith('//') ? asked : null;
+  if (session.aal === 'aal2') redirect(next ?? '/');
+  if (!session.needsMfa && !next) redirect('/');
   const config = loadConfig();
   const t = await getTranslations('mfa');
   return (
@@ -16,6 +24,7 @@ export default async function MfaPage() {
       <MfaForm
         url={required(config, 'SUPABASE_URL')}
         publishableKey={required(config, 'SUPABASE_PUBLISHABLE_KEY')}
+        next={next ?? '/'}
       />
     </main>
   );

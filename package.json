@@ -12,7 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test --concurrency=1",
     "format": "prettier --write .",
-    "supabase:start": "supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,postgres-meta,supavisor,mailpit",
+    "supabase:start": "supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,postgres-meta,supavisor",
     "supabase:stop": "supabase stop",
     "db:migrate": "pnpm --filter @vs/db migrate",
     "db:seed": "pnpm --filter @vs/db seed && pnpm --filter @vs/engine seed-demo",
@@ -20,6 +20,7 @@
     "db:reset": "pnpm --filter @vs/db reset && pnpm --filter @vs/engine seed-demo",
     "db:check-roles": "pnpm --filter @vs/db check-roles",
     "platform:create-company": "pnpm --filter @vs/db create-company",
+    "platform:add-admin": "pnpm --filter @vs/db add-admin",
     "sandbox:setup": "pnpm --filter @vs/engine sandbox-setup"
   },
   "devDependencies": {

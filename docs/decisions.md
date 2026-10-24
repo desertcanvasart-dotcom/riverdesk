@@ -600,3 +600,10 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - **The back office** has `/api/health` for Railway's health check.
   Step-by-step instructions are in `docs/deploy-railway.md`.
   Reason: your choice of provider (2026-10-24). One provider for every program keeps deploys, logs and rollbacks in one place.
+
+## Platform area and password emails (2026-10-24)
+
+- The platform owner works in `/platform` inside the back office rather than in a separate app: one deployment, one sign-in. Access is an email list in `platform.admin` (schema `platform`, owned by `vs_owner`, no grants to runtime roles), maintained with `pnpm platform:add-admin`. Two-step sign-in is always required there.
+- The back office reaches platform data only through four allow-listed SECURITY DEFINER functions (`vs.platform_is_admin`, `vs.platform_companies`, `vs.platform_create_company`, `vs.platform_reinvite_owner`, back office only). Each checks the admin list first. The company list returns counts only. The admin's email comes from the verified session, the same trust as `vs.claim_staff_invitation`.
+- Company creation lives in one SQL function, `platform.create_company`, used by both the command and the platform area.
+- Invited people create their own password at `/signup`. Supabase's email confirmation proves they own the address before the invitation is claimed. Forgotten passwords use Supabase's reset email. Both use PKCE links through `/auth/callback`; no `service_role` key is involved.

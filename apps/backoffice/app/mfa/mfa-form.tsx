@@ -7,7 +7,15 @@ import { Alert, Button, Field, Input } from '../../components/ui';
 import { supabaseBrowser } from '../../lib/supabase-browser';
 
 /** TOTP: verify an existing factor, or enrol one first (owner and finance must use MFA). */
-export function MfaForm({ url, publishableKey }: { url: string; publishableKey: string }) {
+export function MfaForm({
+  url,
+  publishableKey,
+  next,
+}: {
+  url: string;
+  publishableKey: string;
+  next: string;
+}) {
   const t = useTranslations('mfa');
   const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(url, publishableKey), [url, publishableKey]);
@@ -44,7 +52,7 @@ export function MfaForm({ url, publishableKey }: { url: string; publishableKey: 
         const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
         setBusy(false);
         if (error) return setError(t('failed'));
-        router.replace('/');
+        router.replace(next);
         router.refresh();
       }}
     >

@@ -14,6 +14,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
   if (!session) redirect('/login');
   if (session.needsMfa) redirect('/mfa');
+  if (!session.staff && session.platformAdmin) redirect('/platform');
   if (!session.staff) {
     const t = await getTranslations('login');
     return (
@@ -33,6 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       user={profile.displayName}
       role={t(profile.role)}
       showPilot={profile.permissions.includes('pilot.view')}
+      showPlatform={session.platformAdmin}
     >
       {children}
     </Shell>

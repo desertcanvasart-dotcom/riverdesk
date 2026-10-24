@@ -19,7 +19,8 @@ export interface CreatedCompany {
 
 /**
  * Platform task (agreed 2026-10-24): creates a cruise company with its settings, its back-office
- * channel and an invitation for its first owner, in one transaction. Runs as the admin user with
+ * channel and an invitation for its first owner, in one transaction, through
+ * platform.create_company (shared with the platform area). Runs as the admin user with
  * SET LOCAL ROLE vs_owner, because runtime roles cannot create companies.
  */
 export async function createCompany(
@@ -29,42 +30,55 @@ export async function createCompany(
   await client.query('begin');
   try {
     await client.query('set local role vs_owner');
-    const operator = await client.query<{ id: string }>(
-      `insert into vs.operator (name, slug, default_locale) values ($1, $2, $3) returning id`,
-      [input.name, input.slug, input.locale ?? 'ar'],
-    );
-    const operatorId = operator.rows[0]!.id;
-    await client.query(
-      `insert into vs.operator_setting (operator_id, booking_ref_prefix) values ($1, $2)`,
-      [operatorId, input.bookingRefPrefix],
-    );
-    const channel = await client.query<{ id: string }>(
-      `insert into vs.channel (operator_id, code, name, type)
-       values ($1, 'back-office', 'Back office (phone, WhatsApp, walk-in)', 'back_office') returning id`,
-      [operatorId],
-    );
-    const invitation = await client.query<{ id: string }>(
-      `insert into vs.staff_invitation (operator_id, email, display_name, role) values ($1, lower($2), $3, 'owner') returning id`,
-      [operatorId, input.ownerEmail, input.ownerName],
-    );
-    await client.query(
-      `insert into vs.audit_log (operator_id, actor_type, actor_label, action, entity, entity_id, diff)
-       values ($1, 'system', 'platform:create-company', 'operator.created', 'operator', $1, $2)`,
-      [
-        operatorId,
-        JSON.stringify({
-          name: { from: null, to: input.name },
-          slug: { from: null, to: input.slug },
-          owner_invited: { from: null, to: true },
-        }),
-      ],
-    );
+    const { rows } = await client.query<{
+      operator_id: string;
+      back_office_channel_id: string;
+      invitation_id: string;
+    }>(`select * from platform.create_company($1, $2, $3, $4, $5, $6, 'platform:create-company')`, [
+      input.name,
+      input.slug,
+      input.bookingRefPrefix,
+      input.ownerEmail,
+      input.ownerName,
+      input.locale ?? 'ar',
+    ]);
     await client.query('commit');
     return {
-      operatorId,
-      backOfficeChannelId: channel.rows[0]!.id,
-      invitationId: invitation.rows[0]!.id,
+      operatorId: rows[0]!.operator_id,
+      backOfficeChannelId: rows[0]!.back_office_channel_id,
+      invitationId: rows[0]!.invitation_id,
     };
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  }
+}
+
+/**
+ * Lets this verified email into the platform area (it still signs in with a password and the
+ * two-step code). Idempotent. `remove` takes the access away again.
+ */
+export async function setPlatformAdmin(
+  client: pg.ClientBase,
+  email: string,
+  remove = false,
+): Promise<void> {
+  await client.query('begin');
+  try {
+    await client.query('set local role vs_owner');
+    const address = email.trim().toLowerCase();
+    if (remove) await client.query('delete from platform.admin where email = $1', [address]);
+    else
+      await client.query(
+        `insert into platform.admin (email, added_by) values ($1, 'platform:add-admin')
+         on conflict (email) do nothing`,
+        [address],
+      );
+    await client.query(`insert into platform.action_log (admin_email, action) values ($1, $2)`, [
+      address,
+      remove ? 'admin.removed' : 'admin.added',
+    ]);
+    await client.query('commit');
   } catch (error) {
     await client.query('rollback');
     throw error;

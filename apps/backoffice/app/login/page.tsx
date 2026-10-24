@@ -1,21 +1,34 @@
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { loadConfig, required } from '@vs/shared';
-import { LocaleSwitch } from '../../components/locale-switch';
+import { AuthShell } from '../../components/auth-shell';
+import { Alert } from '../../components/ui';
+import { supabasePublic } from '../../lib/supabase-config';
 import { LoginForm } from './login-form';
 
-export default async function LoginPage() {
-  const config = loadConfig();
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ link?: string }>;
+}) {
+  const { link } = await searchParams;
   const t = await getTranslations('login');
+  const a = await getTranslations('auth');
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <LocaleSwitch />
+    <AuthShell title={t('title')}>
+      {link === 'expired' && (
+        <div className="mb-4">
+          <Alert tone="warn">{a('linkExpired')}</Alert>
+        </div>
+      )}
+      <LoginForm {...supabasePublic()} />
+      <div className="mt-6 flex flex-col items-center gap-3 text-sm">
+        <Link href="/forgot-password" className="text-brand">
+          {a('forgotLink')}
+        </Link>
+        <Link href="/signup" className="text-brand">
+          {a('firstTime')}
+        </Link>
       </div>
-      <LoginForm
-        url={required(config, 'SUPABASE_URL')}
-        publishableKey={required(config, 'SUPABASE_PUBLISHABLE_KEY')}
-      />
-    </main>
+    </AuthShell>
   );
 }

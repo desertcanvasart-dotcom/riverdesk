@@ -24,6 +24,7 @@ describe('back-office authorization (server side)', () => {
       email: null,
       aal: 'aal1' as const,
       staff: staff('owner'),
+      platformAdmin: false,
       needsMfa: true,
     };
     await expect(appRouter.createCaller({ session }).home.actionList()).rejects.toMatchObject({
@@ -53,6 +54,7 @@ describe('back-office authorization (server side)', () => {
       email: null,
       aal: 'aal1' as const,
       staff: staff('read_only'),
+      platformAdmin: false,
       needsMfa: false,
     };
     const caller = appRouter.createCaller({ session }) as unknown as Record<

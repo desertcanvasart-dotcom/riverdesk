@@ -19,7 +19,8 @@
     "reset": "tsx src/cli/reset.ts && tsx src/cli/migrate.ts && tsx seed/seed.ts",
     "codegen": "tsx src/cli/codegen.ts",
     "check-roles": "tsx src/cli/check-roles.ts",
-    "create-company": "tsx src/cli/create-company.ts"
+    "create-company": "tsx src/cli/create-company.ts",
+    "add-admin": "tsx src/cli/add-admin.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",

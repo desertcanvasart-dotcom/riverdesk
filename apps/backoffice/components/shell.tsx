@@ -29,12 +29,15 @@ export function Shell({
   user,
   role,
   showPilot = false,
+  showPlatform = false,
   children,
 }: {
   operator: string;
   user: string;
   role: string;
   showPilot?: boolean;
+  /** Platform admins also get a link to the platform area. */
+  showPlatform?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -56,6 +59,15 @@ export function Shell({
           {t(`nav.${key}`)}
         </Link>
       ))}
+      {showPlatform && (
+        <Link
+          href="/platform"
+          onClick={() => setOpen(false)}
+          className="mt-2 rounded-lg border-t border-line px-3 py-2 text-sm text-brand hover:bg-line/40"
+        >
+          {t('nav.platform')}
+        </Link>
+      )}
     </nav>
   );
   return (

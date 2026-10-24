@@ -124,7 +124,30 @@ pnpm platform:create-company --name "Nile Dream Cruises" --slug nile-dream --pre
   --owner-email owner@niledream.com --owner-name "Mona Hassan" --locale ar
 ```
 
-Hosted: prefix with `VS_ENV_FILE=.env.hosted`. The owner then signs in to the back office with that email (Supabase Auth verifies it); the first sign-in links them as the company's owner. The invitation is valid 14 days.
+Hosted: prefix with `VS_ENV_FILE=.env.hosted`. The owner then opens the back office's sign-in page, chooses **First time here? Create your password** with that email, and opens the confirmation link (Supabase Auth verifies the email); that first sign-in links them as the company's owner. The invitation is valid 14 days.
+
+The same can be done in the browser from the **platform area** (below), which is the usual way.
+
+## Platform area (`/platform`)
+
+The platform owner's screen in the back office: every company with counts only (staff, ships, bookings; never bookings or guests themselves), **Add a company** (same as the command above) and **Invite an owner again** for a company whose owner never signed in. It needs a password and the two-step code, always.
+
+Let an email in (it must also have a Riverdesk login, created at `/signup` or through an invitation):
+
+```bash
+VS_ENV_FILE=.env.hosted pnpm platform:add-admin --email you@example.com
+VS_ENV_FILE=.env.hosted pnpm platform:add-admin --email you@example.com --remove
+```
+
+A platform admin with no company login lands on `/platform` after sign-in; one who is also a company's staff sees a **Platform** link at the bottom of the menu. Platform actions are logged in `platform.action_log`.
+
+## Passwords and email links
+
+- **Create your password** (`/signup`): invited people choose a password; Supabase emails a confirmation link. **Forgot your password?** (`/forgot-password`) emails a reset link. Both links land on `/auth/callback`, which signs the person in and continues. Links must be opened in the same browser (PKCE).
+- Someone with a two-step code is asked for it before choosing a new password (Supabase requires it).
+- Hosted Supabase: **Authentication → URL Configuration**: Site URL `https://app.riverdsk.com`, Redirect URLs `https://app.riverdsk.com/**`. **Authentication → Sign In / Providers → Email**: keep **Confirm email** on.
+- Supabase's built-in mailer sends only a few emails an hour and is meant for testing. Before more companies join, set custom SMTP under **Authentication → Emails → SMTP Settings**.
+- Locally the emails land in Mailpit: http://127.0.0.1:55324.
 
 ## Channel API docs
 

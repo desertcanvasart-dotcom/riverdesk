@@ -1,7 +1,12 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { claimStaffInvitation, getStaffContext, type StaffContext } from '@vs/engine';
+import {
+  claimStaffInvitation,
+  getStaffContext,
+  isPlatformAdmin,
+  type StaffContext,
+} from '@vs/engine';
 import { loadConfig, required } from '@vs/shared';
 import { backofficeDb } from './db';
 import { MFA_REQUIRED } from './permissions';
@@ -12,6 +17,8 @@ export interface Session {
   /** 'aal2' after a TOTP check in this session. */
   aal: 'aal1' | 'aal2';
   staff: StaffContext | null;
+  /** The verified email is on the platform admin list (the /platform area; always needs MFA). */
+  platformAdmin: boolean;
   /** True when the role requires MFA and this session has not passed it yet. */
   needsMfa: boolean;
 }
@@ -50,10 +57,21 @@ export async function getSession(): Promise<Session | null> {
   if (!claims?.sub) return null;
   const db = backofficeDb();
   let staff = await getStaffContext(db, claims.sub);
-  if (!staff && claims.email) {
+  // The Auth server confirms the email is verified; asked only when it matters (an unlinked
+  // login, or an email on the platform admin list), not on every page.
+  const verified = async () => {
     const { data: user } = await supabase.auth.getUser();
-    if (user.user?.email_confirmed_at && user.user.email)
-      staff = await claimStaffInvitation(db, claims.sub, user.user.email);
+    return user.user?.email_confirmed_at && user.user.email ? user.user.email : null;
+  };
+  let verifiedEmail: string | null = null;
+  if (!staff && claims.email) {
+    verifiedEmail = await verified();
+    if (verifiedEmail) staff = await claimStaffInvitation(db, claims.sub, verifiedEmail);
+  }
+  let platformAdmin = false;
+  if (claims.email && (await isPlatformAdmin(db, claims.email))) {
+    verifiedEmail ??= await verified();
+    platformAdmin = verifiedEmail?.toLowerCase() === claims.email.toLowerCase();
   }
   const aal = claims.aal === 'aal2' ? 'aal2' : 'aal1';
   return {
@@ -61,6 +79,7 @@ export async function getSession(): Promise<Session | null> {
     email: claims.email ?? null,
     aal,
     staff,
-    needsMfa: !!staff && MFA_REQUIRED.includes(staff.role) && aal !== 'aal2',
+    platformAdmin,
+    needsMfa: ((!!staff && MFA_REQUIRED.includes(staff.role)) || platformAdmin) && aal !== 'aal2',
   };
 }

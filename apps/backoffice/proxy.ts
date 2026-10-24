@@ -24,7 +24,10 @@ export async function proxy(request: NextRequest) {
   });
   const { data } = await supabase.auth.getClaims();
   const path = request.nextUrl.pathname;
-  const open = path.startsWith('/login') || path.startsWith('/api/');
+  // Pages for people who are not signed in yet: sign-in, password creation and recovery.
+  const open = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/', '/api/'].some(
+    (p) => path.startsWith(p),
+  );
   if (!data?.claims && !open) {
     const login = request.nextUrl.clone();
     login.pathname = '/login';

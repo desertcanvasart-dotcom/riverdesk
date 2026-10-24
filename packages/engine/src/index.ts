@@ -3,6 +3,7 @@ export { openDatabase, type VsDatabase } from '@vs/db';
 export * from './audit';
 export * from './invariants';
 export * from './staff';
+export * from './platform';
 export type { EngineContext } from './internal';
 export * from './schedule/setup';
 export * from './schedule/generate';
