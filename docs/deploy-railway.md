@@ -13,6 +13,15 @@ Until the domain is ready, Railway gives each public service a free address like
 
 > **Never paste a password or key into a chat.** Every secret goes straight into Railway's **Variables** screen. The values are in `.env.hosted` on your Mac: open it in a text editor and copy from there.
 
+## Before you start: practical tips
+
+- **Finding `.env.hosted`:** it is in the project folder (`riverdesk`). Finder hides files whose names start with a dot: press **Cmd + Shift + .** to show them, then open the file with TextEdit. Copy each value exactly, with no spaces or quotes at the ends.
+- **GitHub access:** when Railway asks to connect GitHub, give it access to the **riverdesk** repository. If you do not own the GitHub account (`desertcanvasart-dotcom`), its owner has to approve.
+- **Config file path:** set it on each service before the first deploy finishes. If a service starts building with the wrong recipe, set the path, then press **Redeploy**.
+- **Raw editor:** in a service's **Variables** tab, **Raw Editor** lets you paste all the lines at once, one `NAME=value` per line.
+- **Region:** choose **Europe West** for all four services.
+- **If a build turns red:** send the service name and the last lines of its build log (Deployments → the failed deploy → Build logs). Logs contain no passwords.
+
 ## 1. Create the account and the project (you)
 
 1. Sign up at **railway.com** with your email or GitHub. Choose the **Hobby** plan (about USD 5 a month, including usage credit. Four small services usually cost USD 10–25 a month in total; Railway shows usage live).
