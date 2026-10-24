@@ -34,7 +34,10 @@ export async function getSeasons(
   db: VsDatabase,
   ctx: EngineContext,
   vesselId: string,
-): Promise<{ seasons: SeasonRow[]; uncovered: { from: string; to: string }[] }> {
+): Promise<{
+  seasons: SeasonRow[];
+  uncovered: { from: string; to: string; sailings: number }[];
+}> {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const { rows: seasons } = await sql<SeasonRow>`
       select s.id, s.code, s.name,
@@ -44,21 +47,29 @@ export async function getSeasons(
                        from vs.season_period p where p.season_id = s.id), '[]') as periods,
              (select count(*)::int from vs.rate r where r.season_id = s.id) as rates
       from vs.season s where s.vessel_id = ${vesselId} order by s.code`.execute(tx);
-    // Nights the ship sails from today on that no season covers: they cannot be priced.
-    const { rows: nights } = await sql<{ d: string }>`
-      select d::date::text as d
-      from vs.leg l,
-           generate_series(greatest(l.depart_date, (now() at time zone 'Africa/Cairo')::date),
-                           l.arrive_date - 1, interval '1 day') d
-      where l.vessel_id = ${vesselId} and l.status <> 'cancelled'
-        and not exists (select from vs.season_period p
-                        where p.vessel_id = l.vessel_id and p.during @> d::date)
-      group by d order by d`.execute(tx);
-    const uncovered: { from: string; to: string }[] = [];
-    for (const { d } of nights) {
+    // A sailing is priced with the season of its embarkation date (pricing/quote.ts). Sailings
+    // from today on whose embarkation date no season covers cannot be priced: listed as ranges
+    // of consecutive such sailings.
+    const { rows: sailings } = await sql<{ d: string; covered: boolean }>`
+      select s.embark_date::text as d,
+             exists (select from vs.season_period p
+                     where p.vessel_id = s.vessel_id and p.during @> s.embark_date) as covered
+      from vs.sailing s
+      where s.vessel_id = ${vesselId} and s.status <> 'cancelled'
+        and s.embark_date >= (now() at time zone 'Africa/Cairo')::date
+      order by s.embark_date`.execute(tx);
+    const uncovered: { from: string; to: string; sailings: number }[] = [];
+    let open = false;
+    for (const { d, covered } of sailings) {
       const last = uncovered[uncovered.length - 1];
-      if (last && addDays(last.to as BusinessDate, 1) === d) last.to = d;
-      else uncovered.push({ from: d, to: d });
+      if (covered) open = false;
+      else if (open && last) {
+        last.to = d;
+        last.sailings += 1;
+      } else {
+        uncovered.push({ from: d, to: d, sailings: 1 });
+        open = true;
+      }
     }
     return { seasons, uncovered };
   });

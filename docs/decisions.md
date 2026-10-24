@@ -632,7 +632,7 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - On **Rates & policies**: **Seasons** for the selected ship, and the company's **Cancellation**, **Children** and **Payment** policies, replacing the read-only cards. Owners only (`rates.write`). No migration was needed.
 - Policies are edited in place: quotes and bookings already keep a copy of their policies (`quote.policies`, revision snapshot), so an edit changes new quotes only. A test proves an existing quote keeps its terms.
 - Every season or policy change bumps the affected rate plans' `version` and emits `rate.changed` (with a `cause` in the data), like a price change, so channels refresh. Season changes touch every plan of the ship; a policy change touches the plans using it.
-- Seasons: code fixed after creation; dates replaceable; overlapping dates refused (also within one season); delete only without rates or quotes. The card lists **sailing nights no season covers** (from today, live legs), since those cannot be priced.
+- Seasons: code fixed after creation; dates replaceable; overlapping dates refused (also within one season); delete only without rates or quotes. The card lists **sailings whose start date no season covers** (from today), since a sailing is priced with the season of its embarkation date and those cannot be priced. (The first version counted uncovered nights; corrected the same day.)
 - Child bands: the editor types only each band's last age, so bands cannot leave gaps; the engine still checks coverage (`bands_gap`, `bands_end`).
 - Cancellation: a 0-day step is required; days must differ. Amendment fees are edited with the policy.
 - A policy used by a rate plan cannot be deleted. Errors return stable reasons the screen translates.
@@ -644,7 +644,7 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - A new cabin category joins every active contract of its ship, as the contract form already promises ("all cabin categories of the vessel are included").
 - Once a plan has prices, its market, currency, per person/per cabin and per night/per package are fixed. Name, board, minimum nights, policies, inclusions, channels and on-sale can change. Delete only without prices, supplements, quotes or bookings.
 - Every plan or supplement change bumps the plan and emits `rate.changed`.
-- **Getting started** on Today (owners): for each active ship, ten steps in order with links (categories, cabins, route, itineraries, departures, seasons covering every sailing night, policies, a plan, every price, sold in the back office), plus inviting the team and the operations email. "Every price" = each active plan has a price for every category × season, × basis for per-person plans (single, double, triple up to the category's adults) and × active itinerary for package plans. It hides once all is done.
+- **Getting started** on Today (owners): for each active ship, ten steps in order with links (categories, cabins, route, itineraries, departures, seasons covering every sailing date, policies, a plan, every price, sold in the back office), plus inviting the team and the operations email. "Every price" = each active plan has a price for every category × season, × basis for per-person plans (single, double, triple up to the category's adults) and × active itinerary for package plans. It hides once all is done.
 - A test builds a company from nothing through these functions and gets a back-office quote at the end.
 
 ## Batch 8, step 5: staff cabin map (2026-10-24)

@@ -555,13 +555,12 @@ export async function getSetupChecklist(
         (select count(*)::int from vs.sailing_pattern p where p.vessel_id = v.id and p.active) as itineraries,
         (select count(*)::int from vs.leg l where l.vessel_id = v.id and l.status <> 'cancelled'
            and l.depart_date >= (now() at time zone 'Africa/Cairo')::date) as departures,
-        (select count(distinct d)::int
-           from vs.leg l, generate_series(greatest(l.depart_date, (now() at time zone 'Africa/Cairo')::date),
-                                          l.arrive_date - 1, interval '1 day') d
-           where l.vessel_id = v.id and l.status <> 'cancelled'
+        (select count(*)::int from vs.sailing s
+           where s.vessel_id = v.id and s.status <> 'cancelled'
+             and s.embark_date >= (now() at time zone 'Africa/Cairo')::date
              and not exists (select from vs.season_period p
-                             where p.vessel_id = v.id and p.during @> d::date)) as uncovered,
-        (select count(*)::int from vs.season s where s.vessel_id = v.id) as seasons,
+                             where p.vessel_id = v.id and p.during @> s.embark_date)) as uncovered,
+        (select count(*)::int from vs.season x where x.vessel_id = v.id) as seasons,
         (select count(*)::int from vs.rate_plan r where r.vessel_id = v.id and r.active) as plans,
         (select count(*)::int
            from vs.rate_plan r

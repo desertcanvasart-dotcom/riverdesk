@@ -868,7 +868,7 @@
     "edit": "Edit",
     "delete": "Delete",
     "deleteSeasonConfirm": "Delete the season {code}? It has no rates yet.",
-    "uncovered": "No season covers these sailing nights, so they cannot be priced or sold: {ranges}.",
+    "uncovered": "No season covers the start date of these sailings, so they cannot be priced or sold: {ranges}.",
     "andMore": "and {n} more",
     "seasonName": "Name",
     "seasonNameHint": "e.g. High season",
@@ -880,7 +880,7 @@
     "to": "To (included)",
     "addPeriod": "Add dates",
     "removePeriod": "Remove these dates",
-    "periodsHelp": "A season can have several date ranges (e.g. Christmas and Easter). One date belongs to one season only. Prices are per night: each night of a cruise is priced by its own season.",
+    "periodsHelp": "A season can have several date ranges (e.g. Christmas and Easter). One date belongs to one season only. A sailing is priced with the season of the day it starts, for all its nights.",
     "intro": "Policies are shared by all your ships; each rate plan picks one of each. Bookings keep the policy they were sold with: a change applies to new quotes only.",
     "add": "Add",
     "usedBy": "{n, plural, one {used by # rate plan} other {used by # rate plans}}",
@@ -995,14 +995,14 @@
       "route": "A route (ports and stops)",
       "itineraries": "Itineraries to sell",
       "departures": "Departures generated (Extend schedule)",
-      "seasons": "Seasons covering every sailing night",
+      "seasons": "Seasons covering every sailing date",
       "policies": "Child, cancellation and payment policies",
       "plan": "A rate plan",
       "prices": "Prices for every category and season",
       "backOffice": "Sold in the back office"
     },
     "details": {
-      "seasons": "{n, plural, one {# night} other {# nights}} without a season",
+      "seasons": "{n, plural, one {# sailing} other {# sailings}} without a season",
       "prices": "{n, plural, one {# price} other {# prices}} missing"
     }
   },
@@ -1023,7 +1023,7 @@
     "perNight": "each night",
     "perPackage": "the whole itinerary",
     "basicsFixed": "Market, currency and how prices are counted are fixed: this plan already has prices.",
-    "unitHelp": "Per person: one price per adult, for single, double and triple occupancy. Per cabin: one price for the cabin. Per night: added up night by night, each in its season. Whole itinerary: one price per itinerary.",
+    "unitHelp": "Per person: one price per adult, for single, double and triple occupancy. Per cabin: one price for the cabin. Per night: the price times the nights of the sailing, at the season of the day it starts. Whole itinerary: one price per itinerary.",
     "board": "Board",
     "minNights": "Minimum nights",
     "childPolicy": "Child policy",

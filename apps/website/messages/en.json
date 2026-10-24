@@ -81,7 +81,7 @@
     "how": [
       {
         "title": "Set up your vessel",
-        "text": "Cabins and categories, the weekly route with its stops, itineraries, seasons, rates and policies. Riverdesk builds 18 months of departures."
+        "text": "From your own screens: ships and cabins, the route with its stops, itineraries, seasons, policies and rate plans in your markets and currencies. A Getting started list shows each step; Riverdesk builds 18 months of departures."
       },
       {
         "title": "Connect your channels",
@@ -103,7 +103,7 @@
       "A nightly PDF so the office keeps working during an outage"
     ],
     "finalTitle": "See it with your own departures",
-    "finalText": "We set Riverdesk up with your vessel, your itineraries and your rates, and import your existing future bookings."
+    "finalText": "Set Riverdesk up yourself, guided step by step, or with us. Either way we import your existing future bookings."
   },
   "features": {
     "title": "Features",
@@ -112,7 +112,7 @@
       {
         "key": "today",
         "title": "Today",
-        "text": "Your daily action list: requests waiting for an answer with their deadline, options and payment holds expiring, deposits and balances due, guest names missing before the cut-off, departures with cabins still to assign, and exceptions that need a decision."
+        "text": "Your daily action list: requests waiting for an answer with their deadline, options and payment holds expiring, deposits and balances due, guest names missing before the cut-off, departures with cabins still to assign, and exceptions that need a decision. While you set up, a Getting started list shows each step left, ship by ship."
       },
       {
         "key": "book",
@@ -135,14 +135,19 @@
         "text": "Free cabins per departure and category, with what is booked, held, allotted or blocked. Block cabins for repairs, stop or resume sales, or take a cabin out of service in an emergency."
       },
       {
+        "key": "fleet",
+        "title": "Ships and cabins",
+        "text": "Set up your own fleet: each ship, its cabin categories with how many guests they take, and every cabin — type a whole range like 101-120 at once. Add or retire cabins later from any date, and availability follows."
+      },
+      {
         "key": "schedule",
         "title": "Schedule",
-        "text": "Departures for 18 months from your weekly route. Cancel a departure, move dates, change a port or plan dry dock — Riverdesk shows exactly which bookings are affected before anything changes."
+        "text": "Build each ship's route, its stops and the itineraries you sell, then generate 18 months of departures. Cancel a departure, move dates, change a port or plan dry dock — Riverdesk shows exactly which bookings are affected before anything changes."
       },
       {
         "key": "rates",
         "title": "Rates and policies",
-        "text": "Prices per season, category and occupancy, per person or per cabin, per night or per itinerary, in USD, EUR or EGP. Child bands, cancellation penalties, deposits and supplements such as gala dinners."
+        "text": "Your own price plans per market, each in its own currency (USD, EUR, EGP, GBP, the Gulf currencies and more). Prices per season, category and occupancy, per person or per cabin, per night or per itinerary. Child bands, cancellation penalties, deposits and supplements such as gala dinners."
       },
       {
         "key": "channels",
@@ -157,7 +162,7 @@
       {
         "key": "guests",
         "title": "Guests and manifests",
-        "text": "Who is aboard each departure, with cabins assigned automatically before the cut-off and moved by hand when needed. Manifests and rooming lists in PDF and Excel."
+        "text": "Who is aboard each departure, as a list or as a cabin map deck by deck. Cabins are assigned automatically before the cut-off and moved with two clicks when needed. Manifests and rooming lists in PDF and Excel."
       },
       {
         "key": "vacancy",
@@ -167,7 +172,7 @@
       {
         "key": "settings",
         "title": "People and settings",
-        "text": "Invite staff by email with a role — owner, reservations, finance or read-only. Owners and finance use two-step sign-in. Company defaults for holds, deadlines and the voucher text."
+        "text": "Invite staff by email with a role — owner, reservations, finance or read-only. Owners and finance use two-step sign-in. Your markets (who each price is for, and who must show residency or ID), and company defaults for holds, deadlines and the voucher text."
       }
     ]
   },

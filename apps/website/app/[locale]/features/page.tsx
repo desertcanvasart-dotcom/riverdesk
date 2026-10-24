@@ -12,6 +12,7 @@ const DOC: Record<string, string> = {
   booking: 'bookings',
   requests: 'requests',
   inventory: 'inventory',
+  fleet: 'ships-and-cabins',
   schedule: 'schedule',
   rates: 'rates',
   channels: 'channels',

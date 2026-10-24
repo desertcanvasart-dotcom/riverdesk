@@ -5,6 +5,8 @@ summary: Add your ships, their cabin categories and every cabin, the first thing
 
 # Ships & cabins
 
+![Ships & cabins](/screens/{locale}/desktop-fleet.jpg)
+
 **Ships & cabins** is where an owner sets up the fleet: each ship, the kinds of cabin it sells (**categories**) and the cabins themselves. Schedules, rates and bookings all build on it, so a new company starts here. Everyone can open the screen; only owners change ships and categories, and owners and reservations can add or change cabins.
 
 The buttons at the top switch between ships. Under each ship, a blue note says what it still needs before it can be sold.

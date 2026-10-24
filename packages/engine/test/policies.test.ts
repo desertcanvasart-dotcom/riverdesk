@@ -4,6 +4,7 @@ import { addDays } from '@vs/shared';
 import {
   addCabinCategory,
   addCabins,
+  addItinerary,
   addCancellationPolicy,
   addChildPolicy,
   addPaymentPolicy,
@@ -116,7 +117,7 @@ describe('Seasons and policies (setup screens)', () => {
       effectiveFrom: today,
       reason: 'setup',
     });
-    await addRoute(world.db, world.ctx, {
+    const route = await addRoute(world.db, world.ctx, {
       vesselId: ship.id,
       name: 'Weekly',
       cycleDays: 7,
@@ -136,14 +137,24 @@ describe('Seasons and policies (setup screens)', () => {
         },
       ],
     });
+    await addItinerary(world.db, world.ctx, {
+      templateId: route.id,
+      code: 'WEEK',
+      nameEn: 'A week',
+      nameAr: 'أسبوع',
+      embarkStopSeq: 0,
+      disembarkStopSeq: 1,
+    });
     await generateSchedule(world.db, world.ctx, {
       vesselId: ship.id,
       until: addDays(world.demo.validFrom, 13),
     });
-    const first = (await legs(ship.id))[0]!;
-    const start = first.depart_date > today ? first.depart_date : today;
+    // Sailings start on validFrom and a week later; a sailing is priced by its start date.
+    const week1 = world.demo.validFrom;
+    const week2 = addDays(world.demo.validFrom, 7);
+    const start = week1 > today ? week1 : today;
     let result = await getSeasons(world.db, world.ctx, ship.id);
-    expect(result.uncovered).toEqual([{ from: start, to: addDays(world.demo.validFrom, 13) }]);
+    expect(result.uncovered).toEqual([{ from: week1, to: week2, sailings: 2 }]);
 
     const season = await addSeason(world.db, world.ctx, {
       vesselId: ship.id,
@@ -152,13 +163,11 @@ describe('Seasons and policies (setup screens)', () => {
       periods: [{ from: start, to: addDays(world.demo.validFrom, 6) }],
     });
     result = await getSeasons(world.db, world.ctx, ship.id);
-    expect(result.uncovered).toEqual([
-      { from: addDays(world.demo.validFrom, 7), to: addDays(world.demo.validFrom, 13) },
-    ]);
+    expect(result.uncovered).toEqual([{ from: week2, to: week2, sailings: 1 }]);
     await updateSeason(world.db, world.ctx, {
       seasonId: season.id,
       name: 'Low season',
-      periods: [{ from: start, to: addDays(world.demo.validFrom, 30) }],
+      periods: [{ from: start, to: week2 }],
     });
     result = await getSeasons(world.db, world.ctx, ship.id);
     expect(result.uncovered).toEqual([]);

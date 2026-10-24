@@ -10,7 +10,8 @@ The Channel API lets an online platform or a larger agency sell a cruise company
 - **REST over HTTPS, JSON** in and out.
 - **OAuth 2.0 client credentials**: your server gets a short-lived token. See [Authentication](/docs/channel-api/authentication).
 - **The contract** is an OpenAPI 3.1 document, served as `/openapi.yaml` with an interactive reference at `/docs` on every API server.
-- **Money** is always an integer in minor units with its currency: `{"amount": 117000, "currency": "USD"}` is USD 1,170.00.
+- **Money** is always an integer in minor units with its currency: `{"amount": 117000, "currency": "USD"}` is USD 1,170.00. KWD, BHD and OMR have three decimals: `{"amount": 1250, "currency": "KWD"}` is KWD 1.250.
+- **Markets** are codes such as `international` or `gcc`. Each cruise company keeps its own list; ask it which markets your contract sells.
 - **Dates** are cruise dates in Cairo (`YYYY-MM-DD`). Times are ISO 8601 with a time zone.
 
 ## One client per company

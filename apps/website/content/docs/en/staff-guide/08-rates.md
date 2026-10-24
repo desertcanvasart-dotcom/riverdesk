@@ -37,11 +37,11 @@ Supplements are extra charges on dates inside a plan, such as a gala dinner at N
 
 ## Seasons (owners)
 
-A **season** is a set of dates priced the same way, for each ship: for example _High_ (October to April) and _Low_ (May to September). Prices are per night, and each night of a cruise is priced by the season it falls in.
+A **season** is a set of dates priced the same way, for each ship: for example _High_ (October to April) and _Low_ (May to September). A sailing is priced with the season of the day it **starts**, for all its nights.
 
 **+ Add season**: a short code (such as `HIGH`, it cannot change later), a name, and one or more date ranges. A season can have several ranges, such as Christmas and Easter, but a date belongs to one season only: overlapping dates are refused.
 
-A yellow note lists the **sailing nights no season covers**. Those nights cannot be priced, so nothing on them can be sold until a season includes them. Extend your seasons whenever the schedule is extended.
+A yellow note lists the **sailings whose start date no season covers**. Those sailings cannot be priced, so they cannot be sold until a season includes their start date. Extend your seasons whenever the schedule is extended.
 
 **Edit** changes the name and dates. A season can be deleted only while it has no rates.
 

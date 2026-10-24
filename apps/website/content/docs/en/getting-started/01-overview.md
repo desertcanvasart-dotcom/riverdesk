@@ -19,7 +19,7 @@ You only ever see the back office. The other two parts work behind it.
 
 ## What a normal day looks like
 
-1. Open **Today**. It lists what needs doing, most urgent first: requests waiting for an answer, holds about to expire, deposits due, guest names missing, cabins to assign.
+1. Open **Today**. It lists what needs doing, most urgent first: requests waiting for an answer, holds about to expire, deposits due, guest names missing, cabins to assign. While a ship is still being set up, owners also see **Getting started** there: each setup step, in order.
 2. Take phone and WhatsApp bookings on **New booking**: about a minute each.
 3. Answer agency **Requests** before their deadline.
 4. Record money on **Payments** as it arrives.

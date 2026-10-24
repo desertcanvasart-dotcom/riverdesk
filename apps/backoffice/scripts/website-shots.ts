@@ -24,6 +24,7 @@ const SCREENS: [string, string, ((page: Page) => Promise<void>)?][] = [
   ['booking', '/bookings/VS-26-00001'],
   ['requests', '/requests'],
   ['inventory', '/inventory'],
+  ['fleet', '/fleet'],
   ['schedule', '/schedule'],
   ['rates', '/rates'],
   ['channels', '/channels'],
@@ -34,6 +35,10 @@ const SCREENS: [string, string, ((page: Page) => Promise<void>)?][] = [
     async (page) => {
       await page.locator('ul button').first().click();
       await page.waitForLoadState('networkidle');
+      // The cabin map view: deck by deck, who is in each cabin.
+      await page.locator('[role=group] button').nth(1).click();
+      await page.waitForSelector('ul.grid > li');
+      await page.waitForTimeout(500);
     },
   ],
   ['vacancy', '/vacancy'],

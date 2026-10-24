@@ -21,7 +21,7 @@ The payment policy sets them, for example a **25% deposit** and the **balance 30
 
 ## Currencies
 
-Rates can be in USD, EUR or EGP. A payment in another currency is recorded with its exchange rate, and the booking is credited in its own currency.
+Each rate plan has its own currency, so each market can be sold in its own: USD, EUR, EGP, GBP, SAR, AED, QAR, CHF, CAD and AUD (two decimals), and KWD, BHD and OMR (three decimals). A booking keeps the currency of its plan; amounts are never converted. A payment in another currency is recorded with its exchange rate, and the booking is credited in its own currency.
 
 ## The ledger never changes
 

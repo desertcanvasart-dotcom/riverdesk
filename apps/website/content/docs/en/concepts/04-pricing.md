@@ -7,7 +7,7 @@ summary: Rate plans, seasons, occupancy, children, supplements and channel marku
 
 ## Rate plans and seasons
 
-A **rate plan** is a price list for a market and currency, for example _International, USD_. **Seasons** are date ranges (High, Low, Holiday). A sailing is priced with the season of its embark date.
+A **rate plan** is a price list for one **market** and one currency, for example _International, USD_ or _Gulf (GCC), SAR_. Markets are your own list (Settings → Markets). **Seasons** are date ranges (High, Low, Holiday). A sailing is priced with the season of its embark date, for all its nights.
 
 A plan prices either:
 

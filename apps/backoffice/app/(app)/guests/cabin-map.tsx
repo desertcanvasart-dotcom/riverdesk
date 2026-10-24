@@ -57,6 +57,7 @@ export function CabinMap({
     }),
   );
   const data = map.data;
+  if (map.isError) return <Alert tone="bad">{errorText(map.error)}</Alert>;
   if (map.isLoading || !data) return <Empty>{tc('loading')}</Empty>;
   if (data.cabins.length === 0) return <Empty>{t('noCabins')}</Empty>;
 

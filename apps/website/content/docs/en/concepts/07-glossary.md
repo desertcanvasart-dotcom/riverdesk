@@ -21,6 +21,8 @@ summary: Every term used in Riverdesk, in plain words.
 
 **Bucket**: One group of cabins on one leg and category: the pool, an allotment or a block.
 
+**Cabin map**: The cabins of one departure drawn deck by deck on Guests & manifests, showing who is in each and letting staff move a party with two clicks.
+
 **Channel**: Anyone who sells your cabins: your office, an agency, a platform.
 
 **Contract**: The terms a channel sells under for one vessel.
@@ -32,6 +34,8 @@ summary: Every term used in Riverdesk, in plain words.
 **Event / webhook**: A change Riverdesk announces to channels, and the message sent to their system.
 
 **Exception**: Something the system could not decide alone. It appears on Today.
+
+**Getting started**: The list on Today that shows owners, ship by ship, which setup steps are left before the office can sell.
 
 **Hold**: Cabins reserved for a short time before confirmation. It expires on its own.
 
@@ -45,7 +49,7 @@ summary: Every term used in Riverdesk, in plain words.
 
 **Manifest**: The passenger list for a departure. It is the only export with passport numbers.
 
-**Market**: Which prices apply: international or Egyptian resident.
+**Market**: Who a price is for, such as International, Egyptian resident or Gulf (GCC). Each company keeps its own list in Settings; a market can require proof of residency or ID at boarding.
 
 **On request**: A contract where the agency asks and the office decides.
 
@@ -62,6 +66,8 @@ summary: Every term used in Riverdesk, in plain words.
 **Revision**: One version of a booking. Each change adds one.
 
 **Rooming list**: Each cabin with its guests, for the crew. It has no passports.
+
+**Route (schedule template)**: A ship's repeating cycle of stops, for example Luxor → Aswan → Luxor every 7 days. Departures are made from it.
 
 **Sailing**: One itinerary on one date.
 

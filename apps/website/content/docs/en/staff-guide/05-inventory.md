@@ -28,7 +28,7 @@ Each action needs a reason, and every action is recorded.
 
 The **Cabins and capacity** list shows each physical cabin with its category and deck. Owners and reservations can:
 
-- **add a cabin** from a given departure date onwards;
+- **add cabins** from a given departure date onwards, several at once (`101-120`, as on [Ships & cabins](/docs/staff-guide/ships-and-cabins));
 - **change a cabin's category**, for example after a refit;
 - **take a cabin out of service**.
 
