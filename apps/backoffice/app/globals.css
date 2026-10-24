@@ -2,7 +2,8 @@
 
 /* Design tokens. Logical properties (ms-/me-, ps-/pe-, start/end) keep every layout correct in RTL. */
 @theme {
-  --font-sans: 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans', Tahoma, system-ui, sans-serif;
+  --font-sans:
+    'Segoe UI', var(--font-tajawal), 'Noto Sans Arabic', 'Noto Sans', Tahoma, system-ui, sans-serif;
   --color-bg: #f6f6f3;
   --color-surface: #ffffff;
   --color-ink: #1b1c1a;
@@ -54,4 +55,9 @@ body {
 }
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Arabic screens: Tajawal throughout. */
+:lang(ar) body {
+  font-family: var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
 }

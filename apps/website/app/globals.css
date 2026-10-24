@@ -2,8 +2,7 @@
 
 /* Design tokens. Logical properties (ms-/me-, ps-/pe-, start/end) keep every layout correct in RTL. */
 @theme {
-  --font-sans:
-    var(--font-inter), var(--font-plex-arabic), 'Segoe UI', Tahoma, system-ui, sans-serif;
+  --font-sans: var(--font-inter), var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-bg: #f7f6f2;
   --color-surface: #ffffff;
@@ -67,8 +66,9 @@ body {
   -webkit-text-size-adjust: 100%;
   font-feature-settings: 'cv11', 'ss01';
 }
-/* Arabic reads better a little larger and looser. */
+/* Arabic pages: Tajawal for everything, a little looser. */
 :lang(ar) body {
+  font-family: var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
   line-height: 1.7;
 }
 /* Numbers and codes stay left-to-right inside Arabic text. */

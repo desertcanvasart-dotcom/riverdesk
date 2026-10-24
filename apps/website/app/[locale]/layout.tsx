@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { IBM_Plex_Sans_Arabic, Inter } from 'next/font/google';
+import { Inter, Tajawal } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -9,10 +9,10 @@ import { routing } from '../../i18n/routing';
 import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-plex-arabic',
+const tajawal = Tajawal({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '700', '800'],
+  variable: '--font-tajawal',
   display: 'swap',
 });
 
@@ -46,7 +46,7 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
-      className={`${inter.variable} ${plexArabic.variable}`}
+      className={`${inter.variable} ${tajawal.variable}`}
     >
       <body className="min-h-dvh antialiased">
         <NextIntlClientProvider>
