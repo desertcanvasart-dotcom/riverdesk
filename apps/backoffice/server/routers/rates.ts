@@ -1,5 +1,17 @@
 import { z } from 'zod';
 import {
+  addRatePlan,
+  addRatePlanInput,
+  addSupplement,
+  deleteRatePlan,
+  deleteSupplement,
+  getPlans,
+  setPlanContracts,
+  setPlanContractsInput,
+  updateRatePlan,
+  updateRatePlanInput,
+  updateSupplement,
+  updateSupplementInput,
   addCancellationPolicy,
   addChildPolicy,
   addPaymentPolicy,
@@ -8,7 +20,6 @@ import {
   createChildPolicyInput,
   createPaymentPolicyInput,
   createSeasonInput,
-  createSupplement,
   createSupplementInput,
   deletePolicy,
   deletePolicyInput,
@@ -39,7 +50,30 @@ export const ratesRouter = router({
     .mutation(({ ctx, input }) => setRates(backofficeDb(), ctx.engine, input)),
   addSupplement: procedure('rates.write')
     .input(createSupplementInput)
-    .mutation(({ ctx, input }) => createSupplement(backofficeDb(), ctx.engine, input)),
+    .mutation(({ ctx, input }) => addSupplement(backofficeDb(), ctx.engine, input)),
+  updateSupplement: procedure('rates.write')
+    .input(updateSupplementInput)
+    .mutation(({ ctx, input }) => updateSupplement(backofficeDb(), ctx.engine, input)),
+  deleteSupplement: procedure('rates.write')
+    .input(z.object({ supplementId: z.uuid() }))
+    .mutation(({ ctx, input }) => deleteSupplement(backofficeDb(), ctx.engine, input.supplementId)),
+
+  // Rate plans (Batch 8, step 4)
+  plans: procedure('read')
+    .input(z.object({ vesselId: z.uuid() }))
+    .query(({ ctx, input }) => getPlans(backofficeDb(), ctx.engine, input.vesselId)),
+  addPlan: procedure('rates.write')
+    .input(addRatePlanInput)
+    .mutation(({ ctx, input }) => addRatePlan(backofficeDb(), ctx.engine, input)),
+  updatePlan: procedure('rates.write')
+    .input(updateRatePlanInput)
+    .mutation(({ ctx, input }) => updateRatePlan(backofficeDb(), ctx.engine, input)),
+  setPlanContracts: procedure('rates.write')
+    .input(setPlanContractsInput)
+    .mutation(({ ctx, input }) => setPlanContracts(backofficeDb(), ctx.engine, input)),
+  deletePlan: procedure('rates.write')
+    .input(z.object({ ratePlanId: z.uuid() }))
+    .mutation(({ ctx, input }) => deleteRatePlan(backofficeDb(), ctx.engine, input.ratePlanId)),
 
   // Seasons and policies (Batch 8, step 3)
   seasons: procedure('read')

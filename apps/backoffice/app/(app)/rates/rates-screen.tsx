@@ -20,7 +20,9 @@ import {
 import { useErrorText } from '../../../lib/errors';
 import { formatDate, formatMoney, minorToInput, parseMoney } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
+import { PlanDialog } from './plan-dialog';
 import { PoliciesSection } from './policies-section';
+import { usePolicyError } from './policy-errors';
 import { SeasonsCard } from './seasons-card';
 
 interface Category {
@@ -58,7 +60,30 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
   const [patternId, setPatternId] = useState('');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [supplementDialog, setSupplementDialog] = useState<Supplement | 'add' | null>(null);
+  const [planDialog, setPlanDialog] = useState<'add' | 'edit' | null>(null);
+  const plansQuery = useQuery(
+    trpc.rates.plans.queryOptions({ vesselId }, { enabled: Boolean(vesselId) }),
+  );
+  const policyError = usePolicyError();
+  const refreshAll = () => {
+    void queryClient.invalidateQueries({ queryKey: trpc.rates.setup.queryKey() });
+    void queryClient.invalidateQueries({ queryKey: trpc.rates.plans.queryKey() });
+    void queryClient.invalidateQueries({ queryKey: trpc.rates.policies.queryKey() });
+    void queryClient.invalidateQueries({ queryKey: trpc.rates.seasons.queryKey() });
+    void queryClient.invalidateQueries({ queryKey: trpc.home.setup.queryKey() });
+  };
+  const removePlan = useMutation(
+    trpc.rates.deletePlan.mutationOptions({
+      onSuccess: () => {
+        setPlanId('');
+        refreshAll();
+      },
+    }),
+  );
+  const removeSupplement = useMutation(
+    trpc.rates.deleteSupplement.mutationOptions({ onSuccess: refreshAll }),
+  );
 
   useEffect(() => {
     if (data && !data.plans.some((p) => p.id === planId)) setPlanId(data.plans[0]?.id ?? '');
@@ -102,10 +127,11 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
       onSuccess: () => {
         setEdits({});
         setNotice(t('saved'));
-        void queryClient.invalidateQueries({ queryKey: trpc.rates.setup.queryKey() });
+        refreshAll();
       },
     }),
   );
+  const fullPlan = plansQuery.data?.plans.find((p) => p.id === planId);
   const unitLabel = plan
     ? `${plan.pricingUnit === 'per_person' ? t('perPerson') : t('perCabin')} · ${
         plan.pricingPeriod === 'per_night' ? t('perNight') : t('perPackage')
@@ -170,43 +196,78 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
             </Field>
           )}
         </div>
-        <Table head={[t('category'), ...bases.map((b) => (b ? tb(b) : t('perCabin')))]}>
-          {vessel?.categories.map((c) => (
-            <tr key={c.id}>
-              <Td>
-                <span className="font-medium">{c.code}</span>
-                <span className="block text-xs text-muted">
-                  {locale.startsWith('ar') ? c.name_ar : c.name_en}
-                </span>
-              </Td>
-              {bases.map((b) => {
-                const key = cell(c.id, b);
-                const value = current.get(key);
-                const text = edits[key] ?? (value !== undefined ? minorToInput(value) : '');
-                return (
-                  <Td key={key}>
-                    {canWrite ? (
-                      <Input
-                        inputMode="decimal"
-                        dir="ltr"
-                        className="w-28 text-end tabular-nums"
-                        value={text}
-                        aria-label={`${c.code} ${b ?? ''}`}
-                        onChange={(e) => setEdits({ ...edits, [key]: e.target.value })}
-                      />
-                    ) : value !== undefined && plan ? (
-                      <span className="tabular-nums">
-                        {formatMoney(value, plan.currency, locale)}
-                      </span>
-                    ) : (
-                      '—'
-                    )}
-                  </Td>
-                );
-              })}
-            </tr>
-          ))}
-        </Table>
+        {canWrite && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setPlanDialog('add')}>
+              + {t('newPlan')}
+            </Button>
+            {plan && (
+              <Button variant="ghost" onClick={() => setPlanDialog('edit')}>
+                {t('editPlan')}
+              </Button>
+            )}
+            {fullPlan && fullPlan.rates === 0 && fullPlan.used === 0 && (
+              <Button
+                variant="ghost"
+                disabled={removePlan.isPending}
+                onClick={() => {
+                  if (window.confirm(t('deletePlanConfirm', { code: fullPlan.code })))
+                    removePlan.mutate({ ratePlanId: fullPlan.id });
+                }}
+              >
+                {t('deletePlan')}
+              </Button>
+            )}
+          </div>
+        )}
+        {removePlan.isError && (
+          <div className="mb-3">
+            <Alert tone="bad">{policyError(removePlan.error)}</Alert>
+          </div>
+        )}
+        {data && data.plans.length === 0 ? (
+          <Empty>{t('noPlans')}</Empty>
+        ) : data && data.seasons.length === 0 ? (
+          <Empty>{t('noSeasonsYet')}</Empty>
+        ) : (
+          <Table head={[t('category'), ...bases.map((b) => (b ? tb(b) : t('perCabin')))]}>
+            {vessel?.categories.map((c) => (
+              <tr key={c.id}>
+                <Td>
+                  <span className="font-medium">{c.code}</span>
+                  <span className="block text-xs text-muted">
+                    {locale.startsWith('ar') ? c.name_ar : c.name_en}
+                  </span>
+                </Td>
+                {bases.map((b) => {
+                  const key = cell(c.id, b);
+                  const value = current.get(key);
+                  const text = edits[key] ?? (value !== undefined ? minorToInput(value) : '');
+                  return (
+                    <Td key={key}>
+                      {canWrite ? (
+                        <Input
+                          inputMode="decimal"
+                          dir="ltr"
+                          className="w-28 text-end tabular-nums"
+                          value={text}
+                          aria-label={`${c.code} ${b ?? ''}`}
+                          onChange={(e) => setEdits({ ...edits, [key]: e.target.value })}
+                        />
+                      ) : value !== undefined && plan ? (
+                        <span className="tabular-nums">
+                          {formatMoney(value, plan.currency, locale)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </Td>
+                  );
+                })}
+              </tr>
+            ))}
+          </Table>
+        )}
         {save.isError && (
           <div className="mt-3">
             <Alert tone="bad">{errorText(save.error)}</Alert>
@@ -233,7 +294,7 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
         title={t('supplements')}
         actions={
           canWrite && (
-            <Button variant="secondary" onClick={() => setAdding(true)}>
+            <Button variant="secondary" disabled={!plan} onClick={() => setSupplementDialog('add')}>
               + {t('addSupplement')}
             </Button>
           )
@@ -262,7 +323,28 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
                   <Td className="tabular-nums">
                     {plan && formatMoney(s.amountChild, plan.currency, locale)}
                   </Td>
-                  <Td>{s.mandatory && <Badge tone="info">{t('mandatory')}</Badge>}</Td>
+                  <Td>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {s.mandatory && <Badge tone="info">{t('mandatory')}</Badge>}
+                      {canWrite && (
+                        <>
+                          <Button variant="ghost" onClick={() => setSupplementDialog(s)}>
+                            {t('editSupplement')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            disabled={removeSupplement.isPending}
+                            onClick={() => {
+                              if (window.confirm(t('deleteSupplementConfirm', { code: s.code })))
+                                removeSupplement.mutate({ supplementId: s.id });
+                            }}
+                          >
+                            {t('deleteSupplement')}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </Td>
                 </tr>
               ))}
           </Table>
@@ -272,48 +354,94 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
       {vesselId && <SeasonsCard vesselId={vesselId} canWrite={canWrite} />}
       <PoliciesSection canWrite={canWrite} />
 
-      {adding && plan && <SupplementDialog ratePlanId={plan.id} onClose={() => setAdding(false)} />}
+      {supplementDialog && plan && (
+        <SupplementDialog
+          ratePlanId={plan.id}
+          supplement={supplementDialog === 'add' ? undefined : supplementDialog}
+          onClose={() => setSupplementDialog(null)}
+          onDone={refreshAll}
+        />
+      )}
+      {planDialog && vesselId && (
+        <PlanDialog
+          vesselId={vesselId}
+          plan={planDialog === 'edit' ? fullPlan : undefined}
+          contracts={plansQuery.data?.contracts ?? []}
+          onClose={() => setPlanDialog(null)}
+          onDone={(id) => {
+            setPlanId(id);
+            refreshAll();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function SupplementDialog({ ratePlanId, onClose }: { ratePlanId: string; onClose: () => void }) {
+interface Supplement {
+  id: string;
+  code: string;
+  kind?: string;
+  nameEn: string;
+  nameAr: string;
+  dateFrom: string;
+  dateTo: string;
+  amountAdult: bigint;
+  amountChild: bigint;
+  mandatory: boolean;
+}
+
+function SupplementDialog({
+  ratePlanId,
+  supplement,
+  onClose,
+  onDone,
+}: {
+  ratePlanId: string;
+  supplement?: Supplement;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const t = useTranslations('rates');
   const tc = useTranslations('common');
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const errorText = useErrorText();
+  const policyError = usePolicyError();
   const [form, setForm] = useState({
-    code: '',
-    kind: 'gala' as 'gala' | 'peak' | 'other',
-    nameEn: '',
-    nameAr: '',
-    dateFrom: '',
-    dateTo: '',
-    adult: '',
-    child: '',
-    mandatory: true,
+    code: supplement?.code ?? '',
+    kind: (supplement?.kind ?? 'gala') as 'gala' | 'peak' | 'other',
+    nameEn: supplement?.nameEn ?? '',
+    nameAr: supplement?.nameAr ?? '',
+    dateFrom: supplement?.dateFrom ?? '',
+    dateTo: supplement?.dateTo ?? '',
+    adult: supplement ? minorToInput(supplement.amountAdult) : '',
+    child: supplement ? minorToInput(supplement.amountChild) : '',
+    mandatory: supplement?.mandatory ?? true,
   });
-  const add = useMutation(
-    trpc.rates.addSupplement.mutationOptions({
-      onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: trpc.rates.setup.queryKey() });
-        onClose();
-      },
-    }),
-  );
+  const done = {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: trpc.rates.setup.queryKey() });
+      onDone();
+      onClose();
+    },
+  };
+  const add = useMutation(trpc.rates.addSupplement.mutationOptions(done));
+  const update = useMutation(trpc.rates.updateSupplement.mutationOptions(done));
+  const failed = add.error ?? update.error;
   const adult = parseMoney(form.adult);
   const child = parseMoney(form.child || '0');
   return (
-    <Dialog open onClose={onClose} title={t('addSupplement')}>
+    <Dialog
+      open
+      onClose={onClose}
+      title={supplement ? `${t('editSupplement')} · ${supplement.code}` : t('addSupplement')}
+    >
       <form
         className="grid grid-cols-2 gap-3"
         onSubmit={(e) => {
           e.preventDefault();
           if (adult === null || child === null) return;
-          add.mutate({
-            ratePlanId,
-            code: form.code.trim().toUpperCase(),
+          const fields = {
             kind: form.kind,
             nameEn: form.nameEn.trim(),
             nameAr: form.nameAr.trim(),
@@ -322,7 +450,9 @@ function SupplementDialog({ ratePlanId, onClose }: { ratePlanId: string; onClose
             amountAdult: adult,
             amountChild: child,
             mandatory: form.mandatory,
-          });
+          };
+          if (supplement) update.mutate({ supplementId: supplement.id, ...fields });
+          else add.mutate({ ratePlanId, code: form.code.trim().toUpperCase(), ...fields });
         }}
       >
         <Field label={t('code')}>
@@ -330,6 +460,7 @@ function SupplementDialog({ ratePlanId, onClose }: { ratePlanId: string; onClose
             required
             dir="ltr"
             className="uppercase"
+            disabled={Boolean(supplement)}
             value={form.code}
             onChange={(e) => setForm({ ...form, code: e.target.value })}
           />
@@ -403,16 +534,19 @@ function SupplementDialog({ ratePlanId, onClose }: { ratePlanId: string; onClose
           />
           {t('mandatory')}
         </label>
-        {add.isError && (
+        {failed && (
           <div className="col-span-2">
-            <Alert tone="bad">{errorText(add.error)}</Alert>
+            <Alert tone="bad">{policyError(failed)}</Alert>
           </div>
         )}
         <div className="col-span-2 flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             {tc('close')}
           </Button>
-          <Button type="submit" disabled={adult === null || child === null || add.isPending}>
+          <Button
+            type="submit"
+            disabled={adult === null || child === null || add.isPending || update.isPending}
+          >
             {tc('save')}
           </Button>
         </div>

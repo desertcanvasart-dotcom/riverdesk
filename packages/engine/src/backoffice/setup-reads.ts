@@ -267,6 +267,7 @@ export async function getRatesSetup(db: VsDatabase, ctx: EngineContext, vesselId
       id: string;
       ratePlanId: string;
       code: string;
+      kind: 'gala' | 'peak' | 'other';
       nameEn: string;
       nameAr: string;
       dateFrom: string;
@@ -275,7 +276,7 @@ export async function getRatesSetup(db: VsDatabase, ctx: EngineContext, vesselId
       amountChild: bigint;
       mandatory: boolean;
     }>`
-      select s.id, s.rate_plan_id as "ratePlanId", s.code, s.name_en as "nameEn", s.name_ar as "nameAr",
+      select s.id, s.rate_plan_id as "ratePlanId", s.code, s.kind, s.name_en as "nameEn", s.name_ar as "nameAr",
              s.date_from::text as "dateFrom", s.date_to::text as "dateTo", s.amount_adult as "amountAdult",
              s.amount_child as "amountChild", s.mandatory
       from vs.supplement s join vs.rate_plan r on r.id = s.rate_plan_id

@@ -42,7 +42,8 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - A quote can back several holds; make quotes single-use per hold if channels misuse them.
 - Charters (spec test 9) remain out of the MVP.
 
-- Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them. Batch 8 builds them step by step (steps 1–3, ships and cabins, ports, routes and itineraries, seasons and policies: done 2026-10-24).
+- Back office: editors for schedule templates, itineraries (sailing patterns), seasons and cancellation, child and payment policies. MVP shows them read-only; the setup script creates them. Batch 8 builds them step by step (steps 1–4, ships and cabins, ports, routes and itineraries, seasons and policies, rate plans and the getting-started checklist: done 2026-10-24).
+- Channels: edit an existing contract's categories and plans on the Channels screen (today: at creation, plus the plan editor's "Sold through"); more markets than International and Egyptian resident.
 - **Batch 8 step 5 (agreed 2026-10-24, after step 4): staff cabin map.** Per departure, cabins drawn deck by deck, coloured free / held / booked / blocked, with the guest name; click a cabin to assign or move a booking. Sales stay by category. Later options, not agreed: deck-plan drawings with cabins placed on them; guests or agents choosing exact cabins (guaranteed cabins, see Out of MVP scope).
 - Routes: board-only or leave-only stops in the editor (today one tick sets both); itineraries spanning more than one extra cycle (the engine allows up to 8).
 - Ships: take a ship out of service (deactivate) once it has no future departures; delete a category that was never used.

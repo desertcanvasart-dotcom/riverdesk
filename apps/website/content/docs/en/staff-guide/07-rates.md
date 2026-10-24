@@ -1,6 +1,6 @@
 ---
 title: Rates and policies
-summary: Seasons; child, cancellation and payment policies; editing prices per season, category and occupancy; supplements.
+summary: Rate plans, seasons and policies; editing prices per season, category and occupancy; supplements.
 ---
 
 # Rates and policies
@@ -15,6 +15,14 @@ A **rate plan** is a price list for one market and currency, for example _Intern
 - **per night** or **per package** (the whole itinerary);
 - its board, its child policy, its cancellation policy and its payment policy.
 
+### Making a plan (owners)
+
+**+ New rate plan** for the ship chosen at the top. Fill in a name and a short code, the market (International or Egyptian resident) and currency, how prices are counted (per person or per cabin, each night or the whole itinerary), the board, the minimum nights and the three policies. What the price **includes** and **does not include** (one item per line, in English and Arabic) is printed on vouchers.
+
+Leave **Sell in the back office** ticked: your staff can then book this plan at once. To sell it through an agency or nilecrz too, give that channel a contract on [Channels](/docs/staff-guide/channels), or tick it under **Sold through** when you edit the plan.
+
+**Edit plan** changes the name, board, policies, inclusions, which channels sell it, and whether it is **on sale**. Once a plan has prices, its market, currency and the way prices are counted are fixed, because the prices would mean something else: make a new plan instead. A plan with no prices, supplements or bookings can be deleted.
+
 ## Editing rates (owners)
 
 1. Choose the **rate plan** and the **season**. Package plans also need the **itinerary**.
@@ -25,7 +33,7 @@ New prices apply to new quotes and bookings only. Existing bookings keep the pri
 
 ## Supplements
 
-Supplements are extra charges on dates inside a plan, such as a gala dinner at New Year: a price per adult and per child, mandatory or optional. **Add supplement** creates one for the chosen plan.
+Supplements are extra charges on dates inside a plan, such as a gala dinner at New Year: a price per adult and per child, mandatory or optional. **Add supplement** creates one for the chosen plan; **Edit** and **Delete** change or remove it. Bookings already made keep the supplements they were priced with.
 
 ## Seasons (owners)
 

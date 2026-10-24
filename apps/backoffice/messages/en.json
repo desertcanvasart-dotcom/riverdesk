@@ -417,7 +417,16 @@
     "kind_gala": "Gala",
     "kind_peak": "Peak",
     "kind_other": "Other",
-    "readOnly": "Only the owner can change rates."
+    "readOnly": "Only the owner can change rates.",
+    "newPlan": "New rate plan",
+    "editPlan": "Edit plan",
+    "deletePlan": "Delete plan",
+    "deletePlanConfirm": "Delete the rate plan {code}? It has no prices yet.",
+    "noPlans": "No rate plan for this ship yet. Press “New rate plan”.",
+    "noSeasonsYet": "Add seasons (below) to type prices.",
+    "editSupplement": "Edit",
+    "deleteSupplement": "Delete",
+    "deleteSupplementConfirm": "Delete the supplement {code}? Existing bookings keep it."
   },
   "channels": {
     "title": "Channels",
@@ -956,10 +965,81 @@
       "policy_in_use": "A rate plan uses this policy, so it cannot be deleted.",
       "bandValue": "Check the price of band {n}.",
       "percentValue": "Percentages are numbers from 0 to 100.",
-      "feeValue": "Check the amendment fees: an amount or a percent is missing."
+      "feeValue": "Check the amendment fees: an amount or a percent is missing.",
+      "plan_has_rates": "This plan has prices: its market, currency and price basis cannot change. Make a new plan instead.",
+      "plan_in_use": "This plan has prices, supplements or bookings, so it cannot be deleted. Take it off sale instead.",
+      "contract_needs_plan": "A channel would be left with no rate plan to sell. Give it another plan first.",
+      "unknown_contract": "That contract is not for this ship.",
+      "dates_backwards": "The end date is before the start date."
     },
     "ruleLast": "Less than {n} days before, or no-show: {p}% penalty",
     "ruleAlways": "At any time: {p}% penalty",
     "bandOne": "Age {n}"
+  },
+  "setup": {
+    "title": "Getting started",
+    "almostTitle": "Almost there",
+    "intro": "What each ship still needs before the office can sell it. The highlighted step is next; each link opens the screen that does it.",
+    "firstShip": "Add your first ship and its cabins",
+    "progress": "{done} of {total} done",
+    "company": "For the company",
+    "team": "Invite your team (reservations, finance)",
+    "opsEmail": "Set the operations email for the nightly backup sheet",
+    "steps": {
+      "categories": "Cabin categories",
+      "cabins": "Cabins with their numbers",
+      "route": "A route (ports and stops)",
+      "itineraries": "Itineraries to sell",
+      "departures": "Departures generated (Extend schedule)",
+      "seasons": "Seasons covering every sailing night",
+      "policies": "Child, cancellation and payment policies",
+      "plan": "A rate plan",
+      "prices": "Prices for every category and season",
+      "backOffice": "Sold in the back office"
+    },
+    "details": {
+      "seasons": "{n, plural, one {# night} other {# nights}} without a season",
+      "prices": "{n, plural, one {# price} other {# prices}} missing"
+    }
+  },
+  "plans": {
+    "add": "New rate plan",
+    "edit": "Edit rate plan",
+    "name": "Name",
+    "nameHint": "e.g. International (USD)",
+    "code": "Code",
+    "codeHint": "Short, in capitals, e.g. INT.",
+    "codeFixed": "The code cannot change.",
+    "market": "Market",
+    "currency": "Currency",
+    "unit": "Price per",
+    "period": "Price for",
+    "perPerson": "person",
+    "perCabin": "cabin",
+    "perNight": "each night",
+    "perPackage": "the whole itinerary",
+    "basicsFixed": "Market, currency and how prices are counted are fixed: this plan already has prices.",
+    "unitHelp": "Per person: one price per adult, for single, double and triple occupancy. Per cabin: one price for the cabin. Per night: added up night by night, each in its season. Whole itinerary: one price per itinerary.",
+    "board": "Board",
+    "minNights": "Minimum nights",
+    "childPolicy": "Child policy",
+    "cancellationPolicy": "Cancellation policy",
+    "paymentPolicy": "Payment policy",
+    "policiesFirst": "Add a child, a cancellation and a payment policy first (below on this screen).",
+    "inclusionsEn": "Included (English)",
+    "inclusionsAr": "Included (Arabic)",
+    "exclusionsEn": "Not included (English)",
+    "exclusionsAr": "Not included (Arabic)",
+    "linesHint": "One item per line. Shown on vouchers.",
+    "soldThrough": "Sold through",
+    "noContracts": "No channel contracts for this ship yet.",
+    "active": "On sale",
+    "sellInBackOffice": "Sell in the back office (staff can book it right away)",
+    "boards": {
+      "full_board": "Full board",
+      "half_board": "Half board",
+      "bed_breakfast": "Bed and breakfast",
+      "all_inclusive": "All inclusive"
+    }
   }
 }

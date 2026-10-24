@@ -636,3 +636,13 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - Child bands: the editor types only each band's last age, so bands cannot leave gaps; the engine still checks coverage (`bands_gap`, `bands_end`).
 - Cancellation: a 0-day step is required; days must differ. Amendment fees are edited with the policy.
 - A policy used by a rate plan cannot be deleted. Errors return stable reasons the screen translates.
+
+## Batch 8, step 4: rate plans, supplements and the getting-started checklist (2026-10-24)
+
+- On **Rates & policies**: **New rate plan**, **Edit plan** and **Delete plan** for the selected ship; supplements can now be edited and deleted. Owners only (`rates.write`). No migration was needed.
+- A plan sells only through the contracts that list it. **Sell in the back office** (on by default for a new plan) creates the ship's back-office contract when missing (pool, guests pay the company, every category, from today, holds from the company settings) and adds the plan. Before this, a new company could not sell from the office at all: the Channels screen does not offer back-office contracts. Editing a plan sets which of the ship's contracts sell it; a contract must keep at least one plan.
+- A new cabin category joins every active contract of its ship, as the contract form already promises ("all cabin categories of the vessel are included").
+- Once a plan has prices, its market, currency, per person/per cabin and per night/per package are fixed. Name, board, minimum nights, policies, inclusions, channels and on-sale can change. Delete only without prices, supplements, quotes or bookings.
+- Every plan or supplement change bumps the plan and emits `rate.changed`.
+- **Getting started** on Today (owners): for each active ship, ten steps in order with links (categories, cabins, route, itineraries, departures, seasons covering every sailing night, policies, a plan, every price, sold in the back office), plus inviting the team and the operations email. "Every price" = each active plan has a price for every category × season, × basis for per-person plans (single, double, triple up to the category's adults) and × active itinerary for package plans. It hides once all is done.
+- A test builds a company from nothing through these functions and gets a back-office quote at the end.

@@ -9,6 +9,10 @@ summary: The first screen each morning — everything that needs doing, most urg
 
 **Today** is the first screen you see after signing in. It shows only what needs a person, grouped and counted. When everything is done it says _All clear_.
 
+## Getting started (owners)
+
+Until a ship can be sold, owners see **Getting started** at the top: for each ship, the setup steps in order (cabin categories, cabins, route, itineraries, departures, seasons covering every sailing night, policies, a rate plan, prices for every category and season, sold in the back office), each with a tick when done. The next step is highlighted, and each one links to the screen that does it. It also reminds you to invite your team and set the operations email. It disappears once everything is done.
+
 ## What appears here
 
 | Group                                           | What it means                                                                                                                                                                     | What to do                                                                                |

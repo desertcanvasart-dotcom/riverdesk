@@ -1,11 +1,15 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { SetupChecklist } from '../../components/setup-checklist';
 import { Badge, Card, PageHeader } from '../../components/ui';
 import { formatDate, formatDateTime, formatMoney, hoursLeft } from '../../lib/format';
 import { serverCaller } from '../../server/caller';
 
 export default async function HomePage() {
-  const list = await (await serverCaller()).home.actionList();
+  const caller = await serverCaller();
+  const [list, profile] = await Promise.all([caller.home.actionList(), caller.me.profile()]);
+  // Owners see what is left to set up until the company can sell.
+  const setup = profile.permissions.includes('fleet.write') ? await caller.home.setup() : null;
   const t = await getTranslations('home');
   const locale = await getLocale();
   const sections = [
@@ -105,6 +109,11 @@ export default async function HomePage() {
   return (
     <>
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      {setup && (
+        <div className="mb-4">
+          <SetupChecklist setup={setup} />
+        </div>
+      )}
       {sections.length === 0 ? (
         <Card>
           <p className="py-6 text-center text-muted">{t('allClear')}</p>

@@ -126,12 +126,24 @@ export async function addVessel(
   return unique(() => createVessel(db, ctx, input), 'code_taken');
 }
 
+/**
+ * A new category joins every active contract of the ship: contracts sell all of a ship's
+ * categories (the contract form says so), including ones added later.
+ */
 export async function addCabinCategory(
   db: VsDatabase,
   ctx: EngineContext,
   input: z.input<typeof createCabinCategoryInput>,
 ) {
-  return unique(() => createCabinCategory(db, ctx, input), 'code_taken');
+  const category = await unique(() => createCabinCategory(db, ctx, input), 'code_taken');
+  await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    sql`
+      insert into vs.channel_contract_category (operator_id, contract_id, category_id)
+      select ${ctx.operatorId}, k.id, ${category.id} from vs.channel_contract k
+      where k.vessel_id = ${category.vessel_id} and k.active
+      on conflict do nothing`.execute(tx),
+  );
+  return category;
 }
 
 export const updateVesselInput = z.object({
