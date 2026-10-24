@@ -29,7 +29,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('home');
-  const c = await getTranslations('cta');
   const num = (n: number) => n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en');
   return (
     <>
@@ -68,22 +67,27 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       </section>
 
       <section className="container-site relative -mt-14">
-        <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-lift)] lg:grid-cols-4">
-          {(t.raw('stats') as Stat[]).map((s, i) => (
-            <div
-              key={s.label}
-              className={`p-6 ${i > 0 ? 'border-line lg:border-s' : ''} ${i % 2 === 1 ? 'border-s' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''}`}
-            >
-              <dt className="sr-only">{s.label}</dt>
-              <dd>
-                <span className="block text-3xl font-bold tracking-tight text-brand" dir="ltr">
-                  {s.value}
-                </span>
-                <span className="mt-1 block text-sm leading-snug text-muted">{s.label}</span>
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-lift)]">
+          <h2 className="border-b border-line px-6 py-3 text-xs font-semibold tracking-[0.14em] text-sand uppercase">
+            {t('statsTitle')}
+          </h2>
+          <dl className="grid grid-cols-2 lg:grid-cols-4">
+            {(t.raw('stats') as Stat[]).map((s, i) => (
+              <div
+                key={s.label}
+                className={`p-6 ${i > 0 ? 'border-line lg:border-s' : ''} ${i % 2 === 1 ? 'border-s' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''}`}
+              >
+                <dt className="sr-only">{s.label}</dt>
+                <dd>
+                  <span className="block text-3xl font-bold tracking-tight text-brand">
+                    {s.value}
+                  </span>
+                  <span className="mt-1 block text-sm leading-snug text-muted">{s.label}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
 
       <section className="container-site py-24">
@@ -140,7 +144,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <section className="container-site py-24">
         <div className="grid items-start gap-12 lg:grid-cols-[1fr_1.1fr]">
           <div>
-            <Kicker>{t('howKicker')}</Kicker>
+            {t('howKicker') && <Kicker>{t('howKicker')}</Kicker>}
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t('howTitle')}</h2>
             <ol className="mt-10 flex flex-col">
               {(t.raw('how') as Item[]).map((step, i, all) => (
@@ -180,7 +184,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <p className="mt-5 text-lg leading-relaxed text-muted">{t('channelsText')}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/channels" className={secondaryButton}>
-                {c('apiGuide')}
+                {t('channelsLink')}
                 <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
               </Link>
             </div>
@@ -256,7 +260,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">{t('finalText')}</p>
             <div className="mt-9 flex justify-center">
-              <DemoButtons second="docs" dark />
+              <DemoButtons second="start" dark />
             </div>
           </div>
         </div>

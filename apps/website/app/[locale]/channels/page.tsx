@@ -57,6 +57,7 @@ export default async function Channels({ params }: { params: Promise<{ locale: s
         <div className="mt-20 grid items-center gap-10 lg:grid-cols-[1fr_1.3fr]">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('paymentTitle')}</h2>
+            <p className="mt-3 text-muted">{t('paymentIntro')}</p>
             <ul className="mt-6 flex flex-col gap-3">
               {(t.raw('payment') as string[]).map((line, i) => {
                 const Icon = PAYMENT_ICONS[i] ?? Wallet;
@@ -79,8 +80,15 @@ export default async function Channels({ params }: { params: Promise<{ locale: s
           <div className="band-waves absolute inset-0" aria-hidden />
           <div className="relative p-8 sm:p-10">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">{t('apiTitle')}</h2>
-            <p className="mt-3 max-w-3xl text-lg leading-relaxed text-white/70">{t('apiText')}</p>
-            <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {t('apiText')
+              .split('\n\n')
+              .map((para) => (
+                <p key={para} className="mt-3 max-w-3xl text-lg leading-relaxed text-white/70">
+                  {para}
+                </p>
+              ))}
+            <h3 className="mt-8 font-semibold text-white">{t('apiPointsTitle')}</h3>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {(t.raw('apiPoints') as string[]).map((line) => (
                 <li key={line} className="flex items-center gap-2.5 text-white/90">
                   <CheckCircle2 aria-hidden className="size-5 shrink-0 text-[#7fe0d6]" />

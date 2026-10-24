@@ -12,12 +12,20 @@ const primaryDark =
 const secondaryDark =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/25 px-6 text-sm font-semibold text-white transition hover:bg-white/10';
 
+const SECOND = {
+  features: ['/features', 'features'],
+  docs: ['/docs', 'docs'],
+  browse: ['/docs', 'browseDocs'],
+  start: ['/docs/getting-started/overview', 'startGuide'],
+} as const;
+
 /** "Request a demo" opens an email when a contact address is configured; otherwise sign in. */
 export async function DemoButtons({
   second = 'features',
   dark = false,
 }: {
-  second?: 'features' | 'docs';
+  /** The second button: the features, the docs home, or the getting-started guide. */
+  second?: 'features' | 'docs' | 'browse' | 'start';
   /** On a dark band. */
   dark?: boolean;
 }) {
@@ -39,11 +47,8 @@ export async function DemoButtons({
           {arrow}
         </a>
       )}
-      <Link
-        href={second === 'features' ? '/features' : '/docs'}
-        className={dark ? secondaryDark : secondary}
-      >
-        {second === 'features' ? t('features') : t('docs')}
+      <Link href={SECOND[second][0]} className={dark ? secondaryDark : secondary}>
+        {t(SECOND[second][1])}
       </Link>
     </div>
   );

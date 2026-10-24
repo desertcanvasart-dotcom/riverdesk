@@ -104,7 +104,7 @@ export default async function Features({ params }: { params: Promise<{ locale: s
         })}
       </div>
       <div className="flex justify-center">
-        <DemoButtons second="docs" />
+        <DemoButtons second="browse" />
       </div>
     </>
   );

@@ -20,9 +20,10 @@
     "glossary": "Glossary",
     "app": "Riverdesk app",
     "apiReference": "API reference",
-    "rights": "All rights reserved.",
     "guides": "Step-by-step guides",
-    "madeFor": "Made for the Nile, in Arabic and English."
+    "madeFor": "Made for the Nile, in Arabic and English.",
+    "signIn": "Sign in",
+    "copyright": "© {year} Riverdesk. All rights reserved."
   },
   "cta": {
     "demo": "Request a demo",
@@ -31,7 +32,9 @@
     "signIn": "Sign in to Riverdesk",
     "apiGuide": "Channel API guide",
     "apiReference": "Live API reference",
-    "demoSubject": "Riverdesk demo"
+    "demoSubject": "Riverdesk demo",
+    "browseDocs": "Browse the docs",
+    "startGuide": "Getting started guide"
   },
   "home": {
     "eyebrow": "For Nile cruise companies",
@@ -132,7 +135,9 @@
     "learnMore": "Learn more",
     "guidesTitle": "Learn it in an afternoon",
     "guidesText": "Step-by-step guides with real screenshots walk your team through every task, in Arabic and English.",
-    "guidesCta": "Browse the guides"
+    "guidesCta": "Browse the guides",
+    "statsTitle": "Numbers that matter",
+    "channelsLink": "Channel API guide"
   },
   "features": {
     "title": "Features",
@@ -241,7 +246,9 @@
       "Idempotent requests — safe to retry",
       "Sandbox for testing"
     ],
-    "kicker": "For partners"
+    "kicker": "For partners",
+    "paymentIntro": "Choose how each agency or platform collects and settles:",
+    "apiPointsTitle": "What the API covers"
   },
   "security": {
     "title": "Security and reliability",

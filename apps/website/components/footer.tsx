@@ -1,10 +1,15 @@
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '../i18n/routing';
 import { site } from '../lib/site';
 import { Logo } from './logo';
 
 export function Footer() {
   const t = useTranslations('footer');
+  const locale = useLocale();
+  // The year in the page's digits: ٢٠٢٦ in Arabic.
+  const year = new Date()
+    .getFullYear()
+    .toLocaleString(locale === 'ar' ? 'ar-EG' : 'en', { useGrouping: false });
   const n = useTranslations('nav');
   const col = 'flex flex-col gap-2.5 text-sm';
   const link = 'text-white/65 transition-colors hover:text-white';
@@ -54,7 +59,7 @@ export function Footer() {
             {t('app')}
           </span>
           <a href={site.appUrl} className={link}>
-            {n('signIn')}
+            {t('signIn')}
           </a>
           <a href={site.apiDocsUrl} className={link}>
             {t('apiReference')}
@@ -63,9 +68,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="container-site flex flex-wrap justify-between gap-2 py-5 text-xs text-white/50">
-          <span>
-            © {new Date().getFullYear()} Riverdesk · {t('rights')}
-          </span>
+          <span>{t('copyright', { year })}</span>
           <span>{t('madeFor')}</span>
         </div>
       </div>
