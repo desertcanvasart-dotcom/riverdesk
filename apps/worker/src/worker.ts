@@ -12,6 +12,7 @@ import {
   assignCabinsTask,
   completeBookingsTask,
   erasePassportsTask,
+  healthAlertsTask,
   overdueBalancesTask,
   expireHoldsTask,
   expireRequestsTask,
@@ -41,6 +42,7 @@ export const CRONTAB = [
   '0 1 * * * assign_cabins ?max=1',
   '30 1 * * * erase_passports ?max=1',
   '41 * * * * prune_documents ?max=1',
+  '*/5 * * * * health_alerts ?max=1',
 ].join('\n');
 
 export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
@@ -56,6 +58,7 @@ export function buildTaskList(db: VsDatabase, logger: Logger): TaskList {
     assign_cabins: assignCabinsTask(db, logger),
     erase_passports: erasePassportsTask(db, logger),
     prune_documents: pruneDocumentsTask(db, logger),
+    health_alerts: healthAlertsTask(db, logger),
     render_document: renderDocumentTask(db, logger),
   };
 }

@@ -562,3 +562,7 @@ The back office formats with `ar-EG` (the language cookie stays `ar`; code check
 **2026-10-24 · Erasing a guest keeps the guest row and blanks the personal data.**
 An owner can export everything held about one guest (a JSON file, passport included, since the request comes from that person) or erase it. Erasure replaces the name with "Erased Guest" and removes nationality, date of birth and passport, so the cabin's occupancy and the booking's accounts still add up. Both actions are audited without values.
 Reason: spec § Data subject requests. Deleting the row would change the booked occupancy that prices and manifests depend on.
+
+**2026-10-24 · Error tracking is Sentry, optional by configuration; alerts are tracked messages from a worker job.**
+`SENTRY_DSN` turns it on for the API, worker and back office. The SDK collects no user data, cookies, headers, query strings or bodies, and a scrubber deep-redacts everything else. Only unexpected errors are sent: domain refusals are normal answers. The five alert conditions are checked every 5 minutes per company. Each one is logged at error level and sent as `alert:<name>`, with one fingerprint per alert so Sentry groups the repeats. No extra service runs: the queries use the existing database.
+Reason: spec Batch 7 § Observability.

@@ -11,7 +11,7 @@ import {
   type PendingDocument,
   type VsDatabase,
 } from '@vs/engine';
-import { systemActor, type Logger } from '@vs/shared';
+import { captureError, systemActor, type Logger } from '@vs/shared';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import {
   bookingDocumentHtml,
@@ -109,6 +109,7 @@ export function renderDocumentTask(db: VsDatabase, logger: Logger): Task {
       );
     } catch (error) {
       logger.error({ err: error, documentId, kind: doc.kind }, 'document failed');
+      captureError(error, { documentId, kind: doc.kind });
       // Graphile retries the job; the last attempt marks the document failed for the screen.
       if (helpers.job.attempts >= helpers.job.max_attempts) {
         await failDocument(

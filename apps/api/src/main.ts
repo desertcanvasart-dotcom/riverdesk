@@ -1,8 +1,15 @@
 import { openDatabase } from '@vs/engine';
-import { createLogger, loadConfig, required } from '@vs/shared';
+import {
+  createLogger,
+  flushErrorTracking,
+  initErrorTracking,
+  loadConfig,
+  required,
+} from '@vs/shared';
 import { buildApp } from './app';
 
 const config = loadConfig();
+initErrorTracking(config, 'api');
 const logger = createLogger('api', { level: config.LOG_LEVEL });
 const db = openDatabase('vs_api', { config, logger });
 const app = buildApp({
@@ -19,6 +26,7 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     void app
       .close()
       .then(() => db.close())
+      .then(() => flushErrorTracking())
       .then(() => process.exit(0));
   });
 }

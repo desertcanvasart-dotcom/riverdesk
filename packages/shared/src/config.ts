@@ -15,6 +15,8 @@ const base64Key32 = z
 
 export const envSchema = z.object({
   VS_ENV: z.enum(['local', 'ci', 'hosted']).default('local'),
+  /** Error tracking (Sentry). Unset: errors are only logged. */
+  SENTRY_DSN: z.url().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
   DATABASE_URL_ADMIN: z.string().optional(),

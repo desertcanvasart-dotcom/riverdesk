@@ -40,6 +40,7 @@ describe('worker', () => {
               'release_allotments',
               'webhooks',
               'prune_rate_limits',
+              'health_alerts',
             ]),
           );
         },
@@ -59,6 +60,7 @@ describe('worker', () => {
     'overdue_balances',
     'webhooks',
     'prune_rate_limits',
+    'health_alerts',
   ])('runs %s for every operator through the job queue', async (task) => {
     const job = await quickAddJob(
       { connectionString: workerUrl },

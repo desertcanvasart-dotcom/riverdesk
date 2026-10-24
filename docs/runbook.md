@@ -44,7 +44,22 @@ Start it with `pnpm --filter @vs/worker start` (or `dev` to restart on changes).
 | `assign_cabins`      | 01:00            | Departures inside the assignment cut-off get physical cabins                  |
 | `erase_passports`    | 01:30            | Passport numbers and dates of birth erased after the retention period         |
 | `prune_documents`    | hourly           | Deletes expired documents (manifests after a day, others after a week)        |
+| `health_alerts`      | every 5 minutes  | Checks the alert conditions below per company; logs and tracks each one       |
 | `render_document`    | on request       | Renders a requested PDF, Excel or PNG (queued by `vs.enqueue_document`)       |
+
+## Observability
+
+- **Logs**: structured JSON (pino) on stdout from the API, worker and back office. Sensitive keys (passport numbers, secrets, tokens, authorization headers) are redacted before writing.
+- **Error tracking**: set `SENTRY_DSN` (one project per environment) on the API, worker and back office. Unset, errors are only logged. The scrubber drops user data, cookies, headers, query strings and request bodies, and deep-redacts extra data (`packages/shared/src/tracking.ts`, tested).
+- **Alerts**: the `health_alerts` job sends a Sentry warning `alert:<name>` per condition and company, and logs it at error level with `"alert": "<name>"`. In Sentry, create one alert rule: _a new or regressed issue whose message starts with `alert:`_, notifying the operations email or WhatsApp group.
+
+| Alert                      | Fires when                                                                         | First response                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `invariant_violations`     | An invariant exception is open (the nightly check found one)                       | Today screen → the exception; sales are already stopped on that leg   |
+| `hold_expiry_backlog`      | Active holds more than 5 minutes past expiry                                       | Is the worker running? Check its logs; `expire_holds` catches up      |
+| `allotment_release_failed` | Unreleased allotment cabins past their release date (1 day grace), or an exception | Check worker logs for `release_allotments`; release by hand if needed |
+| `webhook_failure_rate`     | Over 10% of the last hour's webhook attempts failed (at least 10 attempts)         | Channels → the endpoint's delivery log; contact the channel           |
+| `payment_exceptions`       | A late payment or paid-but-unavailable exception opened in the last 5 minutes      | Today screen → the booking                                            |
 
 ## Documents
 

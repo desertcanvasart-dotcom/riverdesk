@@ -4,7 +4,7 @@ import ScalarApiReference from '@scalar/fastify-api-reference';
 import { DomainError, isDomainError } from '@vs/contracts';
 import { openApiDocument, openApiText } from '@vs/contracts/openapi';
 import { authenticateClient, pingDatabase, type VsDatabase } from '@vs/engine';
-import { createLogger, type Logger } from '@vs/shared';
+import { captureError, createLogger, type Logger } from '@vs/shared';
 import { issueToken, TOKEN_TTL_SECONDS } from './auth';
 import { v1Routes, type V1Options } from './routes/v1';
 
@@ -45,6 +45,7 @@ export function buildApp(options: AppOptions) {
     }
     if (isOutage(error)) {
       request.log.error({ err: error }, 'database unavailable');
+      captureError(error, { route: request.routeOptions.url, outage: true });
       return reply
         .status(503)
         .header('Retry-After', '30')
@@ -59,6 +60,7 @@ export function buildApp(options: AppOptions) {
       });
     }
     request.log.error({ err: error }, 'unhandled error');
+    captureError(error, { route: request.routeOptions.url, method: request.method });
     return reply.status(500).send({ error: new DomainError('INTERNAL').toJSON() });
   });
   app.setNotFoundHandler((_request, reply) =>

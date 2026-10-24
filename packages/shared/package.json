@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sentry/node": "^11.9.0",
     "@vs/contracts": "workspace:*",
     "dotenv": "^18.0.9",
     "kysely": "^0.29.7",

@@ -3,6 +3,7 @@ import {
   assignDueCabins,
   completeBookings,
   erasePassports,
+  healthAlerts,
   expireHolds,
   expireRequests,
   listOperatorIds,
@@ -11,7 +12,7 @@ import {
   type EngineContext,
   type VsDatabase,
 } from '@vs/engine';
-import { systemActor, type Logger } from '@vs/shared';
+import { captureAlert, captureError, systemActor, type Logger } from '@vs/shared';
 
 /** Runs `fn` for every operator, each in its own tenant transaction(s); one failure does not stop the rest. */
 export async function forEachOperator(
@@ -29,6 +30,7 @@ export async function forEachOperator(
     } catch (error) {
       failures += 1;
       logger.error({ err: error, operatorId, job }, 'job failed for operator');
+      captureError(error, { operatorId, job });
     }
   }
   if (failures > 0) throw new Error(`${job} failed for ${failures} operator(s)`);
@@ -82,4 +84,27 @@ export function assignCabinsTask(db: VsDatabase, logger: Logger): Task {
 /** Daily: passport numbers and dates of birth go after the retention period. */
 export function erasePassportsTask(db: VsDatabase, logger: Logger): Task {
   return () => forEachOperator(db, logger, 'erase_passports', (ctx) => erasePassports(db, ctx));
+}
+
+/**
+ * Every 5 minutes: each alert condition that holds is logged at error level and sent to error
+ * tracking as `alert:<name>` (one issue per alert, so the alert rule fires once and repeats count).
+ */
+export function healthAlertsTask(db: VsDatabase, logger: Logger): Task {
+  return () =>
+    forEachOperator(db, logger, 'health_alerts', async (ctx) => {
+      const alerts = await healthAlerts(db, ctx);
+      for (const alert of alerts) {
+        logger.error(
+          { alert: alert.name, operatorId: ctx.operatorId, count: alert.count, ...alert.detail },
+          `alert: ${alert.name}`,
+        );
+        captureAlert(alert.name, {
+          operatorId: ctx.operatorId,
+          count: alert.count,
+          ...alert.detail,
+        });
+      }
+      return { alerts: alerts.length };
+    });
 }
