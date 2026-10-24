@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   add,
   convert,
+  decimalToMinor,
+  decimalsOf,
   formatMinor,
+  minorToDecimal,
   money,
   mulDivHalfUp,
   multiply,
@@ -49,5 +52,19 @@ describe('money', () => {
   it('formats for logs and debugging', () => {
     expect(formatMinor(money(5, 'EGP'))).toBe('0.05 EGP');
     expect(formatMinor(money(-123_456, 'USD'))).toBe('-1234.56 USD');
+  });
+
+  it('knows 3-decimal currencies and converts decimal text both ways', () => {
+    expect(decimalsOf('KWD')).toBe(3);
+    expect(decimalsOf('SAR')).toBe(2);
+    expect(minorToDecimal(1250n, 'KWD')).toBe('1.250');
+    expect(minorToDecimal(5n, 'BHD')).toBe('0.005');
+    expect(minorToDecimal(58550n, 'USD')).toBe('585.50');
+    expect(minorToDecimal(-150n, 'EUR')).toBe('-1.50');
+    expect(decimalToMinor('1.25', 'KWD')).toBe(1250n);
+    expect(decimalToMinor('12', 'OMR')).toBe(12000n);
+    expect(decimalToMinor('1.255', 'USD')).toBeNull();
+    expect(decimalToMinor('0.125', 'KWD')).toBe(125n);
+    expect(money(1250n, 'QAR').currency).toBe('QAR');
   });
 });

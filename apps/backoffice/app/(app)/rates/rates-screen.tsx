@@ -20,6 +20,7 @@ import {
 import { useErrorText } from '../../../lib/errors';
 import { formatDate, formatMoney, minorToInput, parseMoney } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
+import { useMarkets } from '../../../lib/markets';
 import { PlanDialog } from './plan-dialog';
 import { PoliciesSection } from './policies-section';
 import { usePolicyError } from './policy-errors';
@@ -44,7 +45,6 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
   const t = useTranslations('rates');
   const tc = useTranslations('common');
   const tb = useTranslations('basis');
-  const tbook = useTranslations('book');
   const locale = useLocale();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -66,18 +66,20 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
     trpc.rates.plans.queryOptions({ vesselId }, { enabled: Boolean(vesselId) }),
   );
   const policyError = usePolicyError();
-  const refreshAll = () => {
-    void queryClient.invalidateQueries({ queryKey: trpc.rates.setup.queryKey() });
-    void queryClient.invalidateQueries({ queryKey: trpc.rates.plans.queryKey() });
-    void queryClient.invalidateQueries({ queryKey: trpc.rates.policies.queryKey() });
-    void queryClient.invalidateQueries({ queryKey: trpc.rates.seasons.queryKey() });
-    void queryClient.invalidateQueries({ queryKey: trpc.home.setup.queryKey() });
-  };
+  const { name: marketName } = useMarkets();
+  const refreshAll = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: trpc.rates.setup.queryKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.rates.plans.queryKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.rates.policies.queryKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.rates.seasons.queryKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.home.setup.queryKey() }),
+    ]);
   const removePlan = useMutation(
     trpc.rates.deletePlan.mutationOptions({
       onSuccess: () => {
         setPlanId('');
-        refreshAll();
+        void refreshAll();
       },
     }),
   );
@@ -106,7 +108,7 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
       .map((r) => [cell(r.categoryId, r.basis), r.amount]),
   );
   const changes = Object.entries(edits).flatMap(([key, text]) => {
-    const amount = parseMoney(text);
+    const amount = parseMoney(text, plan?.currency);
     if (amount === null || amount === current.get(key)) return [];
     const [categoryId, basis] = key.split(':') as [string, string];
     return [
@@ -120,14 +122,14 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
     ];
   });
   const invalid = Object.values(edits).some(
-    (text) => text.trim() !== '' && parseMoney(text) === null,
+    (text) => text.trim() !== '' && parseMoney(text, plan?.currency) === null,
   );
   const save = useMutation(
     trpc.rates.set.mutationOptions({
       onSuccess: () => {
         setEdits({});
         setNotice(t('saved'));
-        refreshAll();
+        void refreshAll();
       },
     }),
   );
@@ -157,8 +159,7 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
             >
               {data?.plans.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code} ·{' '}
-                  {tbook.has(`market_${p.market}`) ? tbook(`market_${p.market}`) : p.market}
+                  {p.code} · {marketName(p.market)}
                 </option>
               ))}
             </Select>
@@ -242,7 +243,8 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
                 {bases.map((b) => {
                   const key = cell(c.id, b);
                   const value = current.get(key);
-                  const text = edits[key] ?? (value !== undefined ? minorToInput(value) : '');
+                  const text =
+                    edits[key] ?? (value !== undefined ? minorToInput(value, plan?.currency) : '');
                   return (
                     <Td key={key}>
                       {canWrite ? (
@@ -357,6 +359,7 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
       {supplementDialog && plan && (
         <SupplementDialog
           ratePlanId={plan.id}
+          currency={plan.currency}
           supplement={supplementDialog === 'add' ? undefined : supplementDialog}
           onClose={() => setSupplementDialog(null)}
           onDone={refreshAll}
@@ -368,9 +371,10 @@ export function RatesScreen({ vessels, canWrite }: { vessels: Vessel[]; canWrite
           plan={planDialog === 'edit' ? fullPlan : undefined}
           contracts={plansQuery.data?.contracts ?? []}
           onClose={() => setPlanDialog(null)}
-          onDone={(id) => {
+          onDone={async (id) => {
+            // Select the new plan only once the list has it, or the screen falls back to the first.
+            await refreshAll();
             setPlanId(id);
-            refreshAll();
           }}
         />
       )}
@@ -393,11 +397,14 @@ interface Supplement {
 
 function SupplementDialog({
   ratePlanId,
+  currency,
   supplement,
   onClose,
   onDone,
 }: {
   ratePlanId: string;
+  /** The plan's currency: supplements are priced in it. */
+  currency: string;
   supplement?: Supplement;
   onClose: () => void;
   onDone: () => void;
@@ -414,8 +421,8 @@ function SupplementDialog({
     nameAr: supplement?.nameAr ?? '',
     dateFrom: supplement?.dateFrom ?? '',
     dateTo: supplement?.dateTo ?? '',
-    adult: supplement ? minorToInput(supplement.amountAdult) : '',
-    child: supplement ? minorToInput(supplement.amountChild) : '',
+    adult: supplement ? minorToInput(supplement.amountAdult, currency) : '',
+    child: supplement ? minorToInput(supplement.amountChild, currency) : '',
     mandatory: supplement?.mandatory ?? true,
   });
   const done = {
@@ -428,8 +435,8 @@ function SupplementDialog({
   const add = useMutation(trpc.rates.addSupplement.mutationOptions(done));
   const update = useMutation(trpc.rates.updateSupplement.mutationOptions(done));
   const failed = add.error ?? update.error;
-  const adult = parseMoney(form.adult);
-  const child = parseMoney(form.child || '0');
+  const adult = parseMoney(form.adult, currency);
+  const child = parseMoney(form.child || '0', currency);
   return (
     <Dialog
       open

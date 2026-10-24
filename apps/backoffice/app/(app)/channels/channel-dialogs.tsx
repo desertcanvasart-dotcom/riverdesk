@@ -8,7 +8,9 @@ import { Alert, Badge, Button, Field, Input, Select } from '../../../components/
 import { addDaysIso, cairoTodayIso } from '../../../lib/dates';
 import { useErrorText } from '../../../lib/errors';
 import { formatDateTime, parseMoney } from '../../../lib/format';
+import { CURRENCIES } from '@vs/shared/money';
 import { useTRPC } from '../../../lib/trpc';
+import { useMarkets } from '../../../lib/markets';
 
 export interface Vessel {
   id: string;
@@ -86,7 +88,7 @@ export function ChannelDialog({ onClose, onDone }: { onClose: () => void; onDone
     credit: '',
     currency: 'USD',
   });
-  const credit = form.credit ? parseMoney(form.credit) : null;
+  const credit = form.credit ? parseMoney(form.credit, form.currency) : null;
   const create = useMutation(trpc.channels.create.mutationOptions({ onSuccess: onDone }));
   return (
     <Dialog open onClose={onClose} title={t('newChannel')}>
@@ -145,7 +147,7 @@ export function ChannelDialog({ onClose, onDone }: { onClose: () => void; onDone
               value={form.currency}
               onChange={(e) => setForm({ ...form, currency: e.target.value })}
             >
-              {['USD', 'EUR', 'EGP', 'GBP'].map((c) => (
+              {CURRENCIES.map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </Select>
@@ -179,7 +181,6 @@ export function ContractDialog({
   onDone: () => void;
 }) {
   const t = useTranslations('channels');
-  const tb = useTranslations('book');
   const trpc = useTRPC();
   const errorText = useErrorText();
   const [vesselId, setVesselId] = useState(vessels[0]?.id ?? '');
@@ -194,6 +195,7 @@ export function ContractDialog({
     percent: '0',
     validFrom: cairoTodayIso(),
   });
+  const { name: marketName } = useMarkets();
   const [plans, setPlans] = useState<Set<string>>(new Set());
   const percent = Number(form.percent);
   const create = useMutation(trpc.channels.createContract.mutationOptions({ onSuccess: onDone }));
@@ -304,8 +306,7 @@ export function ContractDialog({
                     setPlans(next);
                   }}
                 />
-                {p.code} · {tb.has(`market_${p.market}`) ? tb(`market_${p.market}`) : p.market} ·{' '}
-                {p.currency}
+                {p.code} · {marketName(p.market)} · {p.currency}
               </label>
             ))}
           </div>

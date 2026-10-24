@@ -166,7 +166,8 @@
     "fromPrice": "from {price} pp",
     "market_international": "International",
     "market_egyptian_resident": "Egyptian resident",
-    "allItineraries": "All"
+    "allItineraries": "All",
+    "needsProof": "Guests show proof of residency or ID at boarding."
   },
   "bookings": {
     "title": "Bookings",
@@ -972,7 +973,8 @@
       "plan_in_use": "This plan has prices, supplements or bookings, so it cannot be deleted. Take it off sale instead.",
       "contract_needs_plan": "A channel would be left with no rate plan to sell. Give it another plan first.",
       "unknown_contract": "That contract is not for this ship.",
-      "dates_backwards": "The end date is before the start date."
+      "dates_backwards": "The end date is before the start date.",
+      "unknown_market": "That market is not offered: choose another or switch it on in Settings."
     },
     "ruleLast": "Less than {n} days before, or no-show: {p}% penalty",
     "ruleAlways": "At any time: {p}% penalty",
@@ -1064,5 +1066,34 @@
     "staysLonger": "stays on",
     "openBooking": "Open booking {ref}",
     "readOnly": "Your role can view the map but not move guests."
+  },
+  "markets": {
+    "title": "Markets",
+    "add": "Add market",
+    "edit": "Edit market",
+    "intro": "Who a price is for. Each rate plan is for one market, in its own currency; guests in a market that needs proof must show residency or ID when they board.",
+    "name": "Market",
+    "code": "Code",
+    "proof": "Proof at boarding",
+    "proofYes": "Residency or ID",
+    "plans": "Rate plans",
+    "off": "Not offered",
+    "delete": "Delete",
+    "deleteConfirm": "Delete the market “{name}”? No rate plan or booking uses it.",
+    "nameEn": "Name in English",
+    "nameAr": "Name in Arabic",
+    "codeHint": "Lower-case letters and _, e.g. gcc or european. Agencies and nilecrz send this code; it cannot change later.",
+    "codeFixed": "The code cannot change: rate plans, bookings and channels use it.",
+    "order": "Order",
+    "proofLabel": "Guests must show proof of residency or ID at boarding",
+    "proofHint": "Printed on vouchers, for example for resident prices.",
+    "active": "Offered for new rate plans",
+    "activeHint": "Off: no new plans in this market; existing plans keep selling.",
+    "errors": {
+      "code_taken": "That code is already used.",
+      "market_in_use": "Rate plans or bookings use this market: switch it off instead.",
+      "unknown_market": "That market is not offered: choose another or switch it on in Settings."
+    },
+    "editRow": "Edit"
   }
 }

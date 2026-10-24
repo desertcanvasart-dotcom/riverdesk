@@ -6,9 +6,9 @@ import { useState } from 'react';
 import { Dialog } from '../../../components/dialog';
 import { Alert, Button, Field, Input, Select } from '../../../components/ui';
 import { useTRPC } from '../../../lib/trpc';
+import { useMarkets } from '../../../lib/markets';
 import { CURRENCIES, usePolicyError } from './policy-errors';
 
-export const MARKETS = ['international', 'egyptian_resident'] as const;
 export const BOARDS = ['full_board', 'half_board', 'bed_breakfast', 'all_inclusive'] as const;
 
 export interface Plan {
@@ -63,10 +63,10 @@ export function PlanDialog({
 }) {
   const t = useTranslations('plans');
   const tc = useTranslations('common');
-  const tbook = useTranslations('book');
   const trpc = useTRPC();
   const policyError = usePolicyError();
   const policies = useQuery(trpc.rates.policies.queryOptions());
+  const { markets, name: marketName } = useMarkets();
   const basicsFixed = Boolean(plan && plan.rates > 0);
   const [form, setForm] = useState({
     code: plan?.code ?? '',
@@ -170,11 +170,13 @@ export function PlanDialog({
               disabled={basicsFixed}
               onChange={(e) => set({ market: e.target.value })}
             >
-              {MARKETS.map((m) => (
-                <option key={m} value={m}>
-                  {tbook(`market_${m}`)}
-                </option>
-              ))}
+              {markets
+                .filter((m) => m.active || m.code === form.market)
+                .map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {marketName(m.code)}
+                  </option>
+                ))}
             </Select>
           </Field>
           <Field label={t('currency')}>

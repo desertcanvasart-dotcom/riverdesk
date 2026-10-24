@@ -19,6 +19,7 @@ import {
   minorUnits,
 } from '../pricing/setup';
 import { dateSchema } from '../schedule/setup';
+import { assertMarket } from './markets';
 
 /**
  * Rate plans and supplements (Batch 8, step 4). A plan sells only through the channel contracts
@@ -196,6 +197,7 @@ export async function addRatePlan(
   return friendly(() =>
     db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
       await lockVessel(tx, data.vesselId);
+      await assertMarket(tx, data.market);
       const plan = await tx
         .insertInto('rate_plan')
         .values({
@@ -262,6 +264,7 @@ export async function updateRatePlan(
       before.currency !== data.currency ||
       before.pricing_unit !== data.pricingUnit ||
       before.pricing_period !== data.pricingPeriod;
+    if (before.market !== data.market) await assertMarket(tx, data.market);
     if (basics) {
       const { rows } = await sql<{ n: number }>`
         select count(*)::int as n from vs.rate where rate_plan_id = ${data.ratePlanId}`.execute(tx);

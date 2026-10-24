@@ -95,6 +95,7 @@ export async function bookingDocumentData(
     const head = await sql<{
       vessel: string;
       market: string;
+      needs_proof: boolean;
       pattern_code: string | null;
       name_en: string | null;
       name_ar: string | null;
@@ -114,7 +115,10 @@ export async function bookingDocumentData(
         };
       };
     }>`
-      select v.name as vessel, b.market, sp.code as pattern_code, sp.name_en, sp.name_ar, s.nights,
+      select v.name as vessel, b.market,
+             coalesce((select m.needs_residency_proof from vs.market m where m.code = b.market),
+                      b.market <> 'international') as needs_proof,
+             sp.code as pattern_code, sp.name_en, sp.name_ar, s.nights,
              s.embark_date::text, s.disembark_date::text,
              jsonb_build_object('en', ep.name_en, 'ar', ep.name_ar) as embark,
              jsonb_build_object('en', dp.name_en, 'ar', dp.name_ar) as disembark,
@@ -210,7 +214,7 @@ export async function bookingDocumentData(
       board: policies.rate_plan?.board ?? 'full_board',
       inclusions: policies.inclusions ?? { en: [], ar: [] },
       exclusions: policies.exclusions ?? { en: [], ar: [] },
-      needsResidencyProof: h.market !== 'international',
+      needsResidencyProof: h.needs_proof,
       paymentsDue: detail.paymentsDue,
       payments: detail.payments
         .filter((p) => !p.reversed && p.kind !== 'reversal')

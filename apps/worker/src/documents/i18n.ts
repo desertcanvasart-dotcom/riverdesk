@@ -1,3 +1,5 @@
+import { decimalsOf, minorToDecimal } from '@vs/shared';
+
 /** Document wording in both languages, and locale-aware formatting (integer minor units in). */
 
 export type Locale = 'ar' | 'en';
@@ -175,14 +177,13 @@ export function translator(locale: Locale) {
 const tag = (locale: Locale) => (locale === 'ar' ? 'ar-EG' : 'en-GB');
 
 export function money(amount: bigint, currency: string, locale: Locale): string {
-  const negative = amount < 0n;
-  const abs = (negative ? -amount : amount).toString().padStart(3, '0');
-  const decimal = `${negative ? '-' : ''}${abs.slice(0, -2)}.${abs.slice(-2)}`;
+  const digits = decimalsOf(currency);
   return new Intl.NumberFormat(tag(locale), {
     style: 'currency',
     currency,
-    minimumFractionDigits: 2,
-  }).format(decimal as unknown as number);
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(minorToDecimal(amount, currency) as unknown as number);
 }
 
 export function date(value: string, locale: Locale, style: 'short' | 'long' = 'long'): string {

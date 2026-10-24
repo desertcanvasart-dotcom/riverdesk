@@ -653,3 +653,12 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - Moving guests reuses the existing `cabinOptions` and `assignCabin` (owners and reservations, `guests.assign`): pick a party, the cabins that fit every night of its cruise light up, one click moves it for the whole cruise. Sales stay by category; holds and allotments are counts and have no cabin.
 - Engine: `getCabinMap(legId)` (backoffice/cabin-map.ts). No migration.
 - The list of fitting cabins is refetched after every move (a cached answer offered the party's own cabin).
+
+## Markets list and more currencies (2026-10-24)
+
+- Migration 0011: `vs.market` (tenant table: code, English and Arabic names, `needs_residency_proof`, active, order). A trigger gives every new company International (no proof) and Egyptian resident (proof); existing companies were backfilled, plus any market a rate plan already used. Rate plans, quotes, bookings and the Channel API keep naming markets by code (no foreign key), so nothing changes for nilecrz.
+- **Settings → Markets** (owners, `settings.write`): add, edit, stop offering, delete when no rate plan, quote or booking used it. The code is fixed. New and changed rate plans must name an offered market (`unknown_market`); an existing plan may keep a market that was switched off.
+- Vouchers' "bring proof of residency or ID" line now comes from the market's setting (was: every market but International). New booking shows the same note.
+- Currencies: SAR, AED, QAR, CHF, CAD, AUD (2 decimals) and KWD, BHD, OMR (3 decimals) next to USD, EUR, EGP, GBP. One table in `@vs/shared/money` (`decimalsOf`, `minorToDecimal`, `decimalToMinor`, exported to the browser as `@vs/shared/money`) drives the back-office formatting and price fields, PDFs and the bookings import; amounts stay integer minor units (1.250 KWD = 1250). The API's Money is already minor units with any 3-letter code.
+- Each rate plan has its own currency, so each market can be sold in its own currency; amounts are never converted.
+- Fixed while testing: after creating a rate plan, the Rates screen now selects the new plan once the list has it (it fell back to the first plan).

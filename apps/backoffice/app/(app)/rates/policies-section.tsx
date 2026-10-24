@@ -290,7 +290,7 @@ function ChildDialog({
       ageTo: String(b.ageTo),
       basis: b.basis,
       percent: b.percentBps !== null ? bpsToPercent(b.percentBps) : '',
-      amount: b.fixedAmount ? minorToInput(BigInt(b.fixedAmount)) : '',
+      amount: b.fixedAmount ? minorToInput(BigInt(b.fixedAmount), b.fixedCurrency ?? 'EGP') : '',
       currency: b.fixedCurrency ?? 'EGP',
       requiresTwoAdults: b.requiresTwoAdults,
     })) ?? [
@@ -333,7 +333,7 @@ function ChildDialog({
           const payload = [];
           for (const [i, b] of bands.entries()) {
             const percentBps = b.basis === 'percent_of_adult' ? percentToBps(b.percent) : undefined;
-            const amount = b.basis === 'fixed' ? parseMoney(b.amount) : undefined;
+            const amount = b.basis === 'fixed' ? parseMoney(b.amount, b.currency) : undefined;
             if (percentBps === null || amount === null)
               return setFormError(t('errors.bandValue', { n: i + 1 }));
             payload.push({
@@ -549,7 +549,7 @@ function CancellationDialog({
       changeKind: f.changeKind,
       fromDays: String(f.fromDays),
       feeKind: f.feeKind,
-      amount: f.amount ? minorToInput(BigInt(f.amount)) : '',
+      amount: f.amount ? minorToInput(BigInt(f.amount), f.currency ?? 'EGP') : '',
       currency: f.currency ?? 'EGP',
       percent: f.percentBps !== null ? bpsToPercent(f.percentBps) : '',
     })) ?? [],
@@ -581,7 +581,7 @@ function CancellationDialog({
           const payloadFees = [];
           for (const f of fees) {
             const percentBps = f.feeKind === 'percent' ? percentToBps(f.percent) : undefined;
-            const amount = f.feeKind === 'flat' ? parseMoney(f.amount) : undefined;
+            const amount = f.feeKind === 'flat' ? parseMoney(f.amount, f.currency) : undefined;
             if (percentBps === null || amount === null) return setFormError(t('errors.feeValue'));
             payloadFees.push({
               changeKind: f.changeKind,

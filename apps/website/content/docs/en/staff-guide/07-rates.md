@@ -17,7 +17,7 @@ A **rate plan** is a price list for one market and currency, for example _Intern
 
 ### Making a plan (owners)
 
-**+ New rate plan** for the ship chosen at the top. Fill in a name and a short code, the market (International or Egyptian resident) and currency, how prices are counted (per person or per cabin, each night or the whole itinerary), the board, the minimum nights and the three policies. What the price **includes** and **does not include** (one item per line, in English and Arabic) is printed on vouchers.
+**+ New rate plan** for the ship chosen at the top. Fill in a name and a short code, the market (from your list in [Settings](/docs/staff-guide/settings)) and the currency (USD, EUR, EGP, GBP, SAR, AED, QAR, CHF, CAD, AUD, KWD, BHD or OMR; each plan has its own, so each market can have its own currency), how prices are counted (per person or per cabin, each night or the whole itinerary), the board, the minimum nights and the three policies. What the price **includes** and **does not include** (one item per line, in English and Arabic) is printed on vouchers.
 
 Leave **Sell in the back office** ticked: your staff can then book this plan at once. To sell it through an agency or nilecrz too, give that channel a contract on [Channels](/docs/staff-guide/channels), or tick it under **Sold through** when you edit the plan.
 

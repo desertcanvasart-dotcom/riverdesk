@@ -12,8 +12,53 @@ export interface Money {
   readonly currency: CurrencyCode;
 }
 
-/** Minor units per currency. Every currency the system prices in must be listed. */
-const MINOR_UNITS: Record<string, number> = { USD: 2, EUR: 2, EGP: 2, GBP: 2 };
+/**
+ * Minor units per currency (ISO 4217). Every currency the system prices in must be listed.
+ * KWD, BHD and OMR have 3 decimals (fils / baisa): 1.250 KWD is 1250 minor units.
+ */
+const MINOR_UNITS: Record<string, number> = {
+  USD: 2,
+  EUR: 2,
+  EGP: 2,
+  GBP: 2,
+  SAR: 2,
+  AED: 2,
+  QAR: 2,
+  CHF: 2,
+  CAD: 2,
+  AUD: 2,
+  KWD: 3,
+  BHD: 3,
+  OMR: 3,
+};
+
+/** The currencies a company can price in, in the order screens offer them. */
+export const CURRENCIES = Object.keys(MINOR_UNITS) as readonly string[];
+
+/** Decimals of any currency code (2 for one this system does not know). */
+export function decimalsOf(code: string): number {
+  return MINOR_UNITS[code] ?? 2;
+}
+
+/** 58550n USD → "585.50"; 1250n KWD → "1.250". Latin digits, no grouping. */
+export function minorToDecimal(amount: bigint, code: string): string {
+  const digits = decimalsOf(code);
+  const negative = amount < 0n;
+  const abs = (negative ? -amount : amount).toString().padStart(digits + 1, '0');
+  const whole = digits === 0 ? abs : abs.slice(0, -digits);
+  const fraction = digits === 0 ? '' : `.${abs.slice(-digits)}`;
+  return `${negative ? '-' : ''}${whole}${fraction}`;
+}
+
+/** "585.5" USD → 58550n; "1.25" KWD → 1250n; null when it has more decimals than the currency. */
+export function decimalToMinor(text: string, code: string): bigint | null {
+  const digits = decimalsOf(code);
+  const match = /^(\d+)(?:\.(\d+))?$/.exec(text.trim());
+  if (!match || (match[2] ?? '').length > digits) return null;
+  return (
+    BigInt(match[1]!) * 10n ** BigInt(digits) + BigInt((match[2] ?? '').padEnd(digits, '0') || '0')
+  );
+}
 
 export const currencySchema = z
   .string()

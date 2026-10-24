@@ -112,6 +112,13 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
       [operatorId, randomUUID()],
     );
   },
+  market: async (db, operatorId) => {
+    await db.query(
+      `insert into vs.market (operator_id, code, name_en, name_ar) values ($1, 'fixture_market', 'Fixture', 'تجربة')
+       on conflict (operator_id, code) do nothing`,
+      [operatorId],
+    );
+  },
   staff_invitation: async (db, operatorId) => {
     await db.query(
       `insert into vs.staff_invitation (operator_id, email, display_name, role) values ($1, $2, 'Fixture', 'read_only')`,

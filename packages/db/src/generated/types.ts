@@ -484,6 +484,19 @@ export interface Leg {
   vessel_id: string;
 }
 
+export interface Market {
+  active: Generated<boolean>;
+  code: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  name_ar: string;
+  name_en: string;
+  needs_residency_proof: Generated<boolean>;
+  operator_id: string;
+  sort_order: Generated<number>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Offer {
   booking_id: string;
   created_at: Generated<Timestamp>;
@@ -871,6 +884,7 @@ export interface DB {
   inventory_bucket: InventoryBucket;
   inventory_event: InventoryEvent;
   leg: Leg;
+  market: Market;
   offer: Offer;
   operator: Operator;
   operator_setting: OperatorSetting;

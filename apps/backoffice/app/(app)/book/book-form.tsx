@@ -20,6 +20,7 @@ import { useErrorText } from '../../../lib/errors';
 import { usePriceLineLabel } from '../../../lib/price-lines';
 import { formatDate, formatMoney } from '../../../lib/format';
 import { newRequestKey, useTRPC } from '../../../lib/trpc';
+import { useMarkets } from '../../../lib/markets';
 
 interface Category {
   id: string;
@@ -55,6 +56,7 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
   const vessel = vessels.find((v) => v.id === vesselId);
   const [channelId, setChannelId] = useState('');
   const [market, setMarket] = useState('');
+  const { markets, name: marketName } = useMarkets();
   const [from, setFrom] = useState(() => cairoTodayIso());
   const [sailingId, setSailingId] = useState('');
   const [pattern, setPattern] = useState('');
@@ -144,7 +146,8 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
     !create.isPending;
 
   const categoryName = (c: Category) => (locale.startsWith('ar') ? c.name_ar : c.name_en);
-  const marketLabel = (m: string) => (t.has(`market_${m}`) ? t(`market_${m}`) : m);
+  const marketLabel = marketName;
+  const needsProof = markets.find((m) => m.code === market)?.needsResidencyProof;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -179,6 +182,7 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
                   </option>
                 ))}
               </Select>
+              {needsProof && <span className="text-xs text-muted">{t('needsProof')}</span>}
             </Field>
           </div>
         </Card>

@@ -30,4 +30,4 @@ export function percentToBps(text: string): number | null {
 
 export const bpsToPercent = (bps: number) => String(bps / 100);
 
-export const CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP'] as const;
+export { CURRENCIES } from '@vs/shared/money';

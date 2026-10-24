@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import { isDomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
+import { decimalToMinor, minorToDecimal } from '@vs/shared';
 import { recordPayment } from '../booking/payments';
 import { cairoToday, type EngineContext } from '../internal';
 import { priceSailing } from '../pricing/quote';
@@ -40,11 +41,6 @@ export interface ImportResult {
   message?: string;
   warnings: string[];
 }
-
-const toMinor = (text: string): bigint | null => {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text.trim());
-  return match ? BigInt(match[1]!) * 100n + BigInt((match[2] ?? '').padEnd(2, '0')) : null;
-};
 
 export async function importBookings(
   db: VsDatabase,
@@ -178,10 +174,12 @@ export async function importBookings(
     };
     try {
       const price = await priceSailing(db, ctx, pricing);
-      const expected = first.expected_total.trim() ? toMinor(first.expected_total) : null;
+      const expected = first.expected_total.trim()
+        ? decimalToMinor(first.expected_total, price.currency)
+        : null;
       if (expected !== null && expected !== price.total) {
         warnings.push(
-          `Price differs: imported ${first.expected_total}, today's rates ${(Number(price.total) / 100).toFixed(2)}`,
+          `Price differs: imported ${first.expected_total}, today's rates ${minorToDecimal(price.total, price.currency)}`,
         );
       }
       if (options.dryRun) {
@@ -195,7 +193,9 @@ export async function importBookings(
         requestKey: `import:${externalRef}`,
       });
       let status = booked.status;
-      const paid = first.paid_amount.trim() ? toMinor(first.paid_amount) : null;
+      const paid = first.paid_amount.trim()
+        ? decimalToMinor(first.paid_amount, price.currency)
+        : null;
       if (paid !== null && paid > 0n) {
         const payment = await recordPayment(db, ctx, {
           bookingId: booked.bookingId,

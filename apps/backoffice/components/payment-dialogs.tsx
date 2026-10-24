@@ -18,7 +18,7 @@ export const METHODS = [
   'channel',
   'gateway',
 ] as const;
-const CURRENCIES = ['USD', 'EUR', 'EGP', 'GBP'];
+import { CURRENCIES } from '@vs/shared/money';
 
 /** Finds a booking by reference when the dialog was not opened from one. */
 function useBookingByRef(initialRef: string) {
@@ -60,7 +60,7 @@ export function RecordPaymentDialog({
     receivedOn: cairoTodayIso(),
   });
   const currency = form.currency || b?.currency || 'USD';
-  const amount = parseMoney(form.amount);
+  const amount = parseMoney(form.amount, currency);
   const needsFx = b !== undefined && currency !== b.currency;
   const fxOk = !needsFx || /^\d+(\.\d{1,6})?$/.test(form.fxRate);
   const requestKey = useMemo(() => newRequestKey(), [JSON.stringify(form), b?.id]);
@@ -234,8 +234,10 @@ export function RefundDialog({
     reference: '',
     refundedOn: cairoTodayIso(),
   });
-  const amountText = form.amount || (due.data ? minorToInput(due.data.refundable) : '');
-  const amount = parseMoney(amountText);
+  const refundCurrency = b?.currency ?? 'USD';
+  const amountText =
+    form.amount || (due.data ? minorToInput(due.data.refundable, refundCurrency) : '');
+  const amount = parseMoney(amountText, refundCurrency);
   const requestKey = useMemo(() => newRequestKey(), [JSON.stringify(form), b?.id]);
   const refund = useMutation(trpc.payments.refund.mutationOptions({ onSuccess: onDone }));
   return (
