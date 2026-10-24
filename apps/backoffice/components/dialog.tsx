@@ -7,11 +7,14 @@ export function Dialog({
   open,
   onClose,
   title,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: ReactNode;
+  /** For forms with a table inside, such as a route's stops. */
+  wide?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -25,7 +28,7 @@ export function Dialog({
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-xl border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-black/40"
+      className={`m-auto w-[calc(100%-2rem)] ${wide ? 'max-w-3xl' : 'max-w-lg'} rounded-xl border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-black/40`}
     >
       {open && (
         <div className="max-h-[85dvh] overflow-y-auto p-4">

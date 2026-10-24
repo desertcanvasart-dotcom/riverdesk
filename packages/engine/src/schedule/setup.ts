@@ -176,31 +176,30 @@ export type TemplateStop = z.infer<typeof stopSchema>;
 /**
  * Rules for a cycle of stops: the first stop is day 0, offsets never go back, the last stop is
  * day `cycleDays` at the same port as the first (where the next cycle starts), and guests can
- * board and leave at both ends.
+ * board and leave at both ends. Returns problem codes (the back office translates them).
  */
 export function validateTemplateStops(stops: TemplateStop[], cycleDays: number): string[] {
   const problems: string[] = [];
   const first = stops[0]!;
   const last = stops[stops.length - 1]!;
-  if (first.dayOffset !== 0) problems.push('The first stop must be on day 0');
-  if (last.dayOffset !== cycleDays)
-    problems.push(`The last stop must be on day ${cycleDays} (the cycle length)`);
-  if (last.portId !== first.portId) problems.push('The cycle must end at the port where it starts');
+  if (first.dayOffset !== 0) problems.push('first_stop_day0');
+  if (last.dayOffset !== cycleDays) problems.push('last_stop_day_cycle');
+  if (last.portId !== first.portId) problems.push('cycle_returns');
   for (const end of [first, last]) {
     if (!end.embarkAllowed || !end.disembarkAllowed) {
-      problems.push('Guests must be able to board and leave at the first and last stop');
+      problems.push('ends_boarding');
       break;
     }
   }
   stops.forEach((stop, index) => {
     if (index > 0 && stop.dayOffset < stops[index - 1]!.dayOffset) {
-      problems.push(`Stop ${index} is earlier than the stop before it`);
+      problems.push('stop_order');
     }
   });
   const boarding = stops.filter((stop) => stop.embarkAllowed || stop.disembarkAllowed);
   boarding.forEach((stop, index) => {
     if (index > 0 && stop.dayOffset === boarding[index - 1]!.dayOffset) {
-      problems.push('Two boarding stops on the same day would make a leg of zero nights');
+      problems.push('zero_night_leg');
     }
   });
   return [...new Set(problems)];
@@ -213,7 +212,7 @@ export async function createScheduleTemplate(
 ) {
   const data = parseInput(createScheduleTemplateInput, input);
   const problems = validateTemplateStops(data.stops, data.cycleDays);
-  if (data.validTo && data.validTo < data.validFrom) problems.push('validTo is before validFrom');
+  if (data.validTo && data.validTo < data.validFrom) problems.push('ends_before_start');
   if (problems.length > 0) throw new DomainError('VALIDATION_FAILED', { details: { problems } });
 
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
@@ -292,14 +291,12 @@ export async function createSailingPattern(
     const embark = stops[data.embarkStopSeq];
     const disembark = stops[data.disembarkStopSeq];
     const problems: string[] = [];
-    if (!embark || data.embarkStopSeq >= lastSeq)
-      problems.push('Embark stop must be a stop before the last one');
-    else if (!embark.embark_allowed) problems.push('Guests cannot board at the embark stop');
-    if (!disembark) problems.push('Disembark stop does not exist');
-    else if (!disembark.disembark_allowed)
-      problems.push('Guests cannot leave at the disembark stop');
+    if (!embark || data.embarkStopSeq >= lastSeq) problems.push('embark_before_last');
+    else if (!embark.embark_allowed) problems.push('embark_not_boarding');
+    if (!disembark) problems.push('disembark_missing');
+    else if (!disembark.disembark_allowed) problems.push('disembark_not_leaving');
     if (data.disembarkCycleOffset === 0 && data.disembarkStopSeq <= data.embarkStopSeq) {
-      problems.push('Disembark must be after embark');
+      problems.push('disembark_after_embark');
     }
     if (problems.length > 0 || !embark || !disembark) {
       throw new DomainError('VALIDATION_FAILED', { details: { problems } });

@@ -15,8 +15,6 @@ import {
   Field,
   Input,
   Select,
-  Table,
-  Td,
   cx,
 } from '../../../components/ui';
 import { addDaysIso, cairoTodayIso } from '../../../lib/dates';
@@ -24,6 +22,7 @@ import { useErrorText } from '../../../lib/errors';
 import { formatDate, formatDateTime } from '../../../lib/format';
 import { statusTone } from '../../../lib/status';
 import { useTRPC } from '../../../lib/trpc';
+import { RoutesSection } from './routes-section';
 
 const WINDOW = 28;
 type Kind = 'cancel' | 'shift' | 'port_change' | 'dry_dock';
@@ -58,6 +57,7 @@ export function ScheduleScreen({
       onSuccess: (r) => {
         setNotice(t('generated', { legs: r.legsCreated, sailings: r.sailingsCreated }));
         void refresh();
+        void queryClient.invalidateQueries({ queryKey: trpc.routes.list.queryKey() });
       },
     }),
   );
@@ -174,53 +174,7 @@ export function ScheduleScreen({
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card title={t('templates')}>
-          {data?.templates.map((tpl) => (
-            <div key={tpl.id} className="mb-3 last:mb-0">
-              <p className="font-medium">
-                {tpl.name}{' '}
-                <span className="text-sm font-normal text-muted">
-                  · {t('cycle', { n: tpl.cycleDays })} ·{' '}
-                  {t('validFrom', { date: formatDate(tpl.validFrom, locale) })}
-                </span>
-              </p>
-              <ol className="mt-2 flex flex-wrap gap-1">
-                {tpl.stops.map((s) => (
-                  <li key={s.seq}>
-                    <Badge tone={s.embark || s.disembark ? 'info' : 'neutral'}>
-                      {t('dayOffset', { n: s.dayOffset })} · {portName(s.port)}
-                    </Badge>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </Card>
-        <Card title={t('patterns')}>
-          <Table head={[t('patterns'), t('nights'), t('embark'), t('disembark')]}>
-            {data?.patterns.map((p) => {
-              const stops = data.templates.find((x) => x.id === p.templateId)?.stops ?? [];
-              const port = (seq: number) => stops.find((s) => s.seq === seq)?.port ?? '';
-              return (
-                <tr key={p.id}>
-                  <Td>
-                    <span className="font-medium" dir="ltr">
-                      {p.code}
-                    </span>
-                    <span className="block text-xs text-muted">
-                      {locale.startsWith('ar') ? p.nameAr : p.nameEn}
-                    </span>
-                  </Td>
-                  <Td>{p.nights}</Td>
-                  <Td>{portName(port(p.embarkStopSeq))}</Td>
-                  <Td>{portName(port(p.disembarkStopSeq))}</Td>
-                </tr>
-              );
-            })}
-          </Table>
-        </Card>
-      </div>
+      {vesselId && <RoutesSection vesselId={vesselId} canWrite={canWrite} />}
 
       <Card title={t('exceptions')}>
         {!data?.exceptions.length ? (

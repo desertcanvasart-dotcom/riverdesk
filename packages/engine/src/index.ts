@@ -30,6 +30,7 @@ export * from './backoffice/reads';
 export * from './backoffice/book';
 export * from './backoffice/setup-reads';
 export * from './backoffice/fleet';
+export * from './backoffice/routes';
 export * from './backoffice/channels';
 export * from './backoffice/settings';
 export * from './backoffice/assignment';

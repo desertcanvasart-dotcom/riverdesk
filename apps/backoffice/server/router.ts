@@ -13,6 +13,7 @@ import { paymentsRouter } from './routers/payments';
 import { pilotRouter } from './routers/pilot';
 import { ratesRouter } from './routers/rates';
 import { requestsRouter } from './routers/requests';
+import { routesRouter } from './routers/routes';
 import { scheduleRouter } from './routers/schedule';
 import { settingsRouter } from './routers/settings';
 import { publicProcedure, router } from './trpc';
@@ -27,6 +28,7 @@ export const appRouter = router({
   inventory: inventoryRouter,
   fleet: fleetRouter,
   schedule: scheduleRouter,
+  routes: routesRouter,
   rates: ratesRouter,
   channels: channelsRouter,
   payments: paymentsRouter,

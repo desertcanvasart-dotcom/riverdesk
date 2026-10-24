@@ -616,3 +616,13 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 - A category's guest limit can only go down when no booking still to sail (requested, held, offered or confirmed) has more guests than the new limit. Short-lived holds are not checked: they expire within minutes.
 - Many cabins are added in one transaction (`addCabins`, up to 200, typed as ranges like `101-120`): all or none. A number already on the ship refuses the whole batch and lists the numbers. Each cabin goes through the same capacity change as one cabin, so a ship that already has departures gets its availability raised on every later leg.
 - In Arabic the app keeps «المركب» for a vessel, as on the other screens.
+
+## Batch 8, step 2: ports, routes and itineraries (2026-10-24)
+
+- Set up on the **Schedule** screen, under the departures: **Routes** (schedule templates) with their **itineraries** (sailing patterns), and the company's **Ports**. Owners only (`schedule.write`). No migration was needed.
+- A route's stops, cycle and first date can change only while it has no itineraries and no departures; until then it can also be deleted. After that only its name and end date change, so nothing already sold moves. A different route = end the old one, add a new one.
+- Itineraries: names and pause (`active = false`: no new sailings; existing ones stay on sale) at any time; delete only without sailings and without package rates.
+- A port on a running route (active, not ended) cannot be retired. "Add the usual Nile ports" adds the nine demo ports the company does not have yet.
+- The stop rules return codes (`first_stop_day0`, `cycle_returns`, …) instead of English sentences; the back office translates them. The route editor fixes day 0 and the closing stop (same port, last day, boarding) so most mistakes cannot be typed.
+- The editor's single **Board / leave** tick sets both flags (`embark_allowed`, `disembark_allowed`); routes with only one of them can still exist and are shown as boarding stops.
+- Arabic terms follow the docs: route = «المسار», itinerary = «خط السير».
