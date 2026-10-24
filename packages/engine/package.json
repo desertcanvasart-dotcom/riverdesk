@@ -13,7 +13,8 @@
     "seed-demo": "tsx scripts/seed-demo.ts",
     "availability-grid": "tsx scripts/availability-grid.ts",
     "sandbox-setup": "tsx scripts/sandbox-setup.ts",
-    "perf": "tsx scripts/perf.ts"
+    "perf": "tsx scripts/perf.ts",
+    "import-bookings": "tsx scripts/import-bookings.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",

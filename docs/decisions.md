@@ -570,3 +570,10 @@ Reason: spec Batch 7 § Observability.
 **2026-10-24 · The outage pack carries manifests without passport numbers.**
 The nightly `outage_pack` job (02:00 UTC) builds one PDF per active vessel: 14 days of free cabins, then each departure's guests with cabin, category and nationality. It is stored as a document (kept a week; staff can also make one now from the vacancy page) and emailed to the company's operations address when `SMTP_URL` is set. Passport numbers are left out because the pack travels by email: the passport manifest stays a one-day download behind the `manifests` permission. The API's outage behaviour (503 with `Retry-After: 30`) now has its own test against an unreachable database.
 Reason: spec § Availability (fallback for staff) and § Sensitive data.
+
+**2026-10-24 · The pilot import books through the engine and reports instead of forcing.**
+`pnpm --filter @vs/engine import-bookings --company <slug> --file <csv> [--dry-run]` reads `docs/pilot/import-template.csv` (one row per cabin; rows share `external_ref`). Each booking goes through `staffBook` with today's contract and rates. A differing agreed total is reported, not imposed. A `paid_amount` is recorded as one payment, which confirms a prepaid direct booking once it covers the deposit. Unknown codes, a missing sailing and no room are reported per booking. A second run skips bookings already imported (same external reference on the same channel). `--dry-run` prices everything and books nothing.
+Reason: spec Batch 7 § Pilot import. Rule 1: no second write path, even for a one-off.
+
+**2026-10-24 · The pilot dashboard is owner only and reads live data.**
+`/pilot` shows the invariant check for the company, oversold buckets (must be 0; emergency-block overcommit is shown apart, since it is covered and sales are stopped), request response times (median and 90th percentile, from the audit log), open exceptions and 30-day bookings by channel.

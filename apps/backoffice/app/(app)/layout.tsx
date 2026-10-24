@@ -28,7 +28,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const profile = await (await serverCaller()).me.profile();
   const t = await getTranslations('roles');
   return (
-    <Shell operator={profile.operatorName} user={profile.displayName} role={t(profile.role)}>
+    <Shell
+      operator={profile.operatorName}
+      user={profile.displayName}
+      role={t(profile.role)}
+      showPilot={profile.permissions.includes('pilot.view')}
+    >
       {children}
     </Shell>
   );

@@ -36,3 +36,5 @@ export * from './documents/requests';
 export * from './documents/data';
 export * from './backoffice/privacy';
 export * from './health';
+export * from './backoffice/import';
+export * from './backoffice/pilot';

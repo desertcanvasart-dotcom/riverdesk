@@ -24,6 +24,7 @@ const screens: [string, string][] = [
   ['11-guests', '/guests'],
   ['12-vacancy', '/vacancy'],
   ['13-settings', '/settings'],
+  ['14-pilot', '/pilot'],
 ];
 
 const browser = await chromium.launch();

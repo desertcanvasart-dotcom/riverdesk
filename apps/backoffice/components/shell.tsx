@@ -21,17 +21,20 @@ const NAV = [
   ['guests', '/guests'],
   ['vacancy', '/vacancy'],
   ['settings', '/settings'],
+  ['pilot', '/pilot'],
 ] as const;
 
 export function Shell({
   operator,
   user,
   role,
+  showPilot = false,
   children,
 }: {
   operator: string;
   user: string;
   role: string;
+  showPilot?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -40,7 +43,7 @@ export function Shell({
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
   const nav = (
     <nav className="flex flex-col gap-0.5 p-2">
-      {NAV.map(([key, href]) => (
+      {NAV.filter(([key]) => key !== 'pilot' || showPilot).map(([key, href]) => (
         <Link
           key={key}
           href={href}

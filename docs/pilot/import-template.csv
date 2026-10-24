@@ -1,0 +1,9 @@
+external_ref,channel_code,vessel_code,itinerary,embark_date,market,category_code,adults,child_ages,guests,nationality,expected_total,paid_amount,paid_reference
+# One row per cabin. Rows of one booking share external_ref (your existing booking number). Lines starting with # are ignored.
+# channel_code: blank for a direct (back-office) booking, otherwise the channel's code (e.g. nilecrz). vessel_code and itinerary as on the Schedule screen.
+# embark_date YYYY-MM-DD. market: international or egyptian_resident. child_ages: ages on the embark date, separated by ; (e.g. 4;8).
+# guests: names in this cabin separated by | (first name, then last name). The first guest of the first row is the lead guest.
+# expected_total: the total you agreed (checked against today's rates, a difference is reported). paid_amount: already received, recorded as one payment.
+OLD-1001,,NILEDEMO,LXR-4,2026-12-07,international,STD,2,,Emma Clarke|James Clarke,GB,1170.00,292.50,Bank transfer 7781
+OLD-1002,nilecrz,NILEDEMO,LXR-7,2026-12-07,international,SUP,2,6,Lukas Weber|Anna Weber|Ben Weber,DE,,,
+OLD-1002,nilecrz,NILEDEMO,LXR-7,2026-12-07,international,STD,1,,Paul Weber,DE,,,

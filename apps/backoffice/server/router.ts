@@ -9,6 +9,7 @@ import { homeRouter } from './routers/home';
 import { inventoryRouter } from './routers/inventory';
 import { meRouter } from './routers/me';
 import { paymentsRouter } from './routers/payments';
+import { pilotRouter } from './routers/pilot';
 import { ratesRouter } from './routers/rates';
 import { requestsRouter } from './routers/requests';
 import { scheduleRouter } from './routers/schedule';
@@ -30,6 +31,7 @@ export const appRouter = router({
   settings: settingsRouter,
   documents: documentsRouter,
   guests: guestsRouter,
+  pilot: pilotRouter,
 });
 
 export type AppRouter = typeof appRouter;

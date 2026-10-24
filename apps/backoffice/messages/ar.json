@@ -17,7 +17,8 @@
     "payments": "المدفوعات",
     "guests": "النزلاء وكشوف الركاب",
     "vacancy": "كشف الأماكن المتاحة",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "pilot": "التشغيل التجريبي"
   },
   "common": {
     "save": "حفظ",
@@ -599,5 +600,31 @@
     "from": "من",
     "weeks": "الأسابيع",
     "png": "صورة (واتساب)"
+  },
+  "pilot": {
+    "title": "التشغيل التجريبي",
+    "subtitle": "هل النظام آمن للاستمرار؟ آخر ٣٠ يومًا.",
+    "invariants": "فحص الثوابت",
+    "invariantsOk": "كل الثوابت سليمة.",
+    "invariant": "الثابت {n, number}: {count, number} صف",
+    "oversells": "البيع الزائد",
+    "oversellsOk": "لا يوجد بيع زائد.",
+    "oversold": "{n, number} مخزون مباع بزيادة",
+    "covered": "{n, number} مغطى بحظر طارئ (البيع متوقف)",
+    "requests": "سرعة الرد على الطلبات",
+    "received": "المستلمة",
+    "answered": "تم الرد",
+    "pending": "بانتظار الرد",
+    "expiredReq": "انتهت مهلتها",
+    "median": "الوسيط",
+    "p90": "٩٠٪ خلال",
+    "minutes": "{n, number} دقيقة",
+    "channels": "الحجوزات حسب القناة",
+    "bookings": "الحجوزات",
+    "confirmed": "مؤكدة",
+    "cancelled": "ملغاة",
+    "openRequests": "طلبات مفتوحة",
+    "exceptions": "الاستثناءات المفتوحة",
+    "none": "لا شيء."
   }
 }

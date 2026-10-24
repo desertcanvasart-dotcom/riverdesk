@@ -15,6 +15,8 @@ export const PERMISSIONS = {
   'guests.assign': ['owner', 'reservations'],
   /** Data subject requests: export or erase one guest's personal data. */
   'guests.privacy': ['owner'],
+  /** The pilot dashboard: whether the system is safe to keep running. */
+  'pilot.view': ['owner'],
   'schedule.write': ['owner'],
   'rates.write': ['owner'],
   'channels.write': ['owner'],

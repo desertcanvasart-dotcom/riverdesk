@@ -17,7 +17,8 @@
     "payments": "Payments",
     "guests": "Guests & manifests",
     "vacancy": "Vacancy sheet",
-    "settings": "Settings"
+    "settings": "Settings",
+    "pilot": "Pilot"
   },
   "common": {
     "save": "Save",
@@ -599,5 +600,31 @@
     "from": "From",
     "weeks": "Weeks",
     "png": "Image (WhatsApp)"
+  },
+  "pilot": {
+    "title": "Pilot",
+    "subtitle": "Is the system safe to keep running? Last 30 days.",
+    "invariants": "Invariant check",
+    "invariantsOk": "All invariants hold.",
+    "invariant": "Invariant {n}: {count} rows",
+    "oversells": "Oversells",
+    "oversellsOk": "No oversells.",
+    "oversold": "{n} oversold buckets",
+    "covered": "{n} covered by an emergency block (sales stopped)",
+    "requests": "Request response times",
+    "received": "Received",
+    "answered": "Answered",
+    "pending": "Waiting",
+    "expiredReq": "Timed out",
+    "median": "Median",
+    "p90": "90% within",
+    "minutes": "{n} min",
+    "channels": "Bookings by channel",
+    "bookings": "Bookings",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled",
+    "openRequests": "Open requests",
+    "exceptions": "Open exceptions",
+    "none": "None."
   }
 }
