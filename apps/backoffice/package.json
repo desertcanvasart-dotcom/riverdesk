@@ -23,6 +23,7 @@
     "@trpc/server": "^11.19.0",
     "@trpc/tanstack-react-query": "^11.19.0",
     "@vs/contracts": "workspace:*",
+    "@vs/documents": "workspace:*",
     "@vs/engine": "workspace:*",
     "@vs/shared": "workspace:*",
     "lucide-react": "^1.61.0",

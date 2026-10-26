@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const config: NextConfig = {
   // Workspace packages ship TypeScript source.
-  transpilePackages: ['@vs/contracts', '@vs/shared', '@vs/engine', '@vs/db'],
+  transpilePackages: ['@vs/contracts', '@vs/shared', '@vs/engine', '@vs/db', '@vs/documents'],
   serverExternalPackages: ['pg', 'pino'],
   poweredByHeader: false,
 };

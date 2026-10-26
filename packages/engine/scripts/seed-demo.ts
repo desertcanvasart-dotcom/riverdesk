@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { loadConfig, required, systemActor } from '@vs/shared';
 import {
   createDemoActivity,
   createDemoPricing,
   createDemoVessel,
   DEMO_OPERATOR_ID,
+  getBranding,
+  setLogo,
+  updateBranding,
   generateSchedule,
   openDatabase,
 } from '../src/index';
@@ -60,6 +64,20 @@ try {
     console.log(
       'demo activity: bookings, holds, a request, an allotment, a cancellation and an amendment',
     );
+  }
+  // Branding: the default colours with a sample emblem and contact block, set once.
+  if (!(await getBranding(db, ctx)).logo) {
+    await updateBranding(db, ctx, {
+      phone: '+20 95 123 4567',
+      whatsapp: '+20 100 123 4567',
+      email: 'reservations@demo-nile.test',
+      website: 'https://demo-nile.test',
+      addressAr: 'كورنيش النيل، الأقصر',
+      addressEn: 'Corniche El Nil, Luxor',
+    });
+    const logo = readFileSync(new URL('./demo-logo.png', import.meta.url)).toString('base64');
+    await setLogo(db, ctx, { base64: logo });
+    console.log('demo branding: logo and contact details');
   }
 } finally {
   await db.close();

@@ -1,6 +1,6 @@
 ---
 title: Settings
-summary: People and invitations, markets, company details and defaults.
+summary: People and invitations, markets, company details and defaults, and your branding.
 ---
 
 # Settings
@@ -29,5 +29,17 @@ Prices with three decimals (KWD, BHD, OMR) are typed with up to three decimals, 
 - **Booking reference prefix**: the letters at the start of every booking reference. Fixed once bookings exist.
 - **Defaults**: hold times, request deadlines, cabin assignment and allotment release days, passport retention. They are explained in [Setting up your company](/docs/getting-started/setting-up-a-company).
 - **On every voucher**: the operations email (for the nightly outage pack), the emergency phone, and the voucher note in English and Arabic.
+
+## Branding
+
+Your logo, two colours and your contact details. Every voucher, list and sheet Riverdesk prints carries them.
+
+![Branding](/screens/{locale}/guide-branding.jpg)
+
+- **Logo**: a PNG or JPEG of up to 200 KB. A wide logo on a transparent or white background works best.
+- **Main colour** for headings and table headers, and a **second colour** for accents. Pick them, type them (`#165a5c`) or tap a **suggested pair**. If a colour is too pale to read on white, Riverdesk prints text in it a little darker, so a document always stays readable.
+- **Contact details**: phone, WhatsApp, email, website and your address in Arabic and English, printed at the bottom of every document. Leave out what you do not want shown.
+
+The **Preview** beside the form shows a sample voucher with made-up guests in Arabic, English or both, and changes as you type. Press **Save branding**: documents made from then on use it.
 
 Every change is recorded with who made it.

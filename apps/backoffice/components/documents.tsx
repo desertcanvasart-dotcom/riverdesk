@@ -29,19 +29,19 @@ export function DocumentButtons({
 }) {
   const t = useTranslations('documents');
   const uiLocale = useLocale();
-  const [locale, setLocale] = useState<'ar' | 'en'>(uiLocale === 'en' ? 'en' : 'ar');
+  const [locale, setLocale] = useState<'ar' | 'en' | 'both'>(uiLocale === 'en' ? 'en' : 'ar');
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 text-sm">
         <span className="text-muted">{t('language')}:</span>
-        {(['ar', 'en'] as const).map((l) => (
+        {(['ar', 'en', 'both'] as const).map((l) => (
           <button
             key={l}
             type="button"
             onClick={() => setLocale(l)}
             className={`rounded-full px-3 py-1 ${locale === l ? 'bg-brand text-brand-ink' : 'border border-line'}`}
           >
-            {l === 'ar' ? 'العربية' : 'English'}
+            {l === 'ar' ? 'العربية' : l === 'en' ? 'English' : t('bothLanguages')}
           </button>
         ))}
       </div>

@@ -1,6 +1,6 @@
 /**
- * Renders one booking's documents (both languages, full and agency copy) to files, for checking
- * layout by eye. Local demo company only; never prints document content.
+ * Renders one booking's documents (Arabic, English and bilingual; full and agency copy) and its
+ * first departure's manifest and rooming list to files, for checking layout by eye. Local demo company only; never prints document content.
  *   pnpm --filter @vs/worker render-sample <booking-ref> <out-dir>
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -19,7 +19,16 @@ try {
     tx.selectFrom('booking').select('id').where('ref', '=', ref).executeTakeFirstOrThrow(),
   );
   mkdirSync(outDir, { recursive: true });
-  for (const locale of ['en', 'ar'] as const) {
+  const leg = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx
+      .selectFrom('booking_line')
+      .innerJoin('leg', 'leg.id', 'booking_line.leg_id')
+      .select('leg.id')
+      .where('booking_line.booking_id', '=', booking.id)
+      .orderBy('leg.depart_date')
+      .executeTakeFirstOrThrow(),
+  );
+  for (const locale of ['en', 'ar', 'both'] as const) {
     for (const [kind, variant] of [
       ['voucher', 'full'],
       ['voucher', 'agent'],
@@ -33,6 +42,23 @@ try {
         locale,
         variant,
         entityId: booking.id,
+        params: {},
+      });
+      writeFileSync(join(outDir, file.filename), file.content);
+      console.log(join(outDir, file.filename));
+    }
+    for (const [kind, format] of [
+      ['manifest', 'pdf'],
+      ['rooming_list', 'pdf'],
+      ['manifest', 'xlsx'],
+    ] as const) {
+      const file = await renderDocument(db, ctx, {
+        id: 'sample',
+        kind,
+        format,
+        locale,
+        variant: 'full',
+        entityId: leg.id,
         params: {},
       });
       writeFileSync(join(outDir, file.filename), file.content);

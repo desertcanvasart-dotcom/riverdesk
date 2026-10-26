@@ -205,6 +205,20 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
       await page.locator(`h2:text-is("${m.markets!.title}")`).scrollIntoViewIfNeeded();
     },
   ],
+  [
+    'branding',
+    async (page, m) => {
+      await page.goto(`${BASE}/settings`);
+      const title = page.locator(`h2:text-is("${m.branding!.title}")`);
+      // Below the sticky top bar.
+      await title.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 72));
+      // Wait for the preview frame to hold the rendered voucher.
+      await page.waitForFunction(
+        () => (document.querySelector('iframe') as HTMLIFrameElement | null)?.srcdoc.length,
+      );
+      await page.waitForTimeout(800);
+    },
+  ],
 ];
 
 const only = process.argv[2];

@@ -20,7 +20,8 @@ export const BOOKING_DOCUMENTS = [
 ] as const;
 export const LEG_DOCUMENTS = ['manifest', 'rooming_list'] as const;
 
-const locale = z.enum(['ar', 'en']);
+// 'both': Arabic first with English beneath each label (on-board staff, police lists).
+const locale = z.enum(['ar', 'en', 'both']);
 
 export const requestDocumentInput = z.union([
   z.object({
@@ -192,7 +193,7 @@ export interface PendingDocument {
   id: string;
   kind: string;
   format: 'pdf' | 'xlsx' | 'png';
-  locale: 'ar' | 'en';
+  locale: 'ar' | 'en' | 'both';
   variant: 'full' | 'agent';
   entityId: string;
   params: { from?: string; weeks?: number };
@@ -202,7 +203,7 @@ export interface PendingDocument {
 export async function createPendingDocument(
   db: VsDatabase,
   ctx: EngineContext,
-  input: { kind: 'outage_pack'; vesselId: string; locale: 'ar' | 'en' },
+  input: { kind: 'outage_pack'; vesselId: string; locale: 'ar' | 'en' | 'both' },
 ): Promise<PendingDocument> {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const row = await tx

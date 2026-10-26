@@ -36,6 +36,12 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   // The operator row and its settings are created by createOperator().
   operator: async () => {},
   operator_setting: async () => {},
+  operator_branding: async (db, operatorId) => {
+    await db.query(
+      `insert into vs.operator_branding (operator_id) values ($1) on conflict do nothing`,
+      [operatorId],
+    );
+  },
   staff_user: async (db, operatorId) => {
     const authUserId = randomUUID();
     await db.query(

@@ -18,6 +18,7 @@ import {
 import { useErrorText } from '../../../lib/errors';
 import { formatDateTime } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
+import { BrandingCard } from './branding-card';
 import { MarketsCard } from './markets-card';
 
 const ROLES = ['owner', 'reservations', 'finance', 'read_only'] as const;
@@ -331,6 +332,8 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
           )}
         </form>
       </Card>
+
+      <BrandingCard canWrite={canWrite} />
     </div>
   );
 }

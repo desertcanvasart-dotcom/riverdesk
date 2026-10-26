@@ -1,11 +1,11 @@
 ---
 title: Documents
-summary: Vouchers, itineraries, payment schedules and cancellation terms, in Arabic or English.
+summary: Vouchers, itineraries, payment schedules and cancellation terms, in Arabic, English or both.
 ---
 
 # Documents
 
-From the **Documents** card on a booking, choose the language, then the document. It is prepared in a few seconds and downloads as a PDF.
+From the **Documents** card on a booking, choose the language (**العربية**, **English** or **Both**), then the document. It is prepared in a few seconds and downloads as a PDF.
 
 | Document                 | What it shows                                                                                                                                                                                                                                                                                       |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -15,6 +15,8 @@ From the **Documents** card on a booking, choose the language, then the document
 | **Payment schedule**     | Total, paid and balance; deposit and balance due dates; payments received                                                                                                                                                                                                                           |
 | **Cancellation terms**   | The share kept by days before embarkation, from the policy the booking was sold under                                                                                                                                                                                                               |
 
-The emergency phone and voucher note come from **Settings**. Fill them in before printing your first voucher.
+**Both** prints every heading and label in Arabic with the English beneath it, and dates and numbers in Latin digits, for staff and guests who read either language.
+
+Every document carries your logo, colours and contact details from **Settings → Branding**. The emergency phone and voucher note also come from **Settings**. Fill them in before printing your first voucher.
 
 Documents are kept for a week, then deleted. You can make them again at any time.

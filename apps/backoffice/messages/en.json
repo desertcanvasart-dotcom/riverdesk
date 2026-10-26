@@ -601,7 +601,8 @@
     "language": "Language",
     "recent": "Recent",
     "expires": "Kept until {when}",
-    "outage_pack": "Outage pack (14 days)"
+    "outage_pack": "Outage pack (14 days)",
+    "bothLanguages": "Both (عربي + English)"
   },
   "guests": {
     "title": "Guests & manifests",
@@ -1182,5 +1183,36 @@
         "duplicatePayment": "Recorded twice"
       }
     }
+  },
+  "branding": {
+    "title": "Branding",
+    "intro": "Your logo, colours and contact details, printed on every voucher, list and sheet Riverdesk produces.",
+    "logo": "Logo",
+    "logoHelp": "PNG or JPEG, up to 200 KB. A wide logo on a transparent or white background works best.",
+    "noLogo": "No logo",
+    "upload": "Upload logo",
+    "replace": "Replace logo",
+    "remove": "Remove",
+    "logoType": "The logo must be a PNG or JPEG image.",
+    "logoTooBig": "The logo must be 200 KB or less.",
+    "colours": "Colours",
+    "coloursHelp": "The main colour is used for headings and table headers, the second for accents.",
+    "primaryColor": "Main colour",
+    "secondaryColor": "Second colour",
+    "darkened": "Text in this colour is printed a little darker so it stays easy to read.",
+    "presets": "Suggested pairs",
+    "contact": "Contact details",
+    "contactHelp": "Printed at the bottom of every document. Leave a field empty to leave it out.",
+    "phone": "Phone",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "website": "Website",
+    "addressAr": "Address (Arabic)",
+    "addressEn": "Address (English)",
+    "preview": "Preview",
+    "previewHelp": "A sample voucher with made-up guests.",
+    "both": "Both",
+    "save": "Save branding",
+    "saved": "Branding saved. New documents use it."
   }
 }

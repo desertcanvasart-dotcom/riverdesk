@@ -518,6 +518,22 @@ export interface Operator {
   updated_at: Generated<Timestamp>;
 }
 
+export interface OperatorBranding {
+  address_ar: string | null;
+  address_en: string | null;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  logo: Buffer | null;
+  logo_type: string | null;
+  operator_id: string;
+  phone: string | null;
+  primary_color: Generated<string>;
+  secondary_color: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  website: string | null;
+  whatsapp: string | null;
+}
+
 export interface OperatorSetting {
   allotment_release_days: Generated<number>;
   assignment_cutoff_days: Generated<number>;
@@ -885,6 +901,7 @@ export interface DB {
   market: Market;
   offer: Offer;
   operator: Operator;
+  operator_branding: OperatorBranding;
   operator_setting: OperatorSetting;
   payment: Payment;
   payment_policy: PaymentPolicy;

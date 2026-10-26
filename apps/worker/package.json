@@ -12,9 +12,8 @@
     "render-sample": "tsx scripts/render-sample.ts"
   },
   "dependencies": {
-    "@fontsource/noto-sans": "^5.3.0",
-    "@fontsource/noto-sans-arabic": "^5.3.0",
     "@vs/contracts": "workspace:*",
+    "@vs/documents": "workspace:*",
     "@vs/engine": "workspace:*",
     "@vs/shared": "workspace:*",
     "exceljs": "^4.4.0",

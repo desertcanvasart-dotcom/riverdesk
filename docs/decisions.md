@@ -684,3 +684,17 @@ You chose Railway. The website, back office, API and worker each run as a Railwa
 
 **2026-10-26 · Pilot requests go through a website-only database role.**
 The website had no backend. The /pilot form posts to `POST /api/pilot` on the website itself, which logs in as a new role, `vs_website`, with no table rights at all: it may only call `vs.submit_pilot_request`. Requests are platform data, so they live in `platform.pilot_request`, readable only as `vs_owner`. The function enforces consent and a rate limit (3 an hour, 10 a day per client), keyed on an HMAC of the visitor's IP (key: the role's password) so the address itself is never stored. `vs_website` is a login role but not one of the tenant runtime roles, so the tenant-isolation checks do not apply to it; `check-roles` checks it has no table rights instead.
+
+## Batch D1 — branding
+
+**2026-10-26 · Branding lives in its own table.**
+`vs.operator_branding` holds the two colours, the logo (PNG or JPEG ≤ 200 KB, type read from the file's first bytes, not the browser) and the contact block. It is apart from `operator_setting`, which is read on every request, so logo bytes load only for documents and the Branding screen. A company without a row uses the defaults (`#165a5c`, `#c58b3c`, no logo). Removing a logo is an update, not a delete.
+
+**2026-10-26 · Any colour is allowed; text in it is made readable.**
+Text printed in a brand colour is darkened until it reaches WCAG contrast 4.5:1 on white; filled table heads pick white or dark ink. Light tints for table heads and notes are mixed from the same colours (`@vs/shared/color`).
+
+**2026-10-26 · Templates moved to `@vs/documents`.**
+The HTML templates, wording and fonts left the worker for a package the worker and the back office share, so the Branding screen's preview is the real voucher template with made-up guests (in a sandboxed frame), not a mock. Fonts are read by path from that package's dependencies because the back office's bundler cannot follow `require.resolve`.
+
+**2026-10-26 · Bilingual documents (`both`).**
+Arabic first and right-to-left, with the English beneath every heading and label; data with both languages (ports, categories, inclusions) shows both. Dates and numbers use Latin digits, which both readers share. Spreadsheet headers read «عربي / English».

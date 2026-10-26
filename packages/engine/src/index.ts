@@ -37,6 +37,7 @@ export * from './backoffice/cabin-map';
 export * from './backoffice/markets';
 export * from './backoffice/channels';
 export * from './backoffice/settings';
+export * from './backoffice/branding';
 export * from './backoffice/assignment';
 export * from './backoffice/manifest';
 export * from './documents/requests';

@@ -93,6 +93,9 @@ importers:
       '@vs/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@vs/documents':
+        specifier: workspace:*
+        version: link:../../packages/documents
       '@vs/engine':
         specifier: workspace:*
         version: link:../../packages/engine
@@ -206,15 +209,12 @@ importers:
 
   apps/worker:
     dependencies:
-      '@fontsource/noto-sans':
-        specifier: ^5.3.0
-        version: 5.3.0
-      '@fontsource/noto-sans-arabic':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@vs/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@vs/documents':
+        specifier: workspace:*
+        version: link:../../packages/documents
       '@vs/engine':
         specifier: workspace:*
         version: link:../../packages/engine
@@ -281,6 +281,21 @@ importers:
       kysely-codegen:
         specifier: ^0.20.0
         version: 0.20.0(kysely@0.29.7)(pg@8.23.1)(typescript@6.0.3)
+
+  packages/documents:
+    dependencies:
+      '@fontsource/noto-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-sans-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@vs/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@vs/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/engine:
     dependencies:

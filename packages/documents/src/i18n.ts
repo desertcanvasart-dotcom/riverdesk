@@ -3,6 +3,8 @@ import { decimalsOf, minorToDecimal } from '@vs/shared';
 /** Document wording in both languages, and locale-aware formatting (integer minor units in). */
 
 export type Locale = 'ar' | 'en';
+/** A document's language: Arabic, English, or both (Arabic first, English beneath each label). */
+export type DocLocale = Locale | 'both';
 
 const en = {
   voucher: 'Voucher',
@@ -82,6 +84,8 @@ const en = {
   totalGuests: '{n} guests',
   confidential: 'Contains passport data. Keep confidential and delete after use.',
   agencyCopy: 'Agency copy (no prices)',
+  tel: 'Tel',
+  whatsapp: 'WhatsApp',
 };
 
 const ar: typeof en = {
@@ -162,21 +166,45 @@ const ar: typeof en = {
   totalGuests: '{n} ضيف',
   confidential: 'يحتوي على بيانات جوازات السفر. سرّي، يُحذف بعد الاستخدام.',
   agencyCopy: 'نسخة الوكالة (بدون أسعار)',
+  tel: 'هاتف',
+  whatsapp: 'واتساب',
 };
 
 export type Key = keyof typeof en;
 
-export function translator(locale: Locale) {
-  const dict = locale === 'ar' ? ar : en;
+function fill(text: string, values: Record<string, string | number>) {
+  return text.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? ''));
+}
+
+const lookup = (dict: typeof en, key: string) => (dict as Record<string, string>)[key] ?? key;
+
+/**
+ * Wording for HTML documents. Values are inserted as given (callers escape data). In a bilingual
+ * document each label is the Arabic text with the English beneath it.
+ */
+export function translator(locale: DocLocale) {
   return (key: Key | string, values: Record<string, string | number> = {}) => {
-    const text = (dict as Record<string, string>)[key] ?? key;
-    return text.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? ''));
+    if (locale !== 'both') return fill(lookup(locale === 'ar' ? ar : en, key), values);
+    const a = fill(lookup(ar, key), values);
+    const b = fill(lookup(en, key), values);
+    return a === b ? a : `<span class="bi">${a}<span class="en" dir="ltr">${b}</span></span>`;
   };
 }
 
-const tag = (locale: Locale) => (locale === 'ar' ? 'ar-EG' : 'en-GB');
+/** Plain-text wording (spreadsheets, file and page titles): "عربي / English" when bilingual. */
+export function textTranslator(locale: DocLocale) {
+  return (key: Key | string, values: Record<string, string | number> = {}) => {
+    if (locale !== 'both') return fill(lookup(locale === 'ar' ? ar : en, key), values);
+    const a = fill(lookup(ar, key), values);
+    const b = fill(lookup(en, key), values);
+    return a === b ? a : `${a} / ${b}`;
+  };
+}
 
-export function money(amount: bigint, currency: string, locale: Locale): string {
+/** Bilingual documents use Latin digits, which both readers share. */
+const tag = (locale: DocLocale) => (locale === 'ar' ? 'ar-EG' : 'en-GB');
+
+export function money(amount: bigint, currency: string, locale: DocLocale): string {
   const digits = decimalsOf(currency);
   return new Intl.NumberFormat(tag(locale), {
     style: 'currency',
@@ -186,7 +214,7 @@ export function money(amount: bigint, currency: string, locale: Locale): string 
   }).format(minorToDecimal(amount, currency) as unknown as number);
 }
 
-export function date(value: string, locale: Locale, style: 'short' | 'long' = 'long'): string {
+export function date(value: string, locale: DocLocale, style: 'short' | 'long' = 'long'): string {
   const [y, m, d] = value.split('-').map(Number) as [number, number, number];
   return new Intl.DateTimeFormat(tag(locale), {
     timeZone: 'UTC',
@@ -197,10 +225,18 @@ export function date(value: string, locale: Locale, style: 'short' | 'long' = 'l
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
-export function number(value: number, locale: Locale): string {
+export function number(value: number, locale: DocLocale): string {
   return new Intl.NumberFormat(tag(locale)).format(value);
 }
 
 export function today(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+}
+
+/** A {ar, en} value as plain text (spreadsheets): "عربي / English" when bilingual. */
+export function locText(value: { ar?: string | null; en?: string | null }, locale: DocLocale) {
+  const ar = value.ar ?? '';
+  const en = value.en ?? '';
+  if (locale !== 'both') return (locale === 'ar' ? ar : en) || ar || en;
+  return !ar || !en || ar === en ? ar || en : `${ar} / ${en}`;
 }

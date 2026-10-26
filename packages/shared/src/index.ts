@@ -1,4 +1,5 @@
 export * from './actor';
+export * from './color';
 export * from './config';
 export * from './crypto';
 export * from './db';

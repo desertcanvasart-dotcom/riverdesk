@@ -1,0 +1,20 @@
+{
+  "name": "@vs/documents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource/noto-sans": "^5.3.0",
+    "@fontsource/noto-sans-arabic": "^5.3.0",
+    "@vs/engine": "workspace:*",
+    "@vs/shared": "workspace:*"
+  }
+}

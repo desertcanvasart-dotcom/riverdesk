@@ -3,6 +3,7 @@ import {
   activeVesselIds,
   bookingDocumentData,
   completeDocument,
+  documentBrand,
   createPendingDocument,
   failDocument,
   getLegManifest,
@@ -17,14 +18,14 @@ import {
 } from '@vs/engine';
 import { captureError, systemActor, type Config, type Logger } from '@vs/shared';
 import { mailer } from '../documents/mail';
-import { htmlToPdf, htmlToPng } from '../documents/render';
 import {
   bookingDocumentHtml,
   manifestHtml,
   outagePackHtml,
   roomingHtml,
   vacancyHtml,
-} from '../documents/templates';
+} from '@vs/documents';
+import { htmlToPdf, htmlToPng } from '../documents/render';
 import { manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
 
@@ -34,18 +35,10 @@ const TYPES = {
   png: 'image/png',
 } as const;
 
-async function operatorName(db: VsDatabase, ctx: EngineContext) {
-  return db.withTenantTx(
-    ctx.operatorId,
-    ctx.actor,
-    async ({ db: tx }) =>
-      (await tx.selectFrom('operator').select('name').executeTakeFirstOrThrow()).name,
-  );
-}
-
 /** Builds the file for one pending document. Never logs content (manifests hold passports). */
 export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: PendingDocument) {
   const locale = doc.locale;
+  const brand = await documentBrand(db, ctx);
   let content: Buffer;
   let base: string;
   switch (doc.kind) {
@@ -55,7 +48,7 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
     case 'cancellation_terms': {
       const data = await bookingDocumentData(db, ctx, doc.entityId);
       content = await htmlToPdf(
-        bookingDocumentHtml(doc.kind, data, locale, doc.variant === 'agent'),
+        bookingDocumentHtml(doc.kind, data, locale, doc.variant === 'agent', brand),
       );
       base = `${data.booking.ref}-${doc.kind}${doc.variant === 'agent' ? '-agent' : ''}`;
       break;
@@ -67,11 +60,11 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       base = `${doc.kind}-${manifest.leg.departDate}-${manifest.leg.from.code}`;
       content =
         doc.format === 'xlsx'
-          ? await manifestXlsx(manifest, locale, withPassports)
+          ? await manifestXlsx(manifest, brand, locale, withPassports)
           : await htmlToPdf(
               withPassports
-                ? manifestHtml(manifest, await operatorName(db, ctx), locale, true)
-                : roomingHtml(manifest, await operatorName(db, ctx), locale),
+                ? manifestHtml(manifest, brand, locale, true)
+                : roomingHtml(manifest, brand, locale),
             );
       break;
     }
@@ -84,10 +77,10 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       base = `vacancy-${data.from}`;
       content =
         doc.format === 'xlsx'
-          ? await vacancyXlsx(data, locale)
+          ? await vacancyXlsx(data, brand, locale)
           : doc.format === 'png'
-            ? await htmlToPng(vacancyHtml(data, locale))
-            : await htmlToPdf(vacancyHtml(data, locale));
+            ? await htmlToPng(vacancyHtml(data, brand, locale))
+            : await htmlToPdf(vacancyHtml(data, brand, locale));
       break;
     }
     case 'outage_pack': {
@@ -96,7 +89,7 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       );
       const data = await outagePackData(db, ctx, { vesselId: doc.entityId, from });
       base = `outage-pack-${from}`;
-      content = await htmlToPdf(outagePackHtml(data, locale));
+      content = await htmlToPdf(outagePackHtml(data, brand, locale));
       break;
     }
     default:
