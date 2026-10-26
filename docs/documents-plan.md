@@ -1,6 +1,6 @@
 # Branding and the cruise document library — plan
 
-Status: **approved 2026-10-26 with the recommended answers; Batch D1 (branding) done, D2 next.** This covers
+Status: **approved 2026-10-26 with the recommended answers; Batch D1 (branding) done, D2 next** (overall order in `analytics-plan.md` § Roadmap). This covers
 the owner's request of 2026-10-26: simple, effective branding per company; a well-designed
 embarkation sheet; a check-in file with every passenger's full details that can reach the staff on
 board for each departure; and the complete set of documents ("stationery") a Nile cruise usually
@@ -149,7 +149,7 @@ Grouped by when they are used. ✓ exists today; ★ proposed for the first roun
 | D3    | On-board operations: diets, occasions, daily programme, disembarkation/transfers, door cards, pre-departure information                                           |
 | D4    | The remaining stationery: transfer voucher, boarding pass with QR, luggage tags, excursion/guide list, table plan, muster list, housekeeping sheet, feedback form |
 
-D1 should come before invoicing batch F2, so invoices are born with the brand and logo.
+D1 came before invoicing, so invoices are born with the brand and logo. D3 and D4 follow the analytics and invoicing batches (`analytics-plan.md` § Roadmap).
 
 ## 7. Questions
 

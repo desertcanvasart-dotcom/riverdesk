@@ -1,6 +1,6 @@
 # Invoices, payments and receivables — Phase 0 plan
 
-Status: **waiting for approval** (branding batch D1 of `documents-plan.md` goes first). No feature code has been written. This plan answers Phase 0 of
+Status: **waiting for approval.** Agreed order (2026-10-26, see `analytics-plan.md` § Roadmap): D2, then analytics A1, then F1–F3, then F4–F6, then money analytics A2. No feature code has been written. This plan answers Phase 0 of
 Prompt B: what exists, what is missing, the proposed data model, API, screens, migration and the
 questions that need an answer before building.
 
@@ -199,6 +199,10 @@ One migration, run in a transaction; counts are printed and recorded in the batc
 | F4    | Statements, aging, credit limit warn/block, Today tasks                                                                                                              |
 | F5    | Reports, accountant export, account mapping, optional API scope                                                                                                      |
 | F6    | AR/EN docs pages with real screenshots                                                                                                                               |
+
+Money analytics (cash in, forecast, receivables, revenue by sailing month, currency exposure) is
+batch A2 of `analytics-plan.md`, built after F1–F3 on the data they create. F5's read-only reports
+stay simple lists and exports; the dashboards live in A2.
 
 ## 8. Questions
 
