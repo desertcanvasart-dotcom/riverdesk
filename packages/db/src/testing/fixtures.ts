@@ -109,6 +109,12 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   checkin_pack_send: bookingFixture,
   analytics_leg_day: bookingFixture,
   analytics_sailing_day: bookingFixture,
+  finance_setting: invoiceFixture,
+  tax_rate: invoiceFixture,
+  billing_party: invoiceFixture,
+  document_counter: invoiceFixture,
+  invoice: invoiceFixture,
+  invoice_line: invoiceFixture,
   api_client: apiFixture,
   api_client_secret: apiFixture,
   rate_limit_counter: apiFixture,
@@ -466,6 +472,55 @@ function bookingWorld(db: pg.Pool, operatorId: string): Promise<void> {
 
 async function bookingFixture(db: pg.Pool, operatorId: string): Promise<void> {
   await bookingWorld(db, operatorId);
+}
+
+const invoiceWorlds = new Map<string, Promise<void>>();
+
+/** One row in every invoicing table (F1), on top of bookingWorld. The invoice stays a draft. */
+function invoiceWorld(db: pg.Pool, operatorId: string): Promise<void> {
+  const existing = invoiceWorlds.get(operatorId);
+  if (existing) return existing;
+  const created = (async () => {
+    await bookingWorld(db, operatorId);
+    const one = async (text: string, params: unknown[]) =>
+      (await db.query<{ id: string }>(text, params)).rows[0]!.id;
+    const o = operatorId;
+    const booking = (
+      await db.query<{ id: string; channel_id: string }>(
+        `select id, channel_id from vs.booking where operator_id = $1 and ref = 'FX-27-00001'`,
+        [o],
+      )
+    ).rows[0]!;
+    await db.query(`insert into vs.finance_setting (operator_id) values ($1)`, [o]);
+    const tax = await one(
+      `insert into vs.tax_rate (operator_id, name_ar, name_en, rate_bps) values ($1, 'ضريبة', 'Tax', 1400) returning id`,
+      [o],
+    );
+    const party = await one(
+      `insert into vs.billing_party (operator_id, kind, channel_id, name) values ($1, 'agency', $2, 'Fixture agency') returning id`,
+      [o, booking.channel_id],
+    );
+    await db.query(
+      `insert into vs.document_counter (operator_id, series, year, last_seq) values ($1, 'invoice', 2027, 0)`,
+      [o],
+    );
+    const invoice = await one(
+      `insert into vs.invoice (operator_id, type, billing_party_id, currency, base_currency) values ($1, 'invoice', $2, 'USD', 'EGP') returning id`,
+      [o, party],
+    );
+    await db.query(
+      `insert into vs.invoice_line (operator_id, invoice_id, seq, kind, booking_id, description_ar, description_en,
+                                    unit_amount, amount, tax_rate_id, tax_bps, tax_inclusive)
+       values ($1, $2, 0, 'penalty', $3, 'غرامة', 'Penalty', 100, 100, $4, 1400, true)`,
+      [o, invoice, booking.id, tax],
+    );
+  })();
+  invoiceWorlds.set(operatorId, created);
+  return created;
+}
+
+async function invoiceFixture(db: pg.Pool, operatorId: string): Promise<void> {
+  await invoiceWorld(db, operatorId);
 }
 
 const apiWorlds = new Map<string, Promise<void>>();

@@ -22,7 +22,7 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
     });
   const [profile, vessels] = await Promise.all([caller.me.profile(), caller.book.vessels()]);
   const canWrite = profile.permissions.includes('bookings.write');
-  const canPay = profile.permissions.includes('payments.write');
+  const canPay = profile.permissions.includes('finance');
   const canDocuments = profile.permissions.includes('documents.create');
   const td = await getTranslations('documents');
   const t = await getTranslations('bookings');

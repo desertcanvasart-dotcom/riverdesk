@@ -123,6 +123,25 @@ export interface AuditLog {
   request_key: string | null;
 }
 
+export interface BillingParty {
+  address: string | null;
+  channel_id: string | null;
+  commercial_registration_no: string | null;
+  country: string | null;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  eta_party_type: string | null;
+  id: Generated<string>;
+  kind: string;
+  legal_name_ar: string | null;
+  legal_name_en: string | null;
+  name: string;
+  operator_id: string;
+  phone: string | null;
+  tax_registration_no: string | null;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Booking {
   amount_paid: Generated<bigint>;
   balance_due_date: string | null;
@@ -300,7 +319,10 @@ export interface ChannelContract {
   allocation: string;
   channel_id: string;
   checkout_hold_minutes: Generated<number>;
+  contract_ref: string | null;
   created_at: Generated<Timestamp>;
+  credit_limit_mode: Generated<string>;
+  credit_terms_days: number | null;
   id: Generated<string>;
   operator_id: string;
   option_hold_hours: Generated<number>;
@@ -403,6 +425,13 @@ export interface Document {
   variant: Generated<string>;
 }
 
+export interface DocumentCounter {
+  last_seq: number;
+  operator_id: string;
+  series: string;
+  year: number;
+}
+
 export interface Event {
   id: Generated<string>;
   occurred_at: Generated<Timestamp>;
@@ -430,6 +459,33 @@ export interface Exception {
   severity: Generated<string>;
   status: Generated<string>;
   summary: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface FinanceSetting {
+  address_ar: string | null;
+  address_en: string | null;
+  bank_details_ar: string | null;
+  bank_details_en: string | null;
+  base_currency: Generated<string>;
+  commercial_registration_no: string | null;
+  created_at: Generated<Timestamp>;
+  credit_note_prefix: Generated<string>;
+  default_terms_days: Generated<number>;
+  eta_activity_code: string | null;
+  eta_branch_id: string | null;
+  eta_footer: Generated<boolean>;
+  first_credit_note_number: Generated<number>;
+  first_invoice_number: Generated<number>;
+  invoice_currencies: Generated<string[]>;
+  invoice_note_ar: string | null;
+  invoice_note_en: string | null;
+  invoice_prefix: Generated<string>;
+  legal_name_ar: string | null;
+  legal_name_en: string | null;
+  number_digits: Generated<number>;
+  operator_id: string;
+  tax_registration_no: string | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -549,6 +605,70 @@ export interface InventoryEvent {
   operator_id: string;
   ref_entity: string | null;
   ref_id: string | null;
+}
+
+export interface Invoice {
+  amount_credited: Generated<bigint>;
+  amount_paid: Generated<bigint>;
+  base_currency: string;
+  billing_party_id: string;
+  created_at: Generated<Timestamp>;
+  created_by: string | null;
+  credit_reason: string | null;
+  credits_invoice_id: string | null;
+  currency: string;
+  due_date: string | null;
+  eta_long_id: string | null;
+  eta_submission_status: string | null;
+  eta_submitted_at: Timestamp | null;
+  eta_uuid: string | null;
+  fx_date: string | null;
+  fx_rate: string | null;
+  fx_source: string | null;
+  id: Generated<string>;
+  issue_date: string | null;
+  issued_at: Timestamp | null;
+  issued_by: string | null;
+  issuer_snapshot: Json | null;
+  locale: Generated<string>;
+  notes: string | null;
+  number: string | null;
+  operator_id: string;
+  party_snapshot: Json | null;
+  seq: number | null;
+  series: string | null;
+  status: Generated<string>;
+  subtotal: Generated<bigint>;
+  tax_total: Generated<bigint>;
+  total: Generated<bigint>;
+  type: string;
+  updated_at: Generated<Timestamp>;
+  year: number | null;
+}
+
+export interface InvoiceLine {
+  amount: bigint;
+  booking_cabin_id: string | null;
+  booking_id: string | null;
+  created_at: Generated<Timestamp>;
+  description_ar: string;
+  description_en: string;
+  id: Generated<string>;
+  invoice_id: string;
+  item_code: string | null;
+  item_type: string | null;
+  kind: string;
+  operator_id: string;
+  quantity: Generated<number>;
+  seq: number;
+  tax_amount: Generated<bigint>;
+  tax_bps: number | null;
+  tax_inclusive: boolean | null;
+  tax_name_ar: string | null;
+  tax_name_en: string | null;
+  tax_rate_id: string | null;
+  unit_amount: bigint;
+  unit_type: string | null;
 }
 
 export interface Leg {
@@ -894,6 +1014,20 @@ export interface Supplement {
   updated_at: Generated<Timestamp>;
 }
 
+export interface TaxRate {
+  active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  inclusive: Generated<boolean>;
+  is_default: Generated<boolean>;
+  name_ar: string;
+  name_en: string;
+  operator_id: string;
+  rate_bps: number;
+  sort_order: Generated<number>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Vessel {
   active: Generated<boolean>;
   checkin_pack_hours: number | null;
@@ -963,6 +1097,7 @@ export interface DB {
   api_client: ApiClient;
   api_client_secret: ApiClientSecret;
   audit_log: AuditLog;
+  billing_party: BillingParty;
   booking: Booking;
   booking_cabin: BookingCabin;
   booking_line: BookingLine;
@@ -982,14 +1117,18 @@ export interface DB {
   child_policy: ChildPolicy;
   child_policy_band: ChildPolicyBand;
   document: Document;
+  document_counter: DocumentCounter;
   event: Event;
   exception: Exception;
+  finance_setting: FinanceSetting;
   guest: Guest;
   hold: Hold;
   hold_line: HoldLine;
   idempotency_key: IdempotencyKey;
   inventory_bucket: InventoryBucket;
   inventory_event: InventoryEvent;
+  invoice: Invoice;
+  invoice_line: InvoiceLine;
   leg: Leg;
   market: Market;
   offer: Offer;
@@ -1014,6 +1153,7 @@ export interface DB {
   staff_invitation: StaffInvitation;
   staff_user: StaffUser;
   supplement: Supplement;
+  tax_rate: TaxRate;
   vessel: Vessel;
   webhook_attempt: WebhookAttempt;
   webhook_delivery: WebhookDelivery;

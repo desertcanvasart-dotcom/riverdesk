@@ -44,9 +44,9 @@ describe('back-office authorization (server side)', () => {
         ['read', 'self', 'checkin.view', 'analytics.view'].includes(permission),
       );
     }
-    expect(can('finance', 'payments.write')).toBe(true);
+    expect(can('finance', 'finance')).toBe(true);
     expect(can('finance', 'bookings.write')).toBe(false);
-    expect(can('reservations', 'payments.write')).toBe(false);
+    expect(can('reservations', 'finance')).toBe(false);
     expect(can('reservations', 'rates.write')).toBe(false);
     expect(can('owner', 'settings.write')).toBe(true);
   });
@@ -77,6 +77,30 @@ describe('back-office authorization (server side)', () => {
       const [group, name] = path.split('.') as [string, string];
       await expect(caller[group]![name]!({}), path).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }
+  });
+
+  it('reservations draft proformas; only finance drafts, issues and credits invoices', async () => {
+    const session = {
+      authUserId: crypto.randomUUID(),
+      email: null,
+      aal: 'aal1' as const,
+      staff: staff('reservations'),
+      platformAdmin: false,
+      needsMfa: false,
+    };
+    const caller = appRouter.createCaller({ session });
+    const id = { invoiceId: crypto.randomUUID() };
+    for (const call of [
+      () => caller.invoices.createDraft({ type: 'invoice', bookingIds: [crypto.randomUUID()] }),
+      () => caller.invoices.issue(id),
+      () => caller.invoices.creditNote({ ...id, reason: 'x' }),
+      () => caller.finance.settings(),
+      () => caller.finance.updateSettings({ invoicePrefix: 'X' }),
+      () => caller.finance.saveTax({ nameAr: 'x', nameEn: 'x', rateBps: 0 }),
+    ]) {
+      await expect(call()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+    expect(can('reservations', 'bookings.write')).toBe(true);
   });
 
   it('on-board staff get Check-in and their own profile, nothing else', async () => {

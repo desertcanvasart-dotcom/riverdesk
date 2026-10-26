@@ -510,6 +510,9 @@ export const createContractInput = z.object({
   validTo: dateSchema.optional(),
   categoryIds: z.array(z.uuid()).min(1),
   ratePlanIds: z.array(z.uuid()).min(1),
+  /** Invoicing: days the agency has to pay an invoice (else the company default). */
+  creditTermsDays: z.number().int().min(0).max(365).optional(),
+  contractRef: z.string().trim().min(1).max(60).optional(),
 });
 
 export async function createContract(
@@ -542,6 +545,8 @@ export async function createContract(
         stop_sell: data.stopSell,
         valid_from: data.validFrom,
         valid_to: data.validTo ?? null,
+        credit_terms_days: data.creditTermsDays ?? null,
+        contract_ref: data.contractRef ?? null,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -582,6 +587,8 @@ export const updateContractInput = z.object({
   adjustmentBps: bps.optional(),
   visibleFreeCap: z.number().int().min(0).nullable().optional(),
   active: z.boolean().optional(),
+  creditTermsDays: z.number().int().min(0).max(365).nullable().optional(),
+  contractRef: z.string().trim().min(1).max(60).nullable().optional(),
 });
 
 export async function updateContract(
@@ -606,6 +613,8 @@ export async function updateContract(
         ...(data.adjustmentBps !== undefined ? { adjustment_bps: data.adjustmentBps } : {}),
         ...(data.visibleFreeCap !== undefined ? { visible_free_cap: data.visibleFreeCap } : {}),
         ...(data.active !== undefined ? { active: data.active } : {}),
+        ...(data.creditTermsDays !== undefined ? { credit_terms_days: data.creditTermsDays } : {}),
+        ...(data.contractRef !== undefined ? { contract_ref: data.contractRef } : {}),
       })
       .where('id', '=', data.contractId)
       .returningAll()

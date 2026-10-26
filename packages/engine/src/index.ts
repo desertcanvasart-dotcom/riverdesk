@@ -59,3 +59,6 @@ export * from './backoffice/privacy';
 export * from './health';
 export * from './backoffice/import';
 export * from './backoffice/pilot';
+export * from './finance/settings';
+export * from './finance/parties';
+export * from './finance/invoices';

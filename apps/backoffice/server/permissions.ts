@@ -11,7 +11,8 @@ export const PERMISSIONS = {
   read: ['owner', 'reservations', 'finance', 'read_only'],
   'bookings.write': ['owner', 'reservations'],
   'inventory.write': ['owner', 'reservations'],
-  'payments.write': ['owner', 'finance'],
+  /** Money in and out: payments, refunds, invoices, credit notes, finance settings. */
+  finance: ['owner', 'finance'],
   'documents.create': ['owner', 'reservations', 'finance', 'onboard'],
   /** Manifests, check-in files and registration cards carry passport numbers: only the people who board guests. */
   manifests: ['owner', 'reservations', 'onboard'],

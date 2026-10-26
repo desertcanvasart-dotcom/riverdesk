@@ -758,3 +758,35 @@ Each tab exports as a workbook, one sheet per table, rendered by the worker like
 
 **2026-10-26 · Occupancy and Overview keep their own filters.**
 The Overview has the vessel filter; Occupancy and pace has vessel, start date and length. Channel and market do not apply to capacity, so they are only on the two booking tabs.
+
+## Invoicing F1 — settings, taxes, parties, invoices and credit notes
+
+**2026-10-26 · Answers taken for the invoicing plan.**
+The owner asked to keep building without answering `invoicing-plan.md` § 8, so the recommended answers were taken (listed at the top of that plan). Any can still change before the batch that uses it.
+
+**2026-10-26 · Gap-free numbers.**
+Invoices and credit notes have their own series per company and year (`INV-2026-00001`, `CN-2026-00001`), from a counter row bumped with `insert … on conflict do update … returning` in the transaction that issues the document. Concurrent issues queue on that row; a failed issue rolls the number back. Postgres sequences are not used because they leave gaps. A company continuing a paper series sets its prefix, digits and first number; these lock once a document in that series is issued, and the base currency locks once anything is issued. Issue dates are always today in Cairo (no back-dating).
+
+**2026-10-26 · An issued invoice is final, in the database.**
+Triggers refuse any change to an issued invoice or credit note except its status and the amounts paid and credited, any change to its lines, its deletion, and a return to draft, whoever asks (owner included). Mistakes are corrected with a credit note, full or by line. A fully credited invoice becomes `cancelled`.
+
+**2026-10-26 · What an invoice shows.**
+Lines come from the booking's frozen quote, never re-priced: one line per cabin (the sum of the quote lines in its total), an amendment-fee line when the booking has fees, and for agencies on commission contracts the gross with the commission as its own negative line, so the total is what the agency owes. A cancelled booking is invoiced for its penalty (and fees) only. Descriptions are written in Arabic and English. A booking is on at most one open invoice (a draft, or issued and not fully credited).
+
+**2026-10-26 · Who is billed.**
+Credit and channel-collected contracts bill the agency: one billing party per channel, created the first time it is invoiced. Direct bookings and vessel-prepaid agency bookings bill the guest, from the lead guest, reused for the booking's later invoices. Issued invoices keep a snapshot of the party and of the company as issuer; editing either later changes nothing issued.
+
+**2026-10-26 · Proformas.**
+A proforma «فاتورة مبدئية» has no number, can be drafted for a booking not yet confirmed, and can be edited or deleted by reservations. Issuing it copies it into an invoice (finance only, and only for confirmed, completed or cancelled bookings); the proforma stays as it was.
+
+**2026-10-26 · Taxes and rounding.**
+No tax by default. A company may add tax lines (inclusive or on top) and mark one as the default for booking lines. Tax is computed per line, half-up, once (inclusive: amount × rate ÷ (1 + rate)); totals are sums of rounded lines. Lines keep a snapshot of the tax they were issued with; credit notes use the original line's tax, not today's rate.
+
+**2026-10-26 · Currencies.**
+An invoice is in its bookings' currency (all bookings on one invoice share it). When that differs from the base currency (EGP by default), issuing needs a typed rate with its source and date, kept on the invoice and reused by its credit notes.
+
+**2026-10-26 · The `finance` permission.**
+`payments.write` is renamed `finance` (same holders: owner and finance, both with MFA). It covers payments, issuing invoices and credit notes, finance settings, taxes and party details. Reservations draft proformas. The channel API's database role can read but not write the invoicing tables; it has no invoice endpoints (question 13).
+
+**2026-10-26 · Contract terms for invoicing.**
+Contracts gain `credit_terms_days` (an invoice's due date = issue date + N, else the company's default terms) and `contract_ref`. `credit_limit_mode` (block, today's behaviour, or warn) is stored but only `block` is enforced until F4.

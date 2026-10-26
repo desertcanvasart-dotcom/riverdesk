@@ -6,6 +6,7 @@ import { bookingsRouter } from './routers/bookings';
 import { channelsRouter } from './routers/channels';
 import { checkinRouter } from './routers/checkin';
 import { documentsRouter } from './routers/documents';
+import { financeRouter, invoicesRouter } from './routers/finance';
 import { fleetRouter } from './routers/fleet';
 import { guestsRouter } from './routers/guests';
 import { homeRouter } from './routers/home';
@@ -32,6 +33,8 @@ export const appRouter = router({
   schedule: scheduleRouter,
   routes: routesRouter,
   rates: ratesRouter,
+  finance: financeRouter,
+  invoices: invoicesRouter,
   channels: channelsRouter,
   payments: paymentsRouter,
   settings: settingsRouter,

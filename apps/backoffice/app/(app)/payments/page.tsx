@@ -9,7 +9,7 @@ export default async function PaymentsPage() {
   return (
     <>
       <PageHeader title={t('title')} subtitle={t('subtitle')} />
-      <PaymentsScreen canWrite={profile.permissions.includes('payments.write')} />
+      <PaymentsScreen canWrite={profile.permissions.includes('finance')} />
     </>
   );
 }

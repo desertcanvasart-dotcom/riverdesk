@@ -26,16 +26,16 @@ export const paymentsRouter = router({
       }),
     )
     .query(({ ctx, input }) => listPayments(backofficeDb(), ctx.engine, input)),
-  record: procedure('payments.write')
+  record: procedure('finance')
     .input(recordPaymentInput)
     .mutation(({ ctx, input }) => recordPayment(backofficeDb(), ctx.engine, input)),
   refundDue: procedure('read')
     .input(calculateRefundInput)
     .query(({ ctx, input }) => calculateRefund(backofficeDb(), ctx.engine, input)),
-  refund: procedure('payments.write')
+  refund: procedure('finance')
     .input(recordRefundInput)
     .mutation(({ ctx, input }) => recordRefund(backofficeDb(), ctx.engine, input)),
-  reverse: procedure('payments.write')
+  reverse: procedure('finance')
     .input(reversePaymentInput)
     .mutation(({ ctx, input }) => reversePayment(backofficeDb(), ctx.engine, input)),
 });

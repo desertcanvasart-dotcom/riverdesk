@@ -1,8 +1,33 @@
 # Invoices, payments and receivables — Phase 0 plan
 
-Status: **waiting for approval.** Agreed order (2026-10-26, see `analytics-plan.md` § Roadmap): D2, then analytics A1, then F1–F3, then F4–F6, then money analytics A2. No feature code has been written. This plan answers Phase 0 of
-Prompt B: what exists, what is missing, the proposed data model, API, screens, migration and the
-questions that need an answer before building.
+Status: **building — F1 done (2026-10-26), F2 next.** The owner asked to keep building without
+answering § 8 one by one, so the recommended answers below were taken; any can still be changed
+before the batch that uses it. Agreed order: see `analytics-plan.md` § Roadmap.
+
+Answers taken (§ 8):
+
+1. Who is billed: `credit` and `channel_collected` contracts → the agency or platform; direct
+   (back-office) bookings and `vessel_prepaid` bookings made through an agency → the guest, who
+   pays the vessel.
+2. Agency invoices on commission contracts: the gross price with the commission as its own line
+   deducted, so the journal can post commission to its own account.
+3. Credit limit: stays on the channel (one exposure per agency). Each contract gets a mode; the
+   default is `block`, which keeps today's behaviour (the booking becomes a request for approval);
+   `warn` is available per contract.
+4. Exposure: uninvoiced confirmed bookings + open invoices − unapplied credit.
+5. Existing bookings: invoicing starts from go-live, no back-dated invoices; the first number of
+   each series is configurable for operators continuing a paper series.
+6. Base currency EGP by default (per company); rates typed in with their source and date.
+7. Taxes: none by default; a company adds its own lines (e.g. 14% VAT, inclusive).
+8. Sharing: the phone's share sheet with the PDF, plus an in-app link; no public link.
+9. Cancelled bookings: invoice only the penalty and the fees kept; an earlier invoice is credited
+   in full.
+10. Payment methods: the § 6 mapping; "collected by the platform" stays a method of its own.
+11. Proformas: «فاتورة مبدئية» / "Proforma", referenced by the booking reference.
+12. Numbers in words: left out of the first version.
+13. Channel API invoice endpoints: left out of this phase.
+14. Receipt attachments: in Postgres, up to 5 MB, like documents.
+15. Batches F1–F6 as listed, each stopping for review.
 
 ## 1. What exists and will be reused
 
