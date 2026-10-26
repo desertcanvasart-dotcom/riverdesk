@@ -1,6 +1,6 @@
 # Analytics — plan
 
-Status: **waiting for approval.** No code has been written. This covers the owner's request of
+Status: **approved 2026-10-26** with the owner's answers in § 8. No code has been written yet. This covers the owner's request of
 2026-10-26: analytics for reservation behaviour (A1) and for money (A2), inside the back office,
 plus the order in which this and the other open plans are built.
 
@@ -10,14 +10,14 @@ plus the order in which this and the other open plans are built.
 | --- | ------ | ---------------------------------------- | ---------------------------------------- |
 | 1   | D1     | Branding, bilingual documents            | Done (hosted at 0014)                    |
 | 2   | D2     | Check-in documents, on-board login       | Approved, next                           |
-| 3   | **A1** | Reservations analytics (this plan, § 4)  | Waiting for approval                     |
+| 3   | **A1** | Reservations analytics (this plan, § 4)  | Approved; A1.1 right after D2            |
 | 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, waiting for answers |
 | 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`                      |
 | 6   | **A2** | Money analytics (this plan, § 5)         | Needs invoicing                          |
 | 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`                      |
 
-The nightly snapshot (§ 3) is the first piece of A1, built as soon as A1 is approved, because
-history it does not record cannot be recovered later.
+The nightly snapshot (§ 3) is the first piece of A1 and ships on its own (A1.1) straight after
+D2, because history it does not record cannot be recovered later.
 
 ## 1. What exists today
 
@@ -102,8 +102,8 @@ A new **Analytics** item in the sidebar, with four tabs. Filters on every tab: v
 **4.2 Occupancy and pace**
 
 - Per sailing: capacity, booked, held, free, occupancy %, and a pace line (cabins on the books
-  night by night as the sailing approached), against the same sailing a season earlier when one
-  exists.
+  night by night as the sailing approached), against the same calendar date a year earlier (the
+  sailings departing that date, if any).
 - Per cabin category: which categories sell first and which stay empty.
 - A heat map of the coming weeks (sailings × categories), coloured by occupancy.
 
@@ -175,16 +175,12 @@ Built on the invoices, receipts and allocations of F1–F3, and the exchange rat
 Each stops for review, like the other batches. A1.1 is small and could ship on its own straight
 after D2, so the snapshot starts recording as early as possible.
 
-## 8. Questions
+## 8. Answers (owner, 2026-10-26)
 
-1. **Pace comparison:** compare a sailing with "the same sailing a season earlier" (same weekday
-   and itinerary, closest date), or with a fixed calendar date a year earlier? Recommendation: the
-   same itinerary and weekday, closest date.
-2. **Season boundaries:** use the seasons already defined in Rates for "this season / last
-   season", or calendar years? Recommendation: the Rates seasons.
-3. **Reservations staff:** may they see A1 without money columns (recommended), or should
-   analytics be for owners and finance only?
-4. **Nationality:** is guest nationality reliable enough to report on, or should markets be the
-   main split until D2's check-in fields are in use?
-5. **A1.1 timing:** ship the snapshot alone right after D2 (recommended), or together with the
-   first screens?
+1. **Pace comparison:** against the **same calendar date a year earlier** (the sailings departing
+   that date, if any), not the same itinerary and weekday.
+2. **Seasons:** "this season / last season" use the seasons already defined in Rates.
+3. **Reservations staff** see A1 without money columns (`analytics.view`); money needs
+   `analytics.money` (owners and finance).
+4. **Nationality** is reliable enough to report on now.
+5. **A1.1** (the snapshot) ships on its own straight after D2.
