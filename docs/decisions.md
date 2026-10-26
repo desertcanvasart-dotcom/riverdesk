@@ -790,3 +790,20 @@ An invoice is in its bookings' currency (all bookings on one invoice share it). 
 
 **2026-10-26 · Contract terms for invoicing.**
 Contracts gain `credit_terms_days` (an invoice's due date = issue date + N, else the company's default terms) and `contract_ref`. `credit_limit_mode` (block, today's behaviour, or warn) is stored but only `block` is enforced until F4.
+
+## Invoicing F2 — PDFs, register, sharing, Invoices screens
+
+**2026-10-26 · One document kind for invoices, proformas and credit notes.**
+`invoice` documents (migration 0019, entity `invoice`) are PDFs in Arabic, English or both, rendered by the worker and kept a week like other documents. An issued document prints its frozen snapshots of the company and the party, so a reprint years later gives the same page; a draft prints today's details under a "Draft — not issued" band. A proforma carries "a proforma is not a tax invoice". Files are named by number (`INV-2026-00042-ar.pdf`) or, before issue, by booking ref. Anyone who can see invoices may print one; it is not a change, so read-only users may too.
+
+**2026-10-26 · What the PDF shows.**
+The company (legal name, address, tax and commercial registration numbers) and the party side by side; number, issue and due dates and booking refs; one row per line with its tax rate when any line is taxed; subtotal, one row per tax rate, total; on an invoice, amounts credited and paid and the amount due; the typed exchange rate with the base-currency equivalent; bank details; the invoice note; the tax-authority footer when switched on. Arabic descriptions keep dates and refs left to right with invisible Unicode isolates. Numbers are not written out in words (question 12).
+
+**2026-10-26 · Sharing.**
+Share hands the PDF to the phone's share sheet (WhatsApp, e-mail) where the browser supports sharing files, and downloads it otherwise. Copy link copies the invoice's page in the back office, for colleagues who are signed in (question 8). Nothing is sent by Riverdesk itself.
+
+**2026-10-26 · The invoice register.**
+An Excel workbook (finance only) of every invoice and credit note issued in a period, by issue date and number: party and its tax number as issued, booking refs, currency, subtotal, tax, total, credited, paid, rate and the total in the base currency. Credit notes are negative, so the base-currency column sums to net sales.
+
+**2026-10-26 · Screens.**
+Invoices (under Reservations): a list with type, status and overdue filters, the register, and a manual invoice without a booking for an existing party. An invoice page: lines and totals, the party (editable by finance; issued invoices keep their snapshot), PDF and sharing, linked credit notes; drafts can be edited (language, due date, note, extra lines) or deleted, and issued (with the rate when the currency is not the base); issued invoices get credit notes (whole or by line). The booking page lists its proformas and invoices with Proforma (reservations) and Invoice (finance) buttons. Finance settings (finance only): the company as issuer, bank details, notes, footer, numbering (locked once used), currencies, default terms, and taxes.

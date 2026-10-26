@@ -177,7 +177,7 @@ export async function getDocumentStatus(db: VsDatabase, ctx: EngineContext, docu
 export async function listDocuments(
   db: VsDatabase,
   ctx: EngineContext,
-  input: { entity: 'booking' | 'leg' | 'vessel'; entityId: string },
+  input: { entity: 'booking' | 'leg' | 'vessel' | 'invoice'; entityId: string },
 ) {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const rows = await tx

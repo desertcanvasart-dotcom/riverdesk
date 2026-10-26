@@ -3,3 +3,4 @@ export * from './i18n';
 export * from './templates';
 export * from './sample';
 export * from './checkin';
+export * from './invoice';

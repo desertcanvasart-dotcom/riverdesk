@@ -7,6 +7,11 @@ import {
   deleteInvoiceDraft,
   getFinanceSettings,
   getInvoice,
+  invoiceRegisterInput,
+  listDocuments,
+  requestInvoiceDocument,
+  requestInvoiceDocumentInput,
+  requestInvoiceRegister,
   issueCreditNote,
   issueInvoice,
   issueInvoiceInput,
@@ -90,6 +95,19 @@ export const invoicesRouter = router({
   issue: procedure('finance')
     .input(issueInvoiceInput)
     .mutation(({ ctx, input }) => issueInvoice(backofficeDb(), ctx.engine, input)),
+  /** The PDF (ar, en or both); anyone who can see invoices can print one. */
+  requestPdf: procedure('read')
+    .input(requestInvoiceDocumentInput)
+    .mutation(({ ctx, input }) => requestInvoiceDocument(backofficeDb(), ctx.engine, input)),
+  documents: procedure('read')
+    .input(invoiceId)
+    .query(({ ctx, input }) =>
+      listDocuments(backofficeDb(), ctx.engine, { entity: 'invoice', entityId: input.invoiceId }),
+    ),
+  /** The invoice register for the accountant (Excel). */
+  requestRegister: procedure('finance')
+    .input(invoiceRegisterInput)
+    .mutation(({ ctx, input }) => requestInvoiceRegister(backofficeDb(), ctx.engine, input)),
   creditNote: procedure('finance')
     .input(creditNoteInput)
     .mutation(({ ctx, input }) => issueCreditNote(backofficeDb(), ctx.engine, input)),

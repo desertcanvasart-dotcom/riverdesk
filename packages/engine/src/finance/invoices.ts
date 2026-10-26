@@ -132,6 +132,8 @@ async function bookingLines(
     .where('id', '=', booking.sailing_id)
     .executeTakeFirstOrThrow();
   const trip = `${sailing.embark_date} → ${sailing.disembark_date}`;
+  // Dates and refs read left to right inside Arabic text (Unicode isolates, invisible).
+  const iso = (text: string) => `\u2066${text}\u2069`;
   const lines: DraftLine[] = [];
   if (booking.status === 'cancelled') {
     if ((booking.penalty_amount ?? 0n) > 0n)
@@ -139,7 +141,7 @@ async function bookingLines(
         ...base,
         kind: 'penalty',
         booking_cabin_id: null,
-        description_ar: `غرامة إلغاء — حجز ${booking.ref}`,
+        description_ar: `غرامة إلغاء — حجز ${iso(booking.ref)}`,
         description_en: `Cancellation penalty — booking ${booking.ref}`,
         unit_amount: booking.penalty_amount!,
       });
@@ -169,7 +171,7 @@ async function bookingLines(
         ...base,
         kind: 'cabin',
         booking_cabin_id: cabin.id,
-        description_ar: `كابينة ${cabin.name_ar} (${guestsAr}) — ${sailing.nights} ليالٍ ${trip} — حجز ${booking.ref}`,
+        description_ar: `كابينة ${cabin.name_ar} (${guestsAr}) — ${sailing.nights} ليالٍ ${iso(trip)} — حجز ${iso(booking.ref)}`,
         description_en: `${cabin.name_en} cabin (${guestsEn}) — ${sailing.nights} nights ${trip} — booking ${booking.ref}`,
         unit_amount: amount,
       });
@@ -184,7 +186,7 @@ async function bookingLines(
         ...base,
         kind: 'commission',
         booking_cabin_id: null,
-        description_ar: `خصم عمولة الوكيل — حجز ${booking.ref}`,
+        description_ar: `خصم عمولة الوكيل — حجز ${iso(booking.ref)}`,
         description_en: `Agency commission deducted — booking ${booking.ref}`,
         unit_amount: -commission,
       });
@@ -194,7 +196,7 @@ async function bookingLines(
       ...base,
       kind: 'fee',
       booking_cabin_id: null,
-      description_ar: `رسوم تعديل — حجز ${booking.ref}`,
+      description_ar: `رسوم تعديل — حجز ${iso(booking.ref)}`,
       description_en: `Amendment fees — booking ${booking.ref}`,
       unit_amount: booking.fees,
     });
@@ -557,7 +559,8 @@ function formatNumber(prefix: string, year: number, seq: number, digits: number)
   return `${prefix}-${year}-${String(seq).padStart(digits, '0')}`;
 }
 
-async function issuerSnapshot(tx: Tx) {
+/** The company as issuer, as it reads now (frozen onto an invoice when issued). */
+export async function issuerSnapshot(tx: Tx) {
   const settings = await loadFinanceSettings(tx);
   const operator = await tx.selectFrom('operator').select('name').executeTakeFirstOrThrow();
   const brand = await tx.selectFrom('operator_branding').selectAll().executeTakeFirst();
@@ -583,7 +586,8 @@ async function issuerSnapshot(tx: Tx) {
   };
 }
 
-async function partySnapshot(tx: Tx, partyId: string) {
+/** The billing party as it reads now (frozen onto an invoice when issued). */
+export async function partySnapshot(tx: Tx, partyId: string) {
   const party = await tx
     .selectFrom('billing_party')
     .selectAll()

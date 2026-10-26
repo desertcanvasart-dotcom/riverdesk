@@ -9,7 +9,7 @@ import { useTRPC } from '../lib/trpc';
 import { Alert, Button } from './ui';
 
 /** Starts the browser download of a ready document. */
-function download(documentId: string) {
+export function download(documentId: string) {
   const link = document.createElement('a');
   link.href = `/api/documents/${documentId}`;
   link.rel = 'noopener';
@@ -61,13 +61,41 @@ export function DocumentButtons({
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 function DocumentButton({ label, input }: { label: string; input: RequestDocumentInput }) {
+  const trpc = useTRPC();
+  const request = useMutation(trpc.documents.request.mutationOptions());
+  return (
+    <RequestDocumentButton
+      label={label}
+      pending={request.isPending}
+      error={request.error}
+      request={() => request.mutateAsync(input)}
+    />
+  );
+}
+
+/**
+ * Requests a document, waits while the worker renders it, then downloads it, or hands the file
+ * to `onReady` instead (sharing).
+ */
+export function RequestDocumentButton({
+  label,
+  request,
+  pending = false,
+  error,
+  onReady,
+  variant = 'secondary',
+}: {
+  label: string;
+  request: () => Promise<{ documentId: string }>;
+  pending?: boolean;
+  error?: unknown;
+  onReady?: (documentId: string) => void | Promise<void>;
+  variant?: 'primary' | 'secondary';
+}) {
   const t = useTranslations('documents');
   const trpc = useTRPC();
   const errorText = useErrorText();
   const [documentId, setDocumentId] = useState<string | null>(null);
-  const request = useMutation(
-    trpc.documents.request.mutationOptions({ onSuccess: (r) => setDocumentId(r.documentId) }),
-  );
   const status = useQuery(
     trpc.documents.status.queryOptions(
       { documentId: documentId ?? '' },
@@ -80,22 +108,26 @@ function DocumentButton({ label, input }: { label: string; input: RequestDocumen
   const state = status.data?.status;
   useEffect(() => {
     if (documentId && state === 'ready') {
-      download(documentId);
       setDocumentId(null);
+      void (onReady ? onReady(documentId) : download(documentId));
     }
-  }, [documentId, state]);
-  const busy = request.isPending || (documentId !== null && state !== 'failed');
+  }, [documentId, state, onReady]);
+  const busy = pending || (documentId !== null && state !== 'failed');
   return (
     <span className="inline-flex flex-col gap-1">
       <Button
         type="button"
-        variant="secondary"
+        variant={variant}
         disabled={busy}
-        onClick={() => request.mutate(input)}
+        onClick={() => {
+          request()
+            .then((r) => setDocumentId(r.documentId))
+            .catch(() => undefined);
+        }}
       >
         {busy ? t('preparing') : label}
       </Button>
-      {request.isError && <Alert tone="bad">{errorText(request.error)}</Alert>}
+      {Boolean(error) && <Alert tone="bad">{errorText(error)}</Alert>}
       {state === 'failed' && <Alert tone="bad">{t('failed')}</Alert>}
     </span>
   );

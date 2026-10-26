@@ -10,12 +10,15 @@ import {
   failDocument,
   getLegManifest,
   getOperatorSettings,
+  invoiceDocumentData,
+  invoiceRegisterData,
   loadPendingDocument,
   outagePackData,
   pendingCheckinPacks,
   pruneDocuments,
   vacancyData,
   type AnalyticsExportParams,
+  type InvoiceRegisterParams,
   type EngineContext,
   type PendingDocument,
   type VsDatabase,
@@ -26,6 +29,8 @@ import {
   bookingDocumentHtml,
   checkinFileHtml,
   embarkationSheetHtml,
+  invoiceFileBase,
+  invoiceHtml,
   manifestHtml,
   outagePackHtml,
   registrationCardsHtml,
@@ -33,6 +38,7 @@ import {
   vacancyHtml,
 } from '@vs/documents';
 import { analyticsXlsx } from '../documents/analytics-xlsx';
+import { invoiceRegisterXlsx } from '../documents/invoice-xlsx';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
@@ -133,6 +139,19 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       );
       content = file.content;
       base = file.base;
+      break;
+    }
+    case 'invoice': {
+      const data = await invoiceDocumentData(db, ctx, doc.entityId);
+      content = await htmlToPdf(invoiceHtml(data, brand, locale));
+      base = invoiceFileBase(data);
+      break;
+    }
+    case 'invoice_register': {
+      const params = doc.params as unknown as InvoiceRegisterParams;
+      const rows = await invoiceRegisterData(db, ctx, params);
+      content = await invoiceRegisterXlsx(rows, params, brand, locale);
+      base = `invoice-register-${params.from}-${params.to}`;
       break;
     }
     default:

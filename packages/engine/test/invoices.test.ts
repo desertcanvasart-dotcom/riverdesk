@@ -9,6 +9,10 @@ import {
   deleteInvoiceDraft,
   getFinanceSettings,
   getInvoice,
+  invoiceDocumentData,
+  invoiceRegisterData,
+  requestInvoiceDocument,
+  requestInvoiceRegister,
   issueCreditNote,
   issueInvoice,
   lineTax,
@@ -407,6 +411,51 @@ describe('invoicing F1', () => {
     );
     expect(rows.map((r) => r.seq)).toEqual(rows.map((_, i) => i + 1));
     expect(new Set(rows.map((r) => r.number)).size).toBe(rows.length);
+  });
+
+  it('prints from frozen snapshots and lists issued documents in the register (F2)', async () => {
+    // The first invoice, issued before its agency's legal name was added.
+    const issued = (await listInvoices(w.db, w.ctx, { type: 'invoice', limit: 500 })).find(
+      (i) => i.number === `INV-${year}-00001`,
+    );
+    const data = await invoiceDocumentData(w.db, w.ctx, issued!.id);
+    expect(data).toMatchObject({ type: 'invoice', currency: 'USD', baseCurrency: 'EGP' });
+    expect(data.fx).toMatchObject({ rate: '48.5', source: 'CBE' });
+    // The snapshot, not today's party: the legal name added later is not on it.
+    expect(data.party.legalNameEn).toBeNull();
+    const { documentId } = await requestInvoiceDocument(w.db, w.ctx, {
+      invoiceId: issued!.id,
+      locale: 'both',
+    });
+    const doc = await owner().query(
+      `select kind, format, entity, entity_id from vs.document where id = $1`,
+      [documentId],
+    );
+    expect(doc.rows[0]).toMatchObject({
+      kind: 'invoice',
+      format: 'pdf',
+      entity: 'invoice',
+      entity_id: issued!.id,
+    });
+
+    const today = await todayInCairo(w.db);
+    const rows = await invoiceRegisterData(w.db, w.ctx, { from: today, to: today });
+    expect(rows.length).toBeGreaterThan(3);
+    expect(rows.every((r) => r.number && r.issueDate === today)).toBe(true);
+    const note = rows.find((r) => r.type === 'credit_note')!;
+    expect(note.credits).toMatch(/^INV-/);
+    const usd = rows.find((r) => r.currency === 'USD' && r.type === 'invoice')!;
+    expect(usd.baseTotal).toBeGreaterThan(usd.total);
+    const register = await requestInvoiceRegister(w.db, w.ctx, { from: today, to: today });
+    const reg = await owner().query(
+      `select kind, format, entity, params from vs.document where id = $1`,
+      [register.documentId],
+    );
+    expect(reg.rows[0]).toMatchObject({
+      kind: 'invoice_register',
+      format: 'xlsx',
+      entity: 'operator',
+    });
   });
 
   it('locks numbering once a series has been issued', async () => {

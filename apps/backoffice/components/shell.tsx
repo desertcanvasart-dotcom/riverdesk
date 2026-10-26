@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Tags,
   Users,
+  ReceiptText,
   Wallet,
   X,
   type LucideIcon,
@@ -47,6 +48,7 @@ type Key =
   | 'vacancy'
   | 'fleet'
   | 'schedule'
+  | 'invoices'
   | 'rates'
   | 'channels'
   | 'settings'
@@ -77,6 +79,7 @@ const SECTIONS: { key: string | null; items: Item[] }[] = [
       { key: 'bookings', href: '/bookings', icon: BookOpen },
       { key: 'requests', href: '/requests', icon: Inbox },
       { key: 'payments', href: '/payments', icon: Wallet },
+      { key: 'invoices', href: '/invoices', icon: ReceiptText },
     ],
   },
   {

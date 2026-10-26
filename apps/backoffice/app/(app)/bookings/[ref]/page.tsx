@@ -9,6 +9,7 @@ import { serverCaller } from '../../../../server/caller';
 import { AmendPanel } from './amend-panel';
 import { CancelPanel } from './cancel-panel';
 import { GuestsEditor } from './guests-editor';
+import { InvoicesCard } from './invoices-card';
 import { PaymentActions } from './payment-actions';
 
 export default async function BookingPage({ params }: { params: Promise<{ ref: string }> }) {
@@ -199,6 +200,16 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
           )}
         </Card>
 
+        {profile.permissions.includes('read') && (
+          <div className="lg:col-span-2">
+            <InvoicesCard
+              bookingId={booking.id}
+              status={booking.status}
+              canDraft={canWrite}
+              canFinance={canPay}
+            />
+          </div>
+        )}
         {canDocuments && ['confirmed', 'held', 'completed'].includes(booking.status) && (
           <Card title={td('title')} className="lg:col-span-2">
             <DocumentButtons
