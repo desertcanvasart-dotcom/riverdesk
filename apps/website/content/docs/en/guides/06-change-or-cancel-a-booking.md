@@ -96,7 +96,7 @@ If the guest paid more than the penalty and any fees kept, the booking shows **R
 
 ## What channels are told
 
-- **Connected platforms**, such as nilecrz, are told automatically when one of their bookings is changed or cancelled, and when free cabins change because of it. Their system reads the new booking and updates the guest.
+- **Connected platforms**, such as booking engines, online travel agencies or nilecrz, are told automatically when one of their bookings is changed or cancelled, and when free cabins change because of it. Their system reads the new booking and updates the guest.
 - **Agencies that are not connected** learn nothing by themselves. Send them the new **Voucher (agency copy, no prices)** from **Documents** after a change, or confirm the cancellation and the penalty in writing.
 - **Direct guests** need a new **Voucher** after a change, and the **Payment schedule** if the amount due changed.
 

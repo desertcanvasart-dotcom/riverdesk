@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { pageMetadata } from '../../../lib/metadata';
 import { DemoButtons } from '../../../components/cta';
 import { PageHero } from '../../../components/page-hero';
 import { Screen } from '../../../components/screen';
@@ -43,7 +44,7 @@ const DOC: Record<string, [string, LucideIcon]> = {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'features' });
-  return { title: t('title'), description: t('intro') };
+  return pageMetadata({ locale, path: '/features', title: t('title'), description: t('intro') });
 }
 
 export default async function Features({ params }: { params: Promise<{ locale: string }> }) {

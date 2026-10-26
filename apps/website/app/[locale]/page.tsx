@@ -2,36 +2,113 @@ import {
   ArrowRight,
   BellRing,
   CalendarCheck2,
+  ChevronDown,
   CircleAlert,
   Compass,
   Copy,
   FileStack,
   FileText,
+  Handshake,
+  KeyRound,
   Languages,
   LockKeyhole,
   Network,
   PhoneCall,
   ShieldCheck,
+  SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { DemoButtons, Kicker, secondaryButton } from '../../components/cta';
+import { DemoButtons, Kicker, primaryButton, secondaryButton } from '../../components/cta';
+import { FoundingPoints } from '../../components/founding';
 import { Screen } from '../../components/screen';
 import { Link } from '../../i18n/routing';
+import { pageMetadata } from '../../lib/metadata';
+import { site } from '../../lib/site';
 
 type Item = { title: string; text: string };
 type Stat = { value: string; label: string };
+type Question = { q: string; a: string };
 
 const PROBLEM_ICONS: LucideIcon[] = [Copy, CircleAlert, FileStack];
 const PILLAR_ICONS: LucideIcon[] = [ShieldCheck, PhoneCall, Network, Languages, FileText, BellRing];
+const CHARTER_ICONS: LucideIcon[] = [KeyRound, LockKeyhole, SlidersHorizontal, Handshake];
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  return pageMetadata({
+    locale,
+    path: '',
+    title: t('title'),
+    description: t('description'),
+    absoluteTitle: true,
+  });
+}
+
+/** Organization, SoftwareApplication and FAQPage structured data, in the page's language. */
+async function structuredData(locale: string) {
+  const meta = await getTranslations({ locale, namespace: 'meta' });
+  const founding = await getTranslations({ locale, namespace: 'founding' });
+  const faq = await getTranslations({ locale, namespace: 'faq' });
+  const url = `${site.siteUrl}/${locale}`;
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': `${site.siteUrl}/#organization`,
+      name: 'Riverdesk',
+      url: site.siteUrl,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'Riverdesk',
+      url,
+      description: meta('description'),
+      inLanguage: locale,
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      publisher: { '@id': `${site.siteUrl}/#organization` },
+      offers: {
+        '@type': 'Offer',
+        name: founding('title'),
+        description: founding('text'),
+        price: '0',
+        priceCurrency: 'USD',
+        url: `${url}/pilot`,
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      inLanguage: locale,
+      mainEntity: (faq.raw('items') as Question[]).map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ];
+}
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('home');
+  const f = await getTranslations('founding');
+  const charter = await getTranslations('charter');
+  const faq = await getTranslations('faq');
   const num = (n: number) => n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en');
   return (
     <>
+      <script
+        type="application/ld+json"
+        // JSON.stringify output, with < escaped so no string can close the script tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(await structuredData(locale)).replace(/</g, '\\u003c'),
+        }}
+      />
       <section className="band-deep relative overflow-hidden">
         <div className="band-waves absolute inset-0" aria-hidden />
         <div className="container-site relative grid items-center gap-12 pt-16 pb-28 lg:grid-cols-[1fr_1.15fr] lg:pt-24 lg:pb-36">
@@ -47,7 +124,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               {t('subtitle')}
             </p>
             <div className="mt-9">
-              <DemoButtons dark />
+              <DemoButtons second="video" dark />
             </div>
           </div>
           <div className="relative">
@@ -79,7 +156,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               >
                 <dt className="sr-only">{s.label}</dt>
                 <dd>
-                  <span className="block text-3xl font-bold tracking-tight text-brand">
+                  <span
+                    className={`block font-bold tracking-tight text-brand ${
+                      s.value.length > 12 ? 'text-xl leading-snug' : 'text-3xl'
+                    }`}
+                  >
                     {s.value}
                   </span>
                   <span className="mt-1 block text-sm leading-snug text-muted">{s.label}</span>
@@ -174,6 +255,25 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
       </section>
 
+      <section id="founding" className="container-site pb-24">
+        <div className="grid gap-10 rounded-3xl border border-line bg-brand-soft/50 p-6 sm:p-10 lg:grid-cols-[1.1fr_1fr] lg:p-12">
+          <div>
+            <Kicker>{f('kicker')}</Kicker>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+              {f('title')}
+            </h2>
+            <p className="mt-5 text-lg leading-relaxed text-muted">{f('text')}</p>
+            <Link href="/pilot" className={`${primaryButton} mt-8`}>
+              {f('cta')}
+              <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+            </Link>
+          </div>
+          <div className="rounded-2xl bg-surface p-6 shadow-[var(--shadow-card)] sm:p-8">
+            <FoundingPoints />
+          </div>
+        </div>
+      </section>
+
       <section className="border-y border-line bg-surface py-24">
         <div className="container-site grid items-center gap-12 lg:grid-cols-2">
           <div className="lg:order-2">
@@ -228,7 +328,43 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         </div>
       </section>
 
-      <section className="container-site">
+      <section className="border-y border-line bg-surface py-24">
+        <div className="container-site">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div className="max-w-2xl">
+              <Kicker>{charter('kicker')}</Kicker>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+                {charter('homeTitle')}
+              </h2>
+            </div>
+            <Link
+              href="/charter"
+              className="inline-flex items-center gap-2 font-semibold text-brand hover:underline"
+            >
+              {charter('homeLink')}
+              <ArrowRight aria-hidden className="size-4 rtl:-scale-x-100" />
+            </Link>
+          </div>
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {(charter.raw('points') as string[]).slice(0, 4).map((point, i) => {
+              const Icon = CHARTER_ICONS[i]!;
+              return (
+                <li
+                  key={point}
+                  className="rounded-2xl border border-line bg-bg p-6 shadow-[var(--shadow-card)]"
+                >
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-brand-soft text-brand">
+                    <Icon aria-hidden className="size-5" />
+                  </span>
+                  <p className="mt-4 leading-relaxed">{point}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      <section className="container-site mt-24">
         <Link
           href="/docs"
           className="group flex flex-col items-start gap-6 rounded-3xl border border-line bg-sand-soft/60 p-8 transition hover:border-sand sm:flex-row sm:items-center sm:p-10"
@@ -248,6 +384,29 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             />
           </span>
         </Link>
+      </section>
+
+      <section className="container-site mt-24">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
+          <div>
+            <Kicker>{faq('kicker')}</Kicker>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{faq('title')}</h2>
+          </div>
+          <div className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-[var(--shadow-card)]">
+            {(faq.raw('items') as Question[]).map((item) => (
+              <details key={item.q} className="group px-6 py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                  <ChevronDown
+                    aria-hidden
+                    className="size-5 shrink-0 text-muted transition group-open:rotate-180"
+                  />
+                </summary>
+                <p className="mt-3 leading-relaxed text-muted">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="container-site mt-24">

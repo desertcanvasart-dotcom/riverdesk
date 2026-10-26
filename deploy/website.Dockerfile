@@ -1,4 +1,5 @@
-# Riverdesk public website (apps/website): static pages served by next start.
+# Riverdesk public website (apps/website): static pages served by next start, plus the
+# /pilot form, which stores requests through the vs_website database role.
 FROM node:22-bookworm-slim
 RUN corepack enable
 WORKDIR /repo
@@ -9,7 +10,13 @@ RUN pnpm install --frozen-lockfile --filter @vs/website...
 # variables of the same name as build arguments.
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_API_DOCS_URL
-ARG NEXT_PUBLIC_CONTACT_EMAIL
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_WHATSAPP_NUMBER
+ARG NEXT_PUBLIC_FOUNDING_SEATS
+ARG NEXT_PUBLIC_DEMO_VIDEO_URL_AR
+ARG NEXT_PUBLIC_DEMO_VIDEO_URL_EN
+ARG NEXT_PUBLIC_DEMO_VIDEO_CAPTIONS_AR
+ARG NEXT_PUBLIC_DEMO_VIDEO_CAPTIONS_EN
 ENV NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production
 RUN pnpm --filter @vs/website build
 WORKDIR /repo/apps/website

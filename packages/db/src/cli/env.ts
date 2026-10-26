@@ -10,6 +10,7 @@ export function adminOptions() {
       vs_backoffice: required(config, 'VS_BACKOFFICE_PASSWORD'),
       vs_api: required(config, 'VS_API_PASSWORD'),
       vs_worker: required(config, 'VS_WORKER_PASSWORD'),
+      vs_website: required(config, 'VS_WEBSITE_PASSWORD'),
     },
   };
 }

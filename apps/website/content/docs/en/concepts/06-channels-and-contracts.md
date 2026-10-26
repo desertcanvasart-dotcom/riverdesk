@@ -7,12 +7,12 @@ summary: The terms each agency or platform sells under.
 
 A **channel** is anyone who sells your cabins:
 
-| Type        | Example                                   |
-| ----------- | ----------------------------------------- |
-| Back office | Your own office: phone, WhatsApp, walk-in |
-| Agent       | A travel agency                           |
-| Portal      | An online platform such as nilecrz        |
-| API         | Another system connecting directly        |
+| Type        | Example                                                                  |
+| ----------- | ------------------------------------------------------------------------ |
+| Back office | Your own office: phone, WhatsApp, walk-in                                |
+| Agent       | A travel agency                                                          |
+| Portal      | An online platform: a booking engine, an online travel agency or nilecrz |
+| API         | Another system connecting directly                                       |
 
 Each channel has a **contract** per vessel saying:
 

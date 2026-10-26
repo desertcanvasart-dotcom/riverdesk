@@ -64,7 +64,7 @@ export function Header() {
           </Link>
           <a
             href={site.appUrl}
-            className="hidden items-center gap-1 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-bg shadow-sm hover:opacity-90 sm:inline-flex"
+            className="hidden items-center gap-1 rounded-full border border-line px-4 py-2 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-ink sm:inline-flex"
           >
             {t('signIn')}
             <ArrowUpRight aria-hidden className="size-4 rtl:-scale-x-100" />
@@ -92,10 +92,7 @@ export function Header() {
                 {t(key)}
               </Link>
             ))}
-            <a
-              href={site.appUrl}
-              className="rounded-lg px-2 py-3 text-base font-semibold text-brand"
-            >
+            <a href={site.appUrl} className="rounded-lg px-2 py-3 text-base text-muted">
               {t('signIn')}
             </a>
           </div>

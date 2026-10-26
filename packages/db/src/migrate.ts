@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { runMigrations as runGraphileMigrations } from 'graphile-worker';
-import { bootstrap, OWNER_ROLE, RUNTIME_ROLES, type RuntimeRoleName } from './bootstrap';
+import { bootstrap, LOGIN_ROLES, OWNER_ROLE, type LoginRoleName } from './bootstrap';
 
 export const MIGRATIONS_DIR = fileURLToPath(new URL('../migrations', import.meta.url));
 
@@ -13,7 +13,7 @@ const LOCK_KEY = 7_302_026; // advisory lock: one migration run at a time
 export interface MigrateOptions {
   adminUrl: string;
   ssl?: boolean;
-  passwords: Record<RuntimeRoleName, string>;
+  passwords: Record<LoginRoleName, string>;
   log?: (message: string) => void;
 }
 
@@ -96,7 +96,7 @@ export async function migrate(options: MigrateOptions): Promise<string[]> {
 async function canLogIn(
   adminUrl: string,
   ssl: pg.ConnectionConfig['ssl'],
-  role: RuntimeRoleName,
+  role: LoginRoleName,
   password: string,
 ): Promise<boolean> {
   const url = new URL(adminUrl);
@@ -153,7 +153,7 @@ async function installGraphileWorker(adminUrl: string, ssl: pg.ConnectionConfig[
       grant select, insert, update, delete on all tables in schema graphile_worker to vs_worker;
       grant usage, select on all sequences in schema graphile_worker to vs_worker;
       grant execute on all functions in schema graphile_worker to vs_worker;
-      revoke all on all tables in schema graphile_worker from ${RUNTIME_ROLES.filter((r) => r !== 'vs_worker').join(', ')};
+      revoke all on all tables in schema graphile_worker from ${LOGIN_ROLES.filter((r) => r !== 'vs_worker').join(', ')};
     `);
   } finally {
     await pool.end();

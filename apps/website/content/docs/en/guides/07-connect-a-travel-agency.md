@@ -23,7 +23,7 @@ Every agency that sells your cabins is a **channel** in Riverdesk, with a **cont
    ![Channels](/screens/{locale}/guide-channels.jpg 'The Channels screen: each channel with its contracts, allotments, API clients and webhooks')
 
 2. **Fill in Name, Code and Type.**
-   Name: _Aswan Tours_. Code: a short code such as `ASWT`, used in lists and reports. Type: **Agent** for a travel agency, **Portal** for an online platform such as nilecrz, **API** for another system that connects directly.
+   Name: _Aswan Tours_. Code: a short code such as `ASWT`, used in lists and reports. Type: **Agent** for a travel agency, **Portal** for an online platform (a booking engine, an online travel agency or nilecrz), **API** for another system that connects directly.
 
 3. **Enter a Credit limit if the agency pays later.**
    This is the most the agency may owe you at any time. Leave it empty if the agency never books on credit.
@@ -82,7 +82,7 @@ If the contract is an allotment, give the agency its cabins.
 
 ## Connect an online platform
 
-A platform such as nilecrz connects its own system to Riverdesk, so it checks availability, holds and books by itself. Set up the channel and contract as above, with type **Portal** or **API**, then:
+A platform such as a booking engine, an online travel agency or nilecrz connects its own system to Riverdesk, so it checks availability, holds and books by itself. Set up the channel and contract as above, with type **Portal** or **API**, then:
 
 1. **Press New API client and give it a name.**
    Riverdesk creates a _Client ID_ and a secret. The secret is shown once, with a **Copy** button. Send it to the platform's developers through a safe route, never in a group chat.

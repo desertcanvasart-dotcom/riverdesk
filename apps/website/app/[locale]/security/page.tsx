@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { pageMetadata } from '../../../lib/metadata';
 import { PageHero } from '../../../components/page-hero';
 
 type Item = { title: string; text: string };
@@ -28,7 +29,7 @@ const ICONS: LucideIcon[] = [
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'security' });
-  return { title: t('title'), description: t('intro') };
+  return pageMetadata({ locale, path: '/security', title: t('title'), description: t('intro') });
 }
 
 export default async function Security({ params }: { params: Promise<{ locale: string }> }) {

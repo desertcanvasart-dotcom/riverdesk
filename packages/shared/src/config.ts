@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 
-export type RuntimeRole = 'vs_backoffice' | 'vs_api' | 'vs_worker';
+export type RuntimeRole = 'vs_backoffice' | 'vs_api' | 'vs_worker' | 'vs_website';
 
 const boolish = z
   .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
@@ -37,6 +37,8 @@ export const envSchema = z.object({
   VS_BACKOFFICE_PASSWORD: z.string().min(8).optional(),
   VS_API_PASSWORD: z.string().min(8).optional(),
   VS_WORKER_PASSWORD: z.string().min(8).optional(),
+  /** The public website: may only submit pilot requests. */
+  VS_WEBSITE_PASSWORD: z.string().min(8).optional(),
 
   SUPABASE_URL: z.url().optional(),
   SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
@@ -111,6 +113,7 @@ const PASSWORD_KEY: Record<RuntimeRole, keyof Config> = {
   vs_backoffice: 'VS_BACKOFFICE_PASSWORD',
   vs_api: 'VS_API_PASSWORD',
   vs_worker: 'VS_WORKER_PASSWORD',
+  vs_website: 'VS_WEBSITE_PASSWORD',
 };
 
 export interface PgConnection {

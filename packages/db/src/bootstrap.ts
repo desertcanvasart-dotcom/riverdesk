@@ -4,6 +4,11 @@ import { scramVerifier } from './scram';
 export const OWNER_ROLE = 'vs_owner';
 export const RUNTIME_ROLES = ['vs_backoffice', 'vs_api', 'vs_worker'] as const;
 export type RuntimeRoleName = (typeof RUNTIME_ROLES)[number];
+/** The public website: no tenant data at all, only vs.submit_pilot_request. */
+export const WEBSITE_ROLE = 'vs_website';
+/** Every role that logs in: the tenant runtime roles and the website. */
+export const LOGIN_ROLES = [...RUNTIME_ROLES, WEBSITE_ROLE] as const;
+export type LoginRoleName = (typeof LOGIN_ROLES)[number];
 
 /**
  * Cluster-level setup that must run as the admin user (postgres), not as vs_owner:
@@ -15,8 +20,8 @@ export type RuntimeRoleName = (typeof RUNTIME_ROLES)[number];
  */
 export async function bootstrap(
   client: pg.ClientBase,
-  passwords: Record<RuntimeRoleName, string>,
-  canLogIn: (role: RuntimeRoleName, password: string) => Promise<boolean> = async () => false,
+  passwords: Record<LoginRoleName, string>,
+  canLogIn: (role: LoginRoleName, password: string) => Promise<boolean> = async () => false,
 ): Promise<void> {
   await client.query(`
     do $$
@@ -24,7 +29,7 @@ export async function bootstrap(
       if not exists (select from pg_roles where rolname = '${OWNER_ROLE}') then
         create role ${OWNER_ROLE} nologin;
       end if;
-      ${RUNTIME_ROLES.map(
+      ${LOGIN_ROLES.map(
         (role) => `
       if not exists (select from pg_roles where rolname = '${role}') then
         create role ${role} login;
@@ -34,7 +39,7 @@ export async function bootstrap(
     $$;
   `);
   await client.query(`alter role ${OWNER_ROLE} nologin nobypassrls nocreaterole nocreatedb`);
-  for (const role of RUNTIME_ROLES) {
+  for (const role of LOGIN_ROLES) {
     await client.query(`alter role ${role} login nobypassrls nocreaterole nocreatedb noinherit`);
     // Only set the password when the configured one does not work (new role, or rotated in the
     // env file). Re-setting it unchanged makes Supabase's pooler drop its cached credentials.
@@ -60,7 +65,7 @@ export async function bootstrap(
   try {
     await client.query(`revoke all on schema vs from public`);
     await client.query(`revoke all on schema graphile_worker from public`);
-    await client.query(`grant usage on schema vs to ${RUNTIME_ROLES.join(', ')}`);
+    await client.query(`grant usage on schema vs to ${LOGIN_ROLES.join(', ')}`);
   } finally {
     await client.query('reset role');
   }

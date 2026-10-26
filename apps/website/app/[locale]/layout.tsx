@@ -5,7 +5,9 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Footer } from '../../components/footer';
 import { Header } from '../../components/header';
+import { WhatsAppButton } from '../../components/whatsapp-button';
 import { routing } from '../../i18n/routing';
+import { site } from '../../lib/site';
 import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
@@ -23,10 +25,11 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
+  // Each page sets its own canonical link, hreflang alternates and Open Graph (lib/metadata).
   return {
+    metadataBase: new URL(site.siteUrl),
     title: { default: t('title'), template: `%s · Riverdesk` },
     description: t('description'),
-    alternates: { languages: { ar: '/ar', en: '/en' } },
   };
 }
 
@@ -53,6 +56,7 @@ export default async function LocaleLayout({
           <Header />
           <main>{children}</main>
           <Footer />
+          <WhatsAppButton />
         </NextIntlClientProvider>
       </body>
     </html>

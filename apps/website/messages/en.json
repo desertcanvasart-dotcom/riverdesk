@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Riverdesk · Reservations for Nile cruise companies",
-    "description": "Riverdesk runs a Nile cruise company's reservations: live availability, phone bookings in under a minute, agencies and online channels on one inventory, vouchers and manifests in Arabic and English. It never oversells."
+    "description": "Riverdesk runs a Nile cruise company's reservations: live availability, phone bookings in under a minute, agencies and online channels on one inventory, vouchers and manifests in Arabic and English. Built to prevent double bookings — with an automatic check every night."
   },
   "nav": {
     "features": "Features",
@@ -23,18 +23,24 @@
     "guides": "Step-by-step guides",
     "madeFor": "Made for the Nile, in Arabic and English.",
     "signIn": "Sign in",
-    "copyright": "© {year} Riverdesk. All rights reserved."
+    "copyright": "© {year} Riverdesk. All rights reserved.",
+    "charter": "Data Charter",
+    "pilot": "Founding Operator Program"
   },
   "cta": {
-    "demo": "Request a demo",
     "features": "See the features",
     "docs": "Read the docs",
-    "signIn": "Sign in to Riverdesk",
     "apiGuide": "Channel API guide",
     "apiReference": "Live API reference",
-    "demoSubject": "Riverdesk demo",
     "browseDocs": "Browse the docs",
-    "startGuide": "Getting started guide"
+    "startGuide": "Getting started guide",
+    "pilot": "Request a free pilot for your vessel",
+    "pilotShort": "Request a free pilot",
+    "video": "See it in 90 seconds",
+    "videoTitle": "Riverdesk in 90 seconds",
+    "close": "Close",
+    "whatsapp": "Chat with us on WhatsApp",
+    "whatsappMessage": "Hi, I'd like to know more about the Riverdesk Founding Operator Program."
   },
   "home": {
     "eyebrow": "For Nile cruise companies",
@@ -98,7 +104,7 @@
       }
     ],
     "channelsTitle": "Agencies and online platforms connect directly",
-    "channelsText": "Contracted agencies see live availability and book under their own terms. Platforms such as nilecrz use the Channel API — real-time availability, holds, bookings, amendments and signed webhooks — so nobody sells from a stale list.",
+    "channelsText": "Contracted agencies, booking engines and online platforms connect through the API, and every channel stays off until you switch it on.",
     "trustTitle": "Built for trust",
     "trust": [
       "Each company's data is isolated by the database itself",
@@ -111,8 +117,8 @@
     "finalText": "Set Riverdesk up yourself, guided step by step, or with us. Either way we import your existing future bookings.",
     "stats": [
       {
-        "value": "0",
-        "label": "cabins sold twice — checked every night"
+        "value": "Built to prevent double bookings",
+        "label": "with an automatic check every night"
       },
       {
         "value": "< 1 min",
@@ -332,5 +338,121 @@
     "apiRef": "Live API reference",
     "allPages": "All pages",
     "guide": "Guide"
+  },
+  "founding": {
+    "kicker": "Free for founding operators",
+    "title": "Founding Operator Program",
+    "text": "Riverdesk is free for founding operators. Send us your latest availability sheet and rate sheet, and we'll set up your vessel with all its sailings within 48 hours and import your existing bookings. Keep working your current way in parallel for 30 days, with no commitment.",
+    "points": [
+      "We build your account from the sheet you send.",
+      "We import your existing future bookings.",
+      "30 days side by side with Excel, with no risk.",
+      "A direct WhatsApp line to the founder.",
+      "Every sales channel stays off until you turn it on."
+    ],
+    "cta": "Request a free pilot",
+    "seats": "Limited to {seats} founding vessels"
+  },
+  "charter": {
+    "kicker": "Data Charter",
+    "title": "Operator Data Charter",
+    "intro": "Six commitments Riverdesk makes to every operator that uses it.",
+    "homeTitle": "Your inventory, your rules",
+    "homeLink": "Read the full Data Charter",
+    "points": [
+      "Your vessel data and bookings are yours. Export everything, any time.",
+      "Every sales channel is off by default. None is enabled without your decision.",
+      "You decide what each channel sees: cabins, rates, terms.",
+      "Riverdesk is run by the team behind nilecrz. nilecrz receives no preferential rates, no exclusivity and no rate-parity demands.",
+      "We never share your data or rates with any other vessel or company.",
+      "Passport numbers are encrypted; each company's data is isolated at the database level."
+    ]
+  },
+  "faq": {
+    "kicker": "Questions",
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Why is Riverdesk free?",
+        "a": "Riverdesk is built by the team behind nilecrz, a Nile cruise marketplace. We want Nile inventory to be accurate and bookable everywhere. The core stays free; nilecrz is one optional channel among many, with no preferential terms."
+      },
+      {
+        "q": "Who owns my data?",
+        "a": "You do. Export everything at any time."
+      },
+      {
+        "q": "Can I keep using Excel?",
+        "a": "Yes. Run both side by side for 30 days."
+      },
+      {
+        "q": "How long does setup take?",
+        "a": "We set up your vessel within 48 hours of receiving your availability and rate sheets. Your team learns it in about an hour."
+      },
+      {
+        "q": "Does it work on mobile?",
+        "a": "Yes, every daily task works from a phone."
+      }
+    ]
+  },
+  "pilot": {
+    "kicker": "Founding Operator Program",
+    "title": "Request a free pilot for your vessel",
+    "formTitle": "Your request",
+    "required": "required",
+    "choose": "Choose…",
+    "fields": {
+      "fullName": "Full name",
+      "company": "Company name",
+      "vessels": "Vessel name(s)",
+      "vesselsHint": "Separate names with commas if you have more than one vessel.",
+      "vesselCount": "Number of vessels",
+      "vesselType": "Vessel type",
+      "whatsapp": "WhatsApp number",
+      "whatsappHint": "An Egyptian number such as 01001234567, or an international number starting with +",
+      "email": "Email (optional)",
+      "homePort": "Home port",
+      "currentTool": "How do you manage reservations today?",
+      "message": "Message (optional)",
+      "consent": "I agree that the Riverdesk team may contact me about the pilot"
+    },
+    "options": {
+      "vesselCount": {
+        "1": "1",
+        "2-4": "2–4",
+        "5+": "5+"
+      },
+      "vesselType": {
+        "cruise": "Cruise ship",
+        "dahabiya": "Dahabiya",
+        "both": "Both"
+      },
+      "homePort": {
+        "luxor": "Luxor",
+        "aswan": "Aswan",
+        "cairo": "Cairo",
+        "other": "Other"
+      },
+      "currentTool": {
+        "excel": "Excel",
+        "whatsapp": "WhatsApp",
+        "paper": "Paper",
+        "other_system": "Another system",
+        "other": "Other"
+      }
+    },
+    "submit": "Send request",
+    "sending": "Sending…",
+    "errors": {
+      "required": "This field is required.",
+      "whatsapp": "Enter a valid WhatsApp number.",
+      "email": "Enter a valid email address.",
+      "consent": "Please tick the box to continue.",
+      "rateLimited": "Too many requests in a short time. Please try again later or message us on WhatsApp.",
+      "failed": "We couldn't send your request. Please try again or message us on WhatsApp."
+    },
+    "successTitle": "We've received your request",
+    "successText": "The Riverdesk team will be in touch soon. Next step: send us your latest availability sheet and rate sheet on WhatsApp.",
+    "successCta": "Send your sheets on WhatsApp",
+    "privacy": "We use your details only to contact you about the pilot, and never share them with anyone else."
   }
 }

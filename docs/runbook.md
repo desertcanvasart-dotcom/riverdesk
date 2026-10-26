@@ -161,6 +161,7 @@ The contract is `packages/contracts/openapi.yaml`. The running API serves it at 
 | `vs_backoffice` | yes   | apps/backoffice             | RLS; may call `vs.resolve_staff`                                                 |
 | `vs_api`        | yes   | apps/api                    | RLS                                                                              |
 | `vs_worker`     | yes   | apps/worker                 | RLS; may call `vs.list_operator_ids`; only role with access to `graphile_worker` |
+| `vs_website`    | yes   | apps/website                | no table rights; may only call `vs.submit_pilot_request`                         |
 
 Rotate a runtime password: change it in the env file, then run `pnpm db:migrate`. Bootstrap sets the password on every run.
 
@@ -217,17 +218,22 @@ Tick each line, with a date and initials, before the pilot vessel takes its firs
 
 ## Public website (`apps/website`)
 
-The public homepage and docs: Home, Features, For agencies & channels, Security, and Docs in four sections. Arabic (`/ar`, the default) and English (`/en`). It has no database and no login, and every page is rendered to static HTML at build time.
+The public homepage and docs: Home, Features, For agencies & channels, Security, Data Charter, the Founding Operator Program form (`/pilot`), and Docs. Arabic (`/ar`, the default) and English (`/en`). It has no login, and every page is rendered to static HTML at build time. Its only server code is `POST /api/pilot`, which stores a request in `platform.pilot_request` through the `vs_website` role and emails it to `PILOT_NOTIFY_EMAIL`. Read requests as `vs_owner`: `select * from platform.pilot_request order by created_at desc`.
 
 ```bash
 pnpm --filter @vs/website dev        # http://localhost:3200
 ```
 
-| Setting                     | What it does                                             | Default                      |
-| --------------------------- | -------------------------------------------------------- | ---------------------------- |
-| `NEXT_PUBLIC_APP_URL`       | "Sign in" goes here (the back office)                    | `http://localhost:3100`      |
-| `NEXT_PUBLIC_API_DOCS_URL`  | "Live API reference"                                     | `http://localhost:4000/docs` |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | "Request a demo" opens an email to it; hidden when unset | unset                        |
+| Setting                                      | What it does                                                             | Default                      |
+| -------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------- |
+| `NEXT_PUBLIC_APP_URL`                        | "Sign in" goes here (the back office)                                    | `http://localhost:3100`      |
+| `NEXT_PUBLIC_API_DOCS_URL`                   | "Live API reference"                                                     | `http://localhost:4000/docs` |
+| `NEXT_PUBLIC_SITE_URL`                       | canonical links, hreflang and Open Graph                                 | `http://localhost:3200`      |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER`                | the floating WhatsApp button and the form's next step; hidden when unset | unset                        |
+| `NEXT_PUBLIC_FOUNDING_SEATS`                 | "Limited to N founding vessels"                                          | `20`                         |
+| `NEXT_PUBLIC_DEMO_VIDEO_URL_AR` / `_EN`      | "See it in 90 seconds" plays it; hidden when unset                       | unset                        |
+| `NEXT_PUBLIC_DEMO_VIDEO_CAPTIONS_AR` / `_EN` | `.vtt` captions for the video                                            | unset                        |
+| `PILOT_NOTIFY_EMAIL`                         | where new pilot requests are emailed (with `SMTP_URL`)                   | unset                        |
 
 - **Docs** are Markdown files in `apps/website/content/docs/<ar|en>/<section>/NN-slug.md`, with a `title` and `summary` in the front matter. English defines the pages and their order. An Arabic page that is missing falls back to English, with a notice. Links are written without the language (`/docs/staff-guide/today`) and keep the reader's.
 - **Screenshots** in `public/screens/<locale>/` come from the demo company. Refresh them after screen changes, with the back office running: `pnpm --filter @vs/backoffice website-shots`.

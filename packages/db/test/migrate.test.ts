@@ -11,6 +11,7 @@ describe('migration runner', () => {
         vs_backoffice: config.VS_BACKOFFICE_PASSWORD!,
         vs_api: config.VS_API_PASSWORD!,
         vs_worker: config.VS_WORKER_PASSWORD!,
+        vs_website: config.VS_WEBSITE_PASSWORD!,
       },
     });
     expect(applied).toEqual([]);

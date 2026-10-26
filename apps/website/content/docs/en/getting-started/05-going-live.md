@@ -14,7 +14,7 @@ Bookings you already have are imported from a spreadsheet saved as CSV. Use the 
 | Column                                  | Meaning                                                    | Example                   |
 | --------------------------------------- | ---------------------------------------------------------- | ------------------------- |
 | `external_ref`                          | Your booking number                                        | `OLD-1002`                |
-| `channel_code`                          | Blank for a direct booking, or the agency's code           | `nilecrz`                 |
+| `channel_code`                          | Blank for a direct booking, or the agency's code           | `ASWT`                    |
 | `vessel_code`, `itinerary`              | As shown on the Schedule screen                            | `NILEDEMO`, `LXR-7`       |
 | `embark_date`                           | Year-month-day                                             | `2026-12-07`              |
 | `market`                                | `international` or `egyptian_resident`                     | `international`           |
@@ -43,7 +43,7 @@ Before the first real booking, the Riverdesk team goes through this with you:
 - **Alerts** reach the office when something needs attention.
 - **The nightly outage pack** arrives in your operations inbox.
 - **Documents** print correctly in Arabic and English.
-- **Online platforms** (such as nilecrz) have tested their connection on a test company.
+- **Online platforms** (booking engines, online travel agencies, nilecrz) have tested their connection on a test company.
 - **The import** has been checked with your reservations manager.
 - **Staff** have each taken a phone booking, answered a request, recorded a payment and printed a voucher.
 - **The Pilot dashboard** shows all checks passing and no oversells.

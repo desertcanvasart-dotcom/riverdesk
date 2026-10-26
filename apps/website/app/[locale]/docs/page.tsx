@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowUpRight, Code2, Timer, UserRound } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { pageMetadata } from '../../../lib/metadata';
 import { SECTION_ICON } from '../../../components/doc-icons';
 import { DocsSearch } from '../../../components/docs-search';
 import { Link } from '../../../i18n/routing';
@@ -10,7 +11,7 @@ import { site } from '../../../lib/site';
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'docs' });
-  return { title: t('title'), description: t('intro') };
+  return pageMetadata({ locale, path: '/docs', title: t('title'), description: t('intro') });
 }
 
 /** Where a new company starts reading, in order. */

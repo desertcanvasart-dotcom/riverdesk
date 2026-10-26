@@ -85,15 +85,21 @@ Open each service → **Variables → Raw editor**, and paste the names below wi
 | `DATABASE_SESSION_PORT` | from `.env.hosted` (5432)                      |
 | `SMTP_URL`, `MAIL_FROM` | later, once the mail account exists (optional) |
 
-### Only on `website` (nothing secret)
+### Only on `website`
 
-| Name                        | Value                                                                       |
-| --------------------------- | --------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_APP_URL`       | the back office's public address, e.g. `https://app.riverdsk.com`           |
-| `NEXT_PUBLIC_API_DOCS_URL`  | the API's address followed by `/docs`, e.g. `https://api.riverdsk.com/docs` |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | the demo-request address (optional)                                         |
+| Name                                          | Value                                                                       |
+| --------------------------------------------- | --------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`                        | the website's own address, e.g. `https://www.riverdsk.com`                  |
+| `NEXT_PUBLIC_APP_URL`                         | the back office's public address, e.g. `https://app.riverdsk.com`           |
+| `NEXT_PUBLIC_API_DOCS_URL`                    | the API's address followed by `/docs`, e.g. `https://api.riverdsk.com/docs` |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER`                 | WhatsApp number in international format, e.g. `201001234567`                |
+| `NEXT_PUBLIC_FOUNDING_SEATS`                  | founding vessels on offer (default 20)                                      |
+| `NEXT_PUBLIC_DEMO_VIDEO_URL_AR` / `_EN`       | the 90-second demo video (optional; the button is hidden until set)         |
+| `NEXT_PUBLIC_DEMO_VIDEO_CAPTIONS_AR` / `_EN`  | its `.vtt` captions (optional)                                              |
+| `VS_WEBSITE_PASSWORD`                         | from `.env.hosted` (secret; stores pilot requests)                          |
+| `SMTP_URL`, `MAIL_FROM`, `PILOT_NOTIFY_EMAIL` | mail for new pilot requests (optional; requests are stored either way)      |
 
-The website bakes these into its pages, so after changing one, **redeploy** the website.
+The website bakes the `NEXT_PUBLIC_…` values into its pages, so after changing one, **redeploy** the website.
 
 **Do not** add `DATABASE_URL_ADMIN`, `SEED_STAFF_PASSWORD` or `SEED_TOTP_SECRET` to any service. They are for setup from your Mac only.
 

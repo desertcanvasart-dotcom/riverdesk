@@ -7,7 +7,7 @@ summary: Agencies and platforms, their contracts, allotments, API keys and webho
 
 ![Channels](/screens/{locale}/desktop-channels.jpg)
 
-A **channel** is anyone who sells your cabins: your own office (_back office_), a travel agency, or an online platform such as nilecrz. Each channel has a **contract** per vessel. See [Channels and contracts](/docs/concepts/channels-and-contracts) for the ideas behind it.
+A **channel** is anyone who sells your cabins: your own office (_back office_), a travel agency, or an online platform such as a booking engine, an online travel agency or nilecrz. Each channel has a **contract** per vessel. See [Channels and contracts](/docs/concepts/channels-and-contracts) for the ideas behind it.
 
 ## The contract
 

@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { pageMetadata } from '../../../lib/metadata';
 import { PageHero } from '../../../components/page-hero';
 import { Screen } from '../../../components/screen';
 import { Link } from '../../../i18n/routing';
@@ -23,7 +24,7 @@ const PAYMENT_ICONS: LucideIcon[] = [Wallet, CreditCard, Handshake];
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'channels' });
-  return { title: t('title'), description: t('intro') };
+  return pageMetadata({ locale, path: '/channels', title: t('title'), description: t('intro') });
 }
 
 export default async function Channels({ params }: { params: Promise<{ locale: string }> }) {

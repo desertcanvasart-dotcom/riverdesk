@@ -33,6 +33,12 @@ export function Footer() {
           <Link href="/security" className={link}>
             {n('security')}
           </Link>
+          <Link href="/charter" className={link}>
+            {t('charter')}
+          </Link>
+          <Link href="/pilot" className={link}>
+            {t('pilot')}
+          </Link>
         </div>
         <div className={col}>
           <span className="mb-1 text-xs font-semibold tracking-wider text-white/45 uppercase">

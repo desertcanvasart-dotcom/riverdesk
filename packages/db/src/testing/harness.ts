@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import { pgErrorCode } from '@vs/shared';
-import { RUNTIME_ROLES, type RuntimeRoleName } from '../bootstrap';
+import { LOGIN_ROLES, RUNTIME_ROLES, type LoginRoleName, type RuntimeRoleName } from '../bootstrap';
 import { owner, roleClient } from './env';
 import { TENANT_FIXTURES, type Fixture } from './fixtures';
 
@@ -9,7 +9,7 @@ import { TENANT_FIXTURES, type Fixture } from './fixtures';
 export const NON_TENANT_TABLES: readonly string[] = [];
 
 /** The only SECURITY DEFINER functions allowed in schema vs, and the one role that may call each. */
-export const SECURITY_DEFINER_ALLOWLIST: Record<string, RuntimeRoleName[]> = {
+export const SECURITY_DEFINER_ALLOWLIST: Record<string, LoginRoleName[]> = {
   list_operator_ids: ['vs_worker'],
   resolve_staff: ['vs_backoffice'],
   claim_staff_invitation: ['vs_backoffice'],
@@ -19,6 +19,7 @@ export const SECURITY_DEFINER_ALLOWLIST: Record<string, RuntimeRoleName[]> = {
   platform_companies: ['vs_backoffice'],
   platform_create_company: ['vs_backoffice'],
   platform_reinvite_owner: ['vs_backoffice'],
+  submit_pilot_request: ['vs_website'],
 };
 
 export interface TenantTable {
@@ -259,9 +260,9 @@ export async function checkRolesAndDefiners(): Promise<string[]> {
             pg_has_role(r.rolname, 'vs_owner', 'MEMBER') as owner_member,
             (select count(*)::int from pg_class c where c.relowner = r.oid) as owns
      from pg_roles r where r.rolname = any($1)`,
-    [[...RUNTIME_ROLES]],
+    [[...LOGIN_ROLES]],
   );
-  if (roles.rows.length !== RUNTIME_ROLES.length) failures.push('a runtime role is missing');
+  if (roles.rows.length !== LOGIN_ROLES.length) failures.push('a runtime role is missing');
   for (const role of roles.rows) {
     if (role.rolsuper) failures.push(`${role.rolname} is a superuser`);
     if (role.rolbypassrls) failures.push(`${role.rolname} has BYPASSRLS`);
@@ -279,7 +280,7 @@ export async function checkRolesAndDefiners(): Promise<string[]> {
             array(select r from unnest($1::text[]) r where has_function_privilege(r, p.oid, 'EXECUTE')) as callers
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'vs' and p.prosecdef`,
-    [[...RUNTIME_ROLES, 'anon', 'authenticated']],
+    [[...LOGIN_ROLES, 'anon', 'authenticated']],
   );
   for (const fn of definers.rows) {
     const allowed = SECURITY_DEFINER_ALLOWLIST[fn.name];

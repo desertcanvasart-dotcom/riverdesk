@@ -47,6 +47,7 @@ const PASSWORD_KEY = {
   vs_backoffice: 'VS_BACKOFFICE_PASSWORD',
   vs_api: 'VS_API_PASSWORD',
   vs_worker: 'VS_WORKER_PASSWORD',
+  vs_website: 'VS_WEBSITE_PASSWORD',
 } as const;
 
 /** A raw client logged in as a runtime role, for statements the harness must control exactly. */

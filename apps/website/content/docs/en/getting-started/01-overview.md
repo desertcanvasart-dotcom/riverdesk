@@ -9,11 +9,11 @@ Riverdesk is the reservations system for a Nile cruise company. It keeps one exa
 
 ## Who uses what
 
-| Part                | Who                                                   | What for                                                                                                                                               |
-| ------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **The back office** | Owners, reservations staff, finance                   | The website your office works in every day: bookings, requests, availability, payments, documents                                                      |
-| **The Channel API** | Online platforms such as nilecrz, and larger agencies | Their own systems check availability and book directly, under their contract with you                                                                  |
-| **The worker**      | Nobody directly                                       | A background program that expires holds on time, returns unused allotments, sends updates to channels, prepares PDFs and checks the system every night |
+| Part                | Who                                                                                     | What for                                                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **The back office** | Owners, reservations staff, finance                                                     | The website your office works in every day: bookings, requests, availability, payments, documents                                                      |
+| **The Channel API** | Online platforms (booking engines, online travel agencies, nilecrz) and larger agencies | Their own systems check availability and book directly, under their contract with you                                                                  |
+| **The worker**      | Nobody directly                                                                         | A background program that expires holds on time, returns unused allotments, sends updates to channels, prepares PDFs and checks the system every night |
 
 You only ever see the back office. The other two parts work behind it.
 

@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Clock, Timer, UserRound } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { pageMetadata } from '../../../../lib/metadata';
 import { SECTION_ICON } from '../../../../components/doc-icons';
 import { DocToc } from '../../../../components/doc-toc';
 import { DocsSidebar } from '../../../../components/docs-sidebar';
@@ -23,7 +24,14 @@ export async function generateMetadata({ params }: { params: Params }) {
   const doc = SECTIONS.includes(slug[0] as Section)
     ? getDoc(locale, slug[0] as Section, slug[1] ?? '')
     : null;
-  return doc ? { title: doc.title, description: doc.summary } : {};
+  return doc
+    ? pageMetadata({
+        locale,
+        path: `/docs/${slug[0]}/${slug[1]}`,
+        title: doc.title,
+        description: doc.summary,
+      })
+    : {};
 }
 
 export default async function DocPage({ params }: { params: Params }) {

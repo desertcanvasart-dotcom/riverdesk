@@ -11,7 +11,14 @@ import type { DB } from './generated/types';
 
 export type { DB } from './generated/types';
 export * from './generated/types';
-export { OWNER_ROLE, RUNTIME_ROLES, type RuntimeRoleName } from './bootstrap';
+export {
+  LOGIN_ROLES,
+  OWNER_ROLE,
+  RUNTIME_ROLES,
+  WEBSITE_ROLE,
+  type LoginRoleName,
+  type RuntimeRoleName,
+} from './bootstrap';
 
 export type VsDatabase = Database<DB>;
 
