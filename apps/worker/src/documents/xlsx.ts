@@ -10,7 +10,7 @@ import { brandPalette } from '@vs/shared/color';
 
 const argb = (hex: string) => `FF${hex.slice(1).toUpperCase()}`;
 
-function sheet(workbook: ExcelJS.Workbook, name: string, locale: DocLocale) {
+export function sheet(workbook: ExcelJS.Workbook, name: string, locale: DocLocale) {
   // Sheet names are limited to 31 characters and may not contain / \ ? * [ ].
   const safe = name.replace(/[/\\?*[\]:]/g, '-').slice(0, 31);
   return workbook.addWorksheet(safe, {
@@ -18,7 +18,7 @@ function sheet(workbook: ExcelJS.Workbook, name: string, locale: DocLocale) {
   });
 }
 
-function header(
+export function header(
   workbook: ExcelJS.Workbook,
   ws: ExcelJS.Worksheet,
   brand: DocumentBrand,
@@ -63,7 +63,7 @@ function header(
   row.height = columns.some((col) => col.header.includes(' / ')) ? 30 : 20;
 }
 
-async function finish(workbook: ExcelJS.Workbook): Promise<Buffer> {
+export async function finish(workbook: ExcelJS.Workbook): Promise<Buffer> {
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 

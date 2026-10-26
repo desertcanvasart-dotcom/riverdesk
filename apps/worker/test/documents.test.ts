@@ -172,4 +172,35 @@ describe('documents (requested by staff, rendered by the worker)', () => {
     ).catch((e: unknown) => e);
     expect(result).toMatchObject({ code: 'NOT_FOUND' });
   });
+
+  it('exports an Analytics tab to Excel, with money only when asked', async () => {
+    const from = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    const render = async (withMoney: boolean) => {
+      const file = await renderDocument(worker, ctx, {
+        id: 'analytics',
+        kind: 'analytics_export',
+        format: 'xlsx',
+        locale: 'en',
+        variant: withMoney ? 'full' : 'agent',
+        entityId: ctx.operatorId,
+        params: { report: 'channels', filter: { from, to: from }, withMoney },
+      });
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(file.content as unknown as ArrayBuffer);
+      return { file, workbook };
+    };
+    const plain = await render(false);
+    expect(plain.file.filename).toMatch(/^analytics-channels-.*-en\.xlsx$/);
+    expect(plain.workbook.worksheets.map((ws) => ws.name)).toEqual([
+      'Analytics- channels and markets',
+      'Markets',
+      'Nationalities',
+      'Allotments',
+    ]);
+    const headers = (wb: ExcelJS.Workbook) =>
+      (wb.worksheets[0]!.getRow(4).values as unknown[]).filter(Boolean);
+    expect(headers(plain.workbook)).not.toContain('Guest value');
+    expect(plain.workbook.worksheets[0]!.getRow(5).getCell(1).value).toBe('nilecrz');
+    expect(headers((await render(true)).workbook)).toContain('Guest value');
+  });
 });

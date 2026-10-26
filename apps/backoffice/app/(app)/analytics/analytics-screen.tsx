@@ -6,17 +6,34 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 import { HeatMap, LineChart, ShareBars } from '../../../components/charts';
 import { Card, Empty, Field, Input, Select, Table, Td, cx } from '../../../components/ui';
+import { useMarkets } from '../../../lib/markets';
+import {
+  BehaviourTab,
+  ChannelsTab,
+  ExportButton,
+  FilterField,
+  type BreakdownFilter,
+} from './analytics-breakdowns';
 import { formatDate, formatMoney, formatNumber } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 
-type Tab = 'overview' | 'occupancy';
+type Tab = 'overview' | 'occupancy' | 'channels' | 'behaviour';
 type Money = { currency: string; total: bigint; net: bigint }[];
 
 const share = (booked: number, sale: number) => (sale > 0 ? booked / sale : null);
 
+const cairoToday = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+const addDays = (date: string, days: number) => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
 /**
- * Analytics (A1.2): how the company is doing, then occupancy and pace sailing by sailing. One
- * filter row scopes everything below it. Money only for owners and finance.
+ * Analytics (A1.2–A1.3): how the company is doing, occupancy and pace, channels and markets,
+ * and booking behaviour. One filter row scopes everything below it; every tab exports to Excel.
+ * Money only for owners and finance.
  */
 export function AnalyticsScreen({
   vessels,
@@ -26,30 +43,71 @@ export function AnalyticsScreen({
   canMoney: boolean;
 }) {
   const t = useTranslations('analytics');
+  const locale = useLocale();
+  const trpc = useTRPC();
+  const { markets, name: marketName } = useMarkets();
   const [tab, setTab] = useState<Tab>('overview');
   const [vesselId, setVesselId] = useState<string>('');
+  const today = cairoToday();
+  const [period, setPeriod] = useState({ from: addDays(today, -89), to: today });
+  const [basis, setBasis] = useState<'booked' | 'sailing'>('booked');
+  const [channelId, setChannelId] = useState('');
+  const [market, setMarket] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const breakdown = tab === 'channels' || tab === 'behaviour';
+  const channels = useQuery({ ...trpc.channels.list.queryOptions(), enabled: breakdown });
+  const fleet = useQuery({ ...trpc.fleet.list.queryOptions(), enabled: breakdown });
+  const categories = (fleet.data ?? [])
+    .filter((v) => !vesselId || v.id === vesselId)
+    .flatMap((v) => v.categories.map((c) => ({ ...c, vessel: v.name })));
+  const filter: BreakdownFilter = {
+    ...period,
+    basis,
+    vesselId: vesselId || null,
+    channelId: channelId || null,
+    market: market || null,
+    categoryId: categoryId || null,
+  };
+  const exportLocale = locale.startsWith('ar') ? 'ar' : 'en';
+  const presets =
+    basis === 'booked'
+      ? [
+          { key: 'last30', from: addDays(today, -29), to: today },
+          { key: 'last90', from: addDays(today, -89), to: today },
+          { key: 'last365', from: addDays(today, -364), to: today },
+        ]
+      : [
+          { key: 'next30', from: today, to: addDays(today, 29) },
+          { key: 'next90', from: today, to: addDays(today, 89) },
+          { key: 'last90', from: addDays(today, -89), to: today },
+        ];
+
   return (
     <div className="flex flex-col gap-4">
+      <div
+        className="flex gap-1 self-start overflow-x-auto rounded-full bg-line/40 p-1 text-sm"
+        role="tablist"
+      >
+        {(['overview', 'occupancy', 'channels', 'behaviour'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => setTab(k)}
+            className={cx(
+              'shrink-0 rounded-full px-4 py-1.5',
+              tab === k ? 'bg-surface font-medium shadow-sm' : 'text-muted hover:text-ink',
+            )}
+          >
+            {t(`tab_${k}`)}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex gap-1 rounded-full bg-line/40 p-1 text-sm" role="tablist">
-          {(['overview', 'occupancy'] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              role="tab"
-              aria-selected={tab === k}
-              onClick={() => setTab(k)}
-              className={cx(
-                'rounded-full px-4 py-1.5',
-                tab === k ? 'bg-surface font-medium shadow-sm' : 'text-muted hover:text-ink',
-              )}
-            >
-              {t(`tab_${k}`)}
-            </button>
-          ))}
-        </div>
         {vessels.length > 1 && (
-          <Field label={t('vessel')}>
+          <FilterField label={t('vessel')}>
             <Select value={vesselId} onChange={(e) => setVesselId(e.target.value)}>
               <option value="">{t('allVessels')}</option>
               {vessels.map((v) => (
@@ -58,13 +116,116 @@ export function AnalyticsScreen({
                 </option>
               ))}
             </Select>
-          </Field>
+          </FilterField>
+        )}
+        {breakdown && (
+          <>
+            <FilterField label={t('basis')}>
+              <Select
+                value={basis}
+                onChange={(e) => {
+                  const next = e.target.value as 'booked' | 'sailing';
+                  setBasis(next);
+                  setPeriod(
+                    next === 'sailing'
+                      ? { from: today, to: addDays(today, 89) }
+                      : { from: addDays(today, -89), to: today },
+                  );
+                }}
+              >
+                <option value="booked">{t('basis_booked')}</option>
+                <option value="sailing">{t('basis_sailing')}</option>
+              </Select>
+            </FilterField>
+            <FilterField label={t('from')}>
+              <Input
+                type="date"
+                value={period.from}
+                onChange={(e) => e.target.value && setPeriod({ ...period, from: e.target.value })}
+              />
+            </FilterField>
+            <FilterField label={t('to')}>
+              <Input
+                type="date"
+                value={period.to}
+                onChange={(e) => e.target.value && setPeriod({ ...period, to: e.target.value })}
+              />
+            </FilterField>
+            <div className="flex gap-1 pb-1">
+              {presets.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setPeriod({ from: p.from, to: p.to })}
+                  className={cx(
+                    'rounded-full px-3 py-1 text-sm',
+                    period.from === p.from && period.to === p.to
+                      ? 'bg-brand text-brand-ink'
+                      : 'border border-line',
+                  )}
+                >
+                  {t(`preset_${p.key}`)}
+                </button>
+              ))}
+            </div>
+            <FilterField label={t('channel')}>
+              <Select value={channelId} onChange={(e) => setChannelId(e.target.value)}>
+                <option value="">{t('all')}</option>
+                {(channels.data ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </FilterField>
+            <FilterField label={t('market')}>
+              <Select value={market} onChange={(e) => setMarket(e.target.value)}>
+                <option value="">{t('all')}</option>
+                {markets.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {marketName(m.code)}
+                  </option>
+                ))}
+              </Select>
+            </FilterField>
+            <FilterField label={t('category')}>
+              <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">{t('all')}</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {(locale.startsWith('ar') ? c.nameAr : c.nameEn) +
+                      (vessels.length > 1 && !vesselId ? ` · ${c.vessel}` : '')}
+                  </option>
+                ))}
+              </Select>
+            </FilterField>
+          </>
+        )}
+        {tab !== 'occupancy' && (
+          <div className="ms-auto">
+            <ExportButton
+              input={
+                tab === 'overview'
+                  ? {
+                      report: 'overview',
+                      locale: exportLocale,
+                      filter: { vesselId: vesselId || null },
+                    }
+                  : { report: tab, locale: exportLocale, filter }
+              }
+            />
+          </div>
         )}
       </div>
+
       {tab === 'overview' ? (
         <Overview vesselId={vesselId || null} canMoney={canMoney} />
-      ) : (
+      ) : tab === 'occupancy' ? (
         <Occupancy vesselId={vesselId || null} canMoney={canMoney} />
+      ) : tab === 'channels' ? (
+        <ChannelsTab filter={filter} canMoney={canMoney} />
+      ) : (
+        <BehaviourTab filter={filter} canMoney={canMoney} />
       )}
     </div>
   );
@@ -295,6 +456,15 @@ function Occupancy({ vesselId, canMoney }: { vesselId: string | null; canMoney: 
               {t('daysN', { n: n(d) })}
             </button>
           ))}
+        </div>
+        <div className="ms-auto">
+          <ExportButton
+            input={{
+              report: 'occupancy',
+              locale: locale.startsWith('ar') ? 'ar' : 'en',
+              filter: { vesselId, from, days },
+            }}
+          />
         </div>
       </div>
 

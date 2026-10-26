@@ -1,6 +1,6 @@
 ---
 title: Analytics
-summary: Occupancy, booking pace, requests and cancellations — how the company is doing, and how each figure is counted.
+summary: Occupancy, booking pace, channels, markets and booking behaviour — how the company is doing, how each figure is counted, and Excel exports.
 ---
 
 # Analytics
@@ -31,6 +31,29 @@ Choose the first day and 30, 60 or 90 days.
 - **Booking pace**: for the sailing chosen in the list, cabins on the books night by night as embarkation approaches, against the sailings that embarked on the same date a year earlier. Point at the chart for the figures of any night.
 - **Sailings by cabin category**: every sailing in the period against every category, lighter for emptier. Point at a cell for its cabin-nights.
 - **Sailings**: each sailing's own cabins booked, cabins on hold, the occupancy of its departures and, for owners and finance, its value. A sailing's occupancy also counts longer cruises that share its departures. Choose a row to see its pace.
+
+## Channels and markets
+
+![Channels and markets](/screens/{locale}/guide-analytics-channels.jpg)
+
+These two tabs share a filter row: the period **by booking date** (when bookings were confirmed) or **by embarkation date** (when their sailings leave), with quick choices, then **channel**, **market** and **cabin category**. A booking counts whatever happened to it later; a cancelled booking shows in **Cancelled**.
+
+- **By channel**: bookings, cabins and cabin-nights, each channel's share of the cabins, how many were cancelled, requests received → booked with the median answer time, and for owners and finance the value per currency and per cabin-night.
+- **By market**: bookings, cabins, guests per booking and the share of bookings with children.
+- **Guests by nationality**: the ten most common, as a share of guests.
+- **Agency allotments**: on departures in the period, the cabins given to each agency, sold, on hold, released back unsold and still open, and the share sold.
+
+## Booking behaviour
+
+- **How far ahead guests book**: bookings by days between confirmation and embarkation, with the median and average.
+- **Cruise length chosen** and the **most booked itineraries**.
+- **Holds**: placed in the period by kind, the share that became bookings, how many expired or are still active, and how long they lasted on average.
+- **When cancellations happen**: how many days before embarkation, and for owners and finance the penalties kept.
+- **Amendments**: how many, on how many bookings, what changed (date, cabin category, guests, cabins), and for owners and finance the fees charged.
+
+## Excel
+
+Every tab has **Export to Excel**. The file has one sheet per table, with the same figures and filters as the screen, in the screen's language, with your logo and colours. Money columns are included only for owners and finance. Files are kept for a week.
 
 ## The nightly record
 

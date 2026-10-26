@@ -67,8 +67,9 @@ describe('back-office authorization (server side)', () => {
     const mutations = Object.entries(appRouter._def.procedures)
       .filter(([, procedure]) => (procedure as { _def: { type: string } })._def.type === 'mutation')
       .map(([path]) => path)
-      // Changing one's own language is allowed to everyone.
-      .filter((path) => path !== 'me.setLocale');
+      // Changing one's own language is allowed to everyone, and an Analytics export only makes a
+      // file of what the person can already see.
+      .filter((path) => path !== 'me.setLocale' && path !== 'analytics.export');
     expect(mutations).toEqual(
       expect.arrayContaining(['book.create', 'bookings.cancel', 'requests.accept']),
     );

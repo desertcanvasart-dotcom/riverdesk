@@ -15,6 +15,7 @@ import {
   pendingCheckinPacks,
   pruneDocuments,
   vacancyData,
+  type AnalyticsExportParams,
   type EngineContext,
   type PendingDocument,
   type VsDatabase,
@@ -31,6 +32,7 @@ import {
   roomingHtml,
   vacancyHtml,
 } from '@vs/documents';
+import { analyticsXlsx } from '../documents/analytics-xlsx';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
@@ -119,6 +121,18 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
                   ? checkinFileHtml(data, brand, locale)
                   : registrationCardsHtml(data, brand, locale),
             );
+      break;
+    }
+    case 'analytics_export': {
+      const file = await analyticsXlsx(
+        db,
+        ctx,
+        doc.params as unknown as AnalyticsExportParams,
+        brand,
+        locale,
+      );
+      content = file.content;
+      base = file.base;
       break;
     }
     default:

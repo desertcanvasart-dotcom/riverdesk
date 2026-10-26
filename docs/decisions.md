@@ -744,3 +744,17 @@ Charts use two validated colours of their own (colour-blind separation, contrast
 
 **2026-10-26 · A1.2 filters.**
 Vessel and date range only. Channel, market and category filters come with A1.3, where channel and market figures live.
+
+## Analytics A1.3 — channels, markets, booking behaviour, exports
+
+**2026-10-26 · One filter for Channels and Booking behaviour.**
+The period is either the booking date (confirmation, Cairo) or the embarkation date, at most 400 days; then vessel, channel, market and cabin category (a booking is in a category when one of its cabins is). Bookings count whatever happened later; cancellations are shown as their own figure. Requests are counted by the date they arrived (or their sailing date); holds by the date they were placed (or their sailing date). Agency allotments are always by departure date.
+
+**2026-10-26 · How the A1.3 figures are counted.**
+Per channel: bookings, cabins, cabin-nights, cancelled, requests received → booked with the median answer in minutes, value and value per cabin-night per currency (rounded down to the minor unit on screen). Per market: guests per booking and the share of bookings with children. Allotments: allotted = cabins still in the allotment plus those released back unsold (read from the inventory event written in the release's own transaction); "still open" counts unreleased allotments only. Booking window and cancellation timing use bands of days before embarkation (0–7, 8–14, 15–30, 31–60, 61–90, 91–180, more). Amendments come from booking revisions whose reason is an amendment, with the changes stored in their snapshot.
+
+**2026-10-26 · Excel exports through the document worker.**
+Each tab exports as a workbook, one sheet per table, rendered by the worker like every document (queued, audited, kept a week), entity `operator` (migration 0017). Whether money columns are included is decided on the server from the person's role and stored with the request, never taken from the browser.
+
+**2026-10-26 · Occupancy and Overview keep their own filters.**
+The Overview has the vessel filter; Occupancy and pace has vessel, start date and length. Channel and market do not apply to capacity, so they are only on the two booking tabs.

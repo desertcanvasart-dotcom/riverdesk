@@ -232,7 +232,7 @@ export interface PendingDocument {
   locale: 'ar' | 'en' | 'both';
   variant: 'full' | 'agent';
   entityId: string;
-  params: { from?: string; weeks?: number };
+  params: { from?: string; weeks?: number } & Record<string, unknown>;
 }
 
 /** Worker side: a pending document it renders itself (the nightly outage pack). */

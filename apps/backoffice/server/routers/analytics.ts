@@ -1,5 +1,10 @@
 import {
+  analyticsExportInput,
+  analyticsFilterInput,
   analyticsOverview,
+  behaviourReport,
+  channelsReport,
+  requestAnalyticsExport,
   analyticsOverviewInput,
   occupancyReport,
   occupancyReportInput,
@@ -29,4 +34,26 @@ export const analyticsRouter = router({
   pace: procedure('analytics.view')
     .input(sailingPaceInput)
     .query(({ ctx, input }) => sailingPace(backofficeDb(), ctx.engine, input)),
+  channels: procedure('analytics.view')
+    .input(analyticsFilterInput)
+    .query(({ ctx, input }) =>
+      channelsReport(backofficeDb(), ctx.engine, input, {
+        withMoney: can(ctx.staff.role, 'analytics.money'),
+      }),
+    ),
+  behaviour: procedure('analytics.view')
+    .input(analyticsFilterInput)
+    .query(({ ctx, input }) =>
+      behaviourReport(backofficeDb(), ctx.engine, input, {
+        withMoney: can(ctx.staff.role, 'analytics.money'),
+      }),
+    ),
+  /** An Excel file of one tab; money columns follow the person's role, decided here. */
+  export: procedure('analytics.view')
+    .input(analyticsExportInput)
+    .mutation(({ ctx, input }) =>
+      requestAnalyticsExport(backofficeDb(), ctx.engine, input, {
+        withMoney: can(ctx.staff.role, 'analytics.money'),
+      }),
+    ),
 });
