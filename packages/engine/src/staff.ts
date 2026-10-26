@@ -47,16 +47,22 @@ export async function claimStaffInvitation(
   authUserId: string,
   verifiedEmail: string,
 ): Promise<StaffContext | null> {
-  const { rows } = await db.withLookupTx((tx) =>
-    sql<{ staff_user_id: string; operator_id: string; role: StaffRole }>`
-      select staff_user_id, operator_id, role from vs.claim_staff_invitation(${authUserId}::uuid, ${verifiedEmail})`.execute(
-      tx,
-    ),
-  );
-  const row = rows[0];
-  return row
-    ? { staffUserId: row.staff_user_id, operatorId: row.operator_id, role: row.role }
-    : null;
+  const claim = async () => {
+    const { rows } = await db.withLookupTx((tx) =>
+      sql<{ staff_user_id: string; operator_id: string; role: StaffRole }>`
+        select staff_user_id, operator_id, role from vs.claim_staff_invitation(${authUserId}::uuid, ${verifiedEmail})`.execute(
+        tx,
+      ),
+    );
+    const row = rows[0];
+    return row
+      ? { staffUserId: row.staff_user_id, operatorId: row.operator_id, role: row.role }
+      : null;
+  };
+  // A first sign-in loads several parts of a page at once, and each may claim. The losers wait
+  // for the winner's lock, then find the invitation already taken; asking once more returns the
+  // link the winner made (or still null when there was no invitation).
+  return (await claim()) ?? (await claim());
 }
 
 export interface StaffProfile {

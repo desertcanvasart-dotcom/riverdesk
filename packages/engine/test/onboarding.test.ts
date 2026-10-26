@@ -73,6 +73,31 @@ describe('company onboarding (platform command + first sign-in)', () => {
     expect(audit.rowCount).toBe(1);
   });
 
+  it('claims made at the same time by one first sign-in all get the same link', async () => {
+    const other = `co-${randomUUID().slice(0, 8)}`;
+    const otherEmail = `${other}@example.test`;
+    const created = await createCompany(admin, {
+      name: 'Race Co',
+      slug: other,
+      bookingRefPrefix: 'RCE',
+      ownerEmail: otherEmail,
+      ownerName: 'R',
+    });
+    operatorsCreatedHere().add(created.operatorId);
+    const authUserId = randomUUID();
+    // Enough connections that the claims really overlap.
+    const wide = openDatabase('vs_backoffice', { config: testConfig(), max: 12 });
+    try {
+      const claims = await Promise.all(
+        Array.from({ length: 12 }, () => claimStaffInvitation(wide, authUserId, otherEmail)),
+      );
+      expect(claims[0]).toMatchObject({ role: 'owner' });
+      for (const claim of claims) expect(claim).toEqual(claims[0]);
+    } finally {
+      await wide.close();
+    }
+  });
+
   it('an expired invitation cannot be claimed; the API role cannot claim at all', async () => {
     const other = `co-${randomUUID().slice(0, 8)}`;
     const otherEmail = `${other}@example.test`;
