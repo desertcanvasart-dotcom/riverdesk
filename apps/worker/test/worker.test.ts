@@ -42,6 +42,7 @@ describe('worker', () => {
               'prune_rate_limits',
               'health_alerts',
               'checkin_packs',
+              'analytics_snapshot',
             ]),
           );
         },
@@ -63,6 +64,7 @@ describe('worker', () => {
     'prune_rate_limits',
     'health_alerts',
     'checkin_packs',
+    'analytics_snapshot',
   ])('runs %s for every operator through the job queue', async (task) => {
     const job = await quickAddJob(
       { connectionString: workerUrl },

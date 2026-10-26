@@ -47,6 +47,7 @@ export * from './backoffice/channels';
 export * from './backoffice/settings';
 export * from './backoffice/branding';
 export * from './backoffice/checkin';
+export * from './analytics/snapshot';
 export * from './backoffice/assignment';
 export * from './backoffice/manifest';
 export * from './documents/requests';

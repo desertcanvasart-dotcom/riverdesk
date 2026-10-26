@@ -9,6 +9,7 @@ import {
   type Logger,
 } from '@vs/shared';
 import { closeRenderer } from './documents/render';
+import { analyticsSnapshotTask } from './tasks/analytics-jobs';
 import {
   assignCabinsTask,
   completeBookingsTask,
@@ -53,6 +54,8 @@ export const CRONTAB = [
   '0 2 * * * outage_pack ?max=1',
   // The check-in pack: departures entering their vessel's window, and button presses (within a minute).
   '* * * * * checkin_packs ?max=1',
+  // 21:45 UTC is 23:45 in Cairo, or 00:45 on summer time; the snapshot counts it as the same night.
+  '45 21 * * * analytics_snapshot ?max=1',
 ].join('\n');
 
 export function buildTaskList(
@@ -75,6 +78,7 @@ export function buildTaskList(
     health_alerts: healthAlertsTask(db, logger),
     outage_pack: outagePackTask(db, logger, config),
     checkin_packs: checkinPacksTask(db, logger, config),
+    analytics_snapshot: analyticsSnapshotTask(db, logger),
     render_document: renderDocumentTask(db, logger),
   };
 }

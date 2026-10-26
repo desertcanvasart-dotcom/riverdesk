@@ -719,3 +719,14 @@ The guest details (Excel) and the embarkation sheet, bilingual, emailed to the v
 
 **2026-10-26 · Police list columns are provisional.**
 The check-in file follows the field list in `documents-plan.md` § 3 until the owner sends a real police list; then its columns are reordered to match.
+
+## Analytics A1.1 — nightly snapshot
+
+**2026-10-26 · Which night a snapshot belongs to.**
+The worker runs at 21:45 UTC. The night is the Cairo date of the run time less two hours, so the same night is written whether Cairo is on UTC+2 (23:45) or summer time (00:45 the next day). Re-running a night deletes and rewrites it, so a missed, late or repeated run is harmless.
+
+**2026-10-26 · What a night records.**
+`analytics_leg_day`: per departure (up to 400 days ahead) and cabin category, the cabins on sale (pool and allotments), booked, held, blocked (active blocks) and allotted but unsold, and whether sales were stopped. About 460 rows a night for the demo vessel (~170,000 a year). `analytics_sailing_day`: per upcoming sailing, channel, market and currency, confirmed bookings, cabins, guests, cabin-nights, guest value and net value (never added across currencies), open requests and active holds. Only the worker writes them; the back office and API may read.
+
+**2026-10-26 · The one-time backfill.**
+A company's first nightly run rebuilds up to 400 past nights from booking dates (counted from confirmation until cancellation; cabins on a departure from booking until release), marked `reconstructed`. Holds, blocks, requests and amendments of those nights are unknown, values use today's booking totals, and capacity uses today's numbers. Screens will mark those nights as estimated.

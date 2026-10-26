@@ -49,6 +49,42 @@ export interface AmendmentFeeRule {
   updated_at: Generated<Timestamp>;
 }
 
+export interface AnalyticsLegDay {
+  allotted_unsold: number;
+  blocked: number;
+  booked: number;
+  capacity: number;
+  category_id: string;
+  created_at: Generated<Timestamp>;
+  depart_date: string;
+  held: number;
+  leg_id: string;
+  operator_id: string;
+  reconstructed: Generated<boolean>;
+  snapshot_date: string;
+  stop_sale: Generated<boolean>;
+}
+
+export interface AnalyticsSailingDay {
+  bookings: number;
+  cabin_nights: number;
+  cabins: number;
+  channel_id: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  embark_date: string;
+  guests: number;
+  holds_open: Generated<number>;
+  market: string;
+  operator_id: string;
+  reconstructed: Generated<boolean>;
+  requests_open: Generated<number>;
+  sailing_id: string;
+  snapshot_date: string;
+  value_net: bigint;
+  value_total: bigint;
+}
+
 export interface ApiClient {
   active: Generated<boolean>;
   channel_id: string;
@@ -922,6 +958,8 @@ export interface WebhookEndpoint {
 export interface DB {
   allotment: Allotment;
   amendment_fee_rule: AmendmentFeeRule;
+  analytics_leg_day: AnalyticsLegDay;
+  analytics_sailing_day: AnalyticsSailingDay;
   api_client: ApiClient;
   api_client_secret: ApiClientSecret;
   audit_log: AuditLog;

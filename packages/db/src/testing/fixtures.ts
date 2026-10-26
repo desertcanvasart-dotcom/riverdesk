@@ -107,6 +107,8 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   payment: bookingFixture,
   checkin: bookingFixture,
   checkin_pack_send: bookingFixture,
+  analytics_leg_day: bookingFixture,
+  analytics_sailing_day: bookingFixture,
   api_client: apiFixture,
   api_client_secret: apiFixture,
   rate_limit_counter: apiFixture,
@@ -445,6 +447,17 @@ function bookingWorld(db: pg.Pool, operatorId: string): Promise<void> {
     await db.query(
       `insert into vs.checkin_pack_send (operator_id, leg_id, sent_to, trigger) values ($1, $2, 'ship@example.test', 'button')`,
       [o, ids.leg],
+    );
+    await db.query(
+      `insert into vs.analytics_leg_day (operator_id, snapshot_date, leg_id, category_id, depart_date, capacity, booked, held, blocked, allotted_unsold)
+       values ($1, '2027-01-01', $2, $3, '2027-01-04', 10, 1, 0, 0, 0)`,
+      [o, ids.leg, ids.category],
+    );
+    await db.query(
+      `insert into vs.analytics_sailing_day (operator_id, snapshot_date, sailing_id, embark_date, channel_id, market, currency,
+                                             bookings, cabins, guests, cabin_nights, value_total, value_net)
+       values ($1, '2027-01-01', $2, '2027-01-04', $3, 'international', 'USD', 1, 1, 2, 7, 100000, 90000)`,
+      [o, ids.sailing, channel],
     );
   })();
   bookingWorlds.set(operatorId, created);
