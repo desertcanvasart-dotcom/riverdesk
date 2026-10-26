@@ -10,7 +10,7 @@ plus the order in which this and the other open plans are built.
 | --- | ------ | ---------------------------------------- | ---------------------------------------- |
 | 1   | D1     | Branding, bilingual documents            | Done (hosted at 0014)                    |
 | 2   | D2     | Check-in documents, on-board login       | Done                                     |
-| 3   | **A1** | Reservations analytics (this plan, § 4)  | A1.1 (snapshot) done; A1.2 next          |
+| 3   | **A1** | Reservations analytics (this plan, § 4)  | A1.1 and A1.2 done; A1.3 next            |
 | 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, waiting for answers |
 | 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`                      |
 | 6   | **A2** | Money analytics (this plan, § 5)         | Needs invoicing                          |

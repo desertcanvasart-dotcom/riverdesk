@@ -41,7 +41,7 @@ describe('back-office authorization (server side)', () => {
   it('read-only may read and do nothing else', () => {
     for (const permission of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) {
       expect(can('read_only', permission)).toBe(
-        ['read', 'self', 'checkin.view'].includes(permission),
+        ['read', 'self', 'checkin.view', 'analytics.view'].includes(permission),
       );
     }
     expect(can('finance', 'payments.write')).toBe(true);

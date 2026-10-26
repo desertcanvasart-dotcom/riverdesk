@@ -5,6 +5,7 @@ import {
   BookOpen,
   CalendarDays,
   CalendarPlus,
+  ChartColumn,
   ChevronDown,
   ClipboardCheck,
   ClipboardList,
@@ -35,6 +36,7 @@ import { cx } from './ui';
 
 type Key =
   | 'home'
+  | 'analytics'
   | 'book'
   | 'bookings'
   | 'requests'
@@ -61,7 +63,13 @@ interface Item {
  * Today stands alone at the top. Sections fold; opening a page unfolds its section.
  */
 const SECTIONS: { key: string | null; items: Item[] }[] = [
-  { key: null, items: [{ key: 'home', href: '/', icon: House }] },
+  {
+    key: null,
+    items: [
+      { key: 'home', href: '/', icon: House },
+      { key: 'analytics', href: '/analytics', icon: ChartColumn },
+    ],
+  },
   {
     key: 'reservations',
     items: [

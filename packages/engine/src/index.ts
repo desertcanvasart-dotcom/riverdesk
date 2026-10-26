@@ -48,6 +48,7 @@ export * from './backoffice/settings';
 export * from './backoffice/branding';
 export * from './backoffice/checkin';
 export * from './analytics/snapshot';
+export * from './analytics/reports';
 export * from './backoffice/assignment';
 export * from './backoffice/manifest';
 export * from './documents/requests';

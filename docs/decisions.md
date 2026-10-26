@@ -730,3 +730,17 @@ The worker runs at 21:45 UTC. The night is the Cairo date of the run time less t
 
 **2026-10-26 · The one-time backfill.**
 A company's first nightly run rebuilds up to 400 past nights from booking dates (counted from confirmation until cancellation; cabins on a departure from booking until release), marked `reconstructed`. Holds, blocks, requests and amendments of those nights are unknown, values use today's booking totals, and capacity uses today's numbers. Screens will mark those nights as estimated.
+
+## Analytics A1.2 — Overview and occupancy and pace
+
+**2026-10-26 · How the A1.2 figures are counted.**
+Occupancy is cabin-nights booked ÷ cabin-nights on sale (pool and allotments; blocked cabins are not on sale) over the departures in range, from live inventory. "Booked in a period" counts bookings confirmed in it (Cairo dates), whatever happened later, so a booking cancelled the same week still counts as booked that week. Cancellation rate is cancellations this month ÷ confirmations this month. Requests "answered in time" were accepted, declined or offered before their deadline. A sailing's occupancy counts every booking on its departures, including longer cruises sharing them; its "cabins booked" are its own.
+
+**2026-10-26 · Comparisons with last year.**
+The same calendar dates a year earlier (owner's answer). Before the company's first confirmed booking, "last year" has no data and says so instead of showing an increase from zero. The pace chart compares with the sailings of the same vessel that embarked on the same date a year earlier.
+
+**2026-10-26 · Chart colours.**
+Charts use two validated colours of their own (colour-blind separation, contrast and chroma, light and dark: #008f8a / #c97416, dark #2aa9a3 / #c27e2c). The brand teal reads as grey in a thin line, so the chart's "this year" is a stronger step of the same hue. The heat map is that one hue from light (empty) to dark (full).
+
+**2026-10-26 · A1.2 filters.**
+Vessel and date range only. Channel, market and category filters come with A1.3, where channel and market figures live.

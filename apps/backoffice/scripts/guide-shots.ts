@@ -206,6 +206,23 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
   [
+    'analytics',
+    async (page) => {
+      await page.goto(`${BASE}/analytics`);
+      await page.locator('section.rounded-xl').first().waitFor();
+      await page.waitForTimeout(600);
+    },
+  ],
+  [
+    'analytics-occupancy',
+    async (page, m) => {
+      await page.goto(`${BASE}/analytics`);
+      await page.getByRole('tab', { name: m.analytics!.tab_occupancy }).click();
+      await page.locator('table').first().waitFor();
+      await page.waitForTimeout(800);
+    },
+  ],
+  [
     'checkin',
     async (page) => {
       await page.goto(`${BASE}/checkin`);

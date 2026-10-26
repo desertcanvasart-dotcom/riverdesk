@@ -1,5 +1,6 @@
 import { pingDatabase } from '@vs/engine';
 import { backofficeDb } from './db';
+import { analyticsRouter } from './routers/analytics';
 import { bookRouter } from './routers/book';
 import { bookingsRouter } from './routers/bookings';
 import { channelsRouter } from './routers/channels';
@@ -37,6 +38,7 @@ export const appRouter = router({
   documents: documentsRouter,
   guests: guestsRouter,
   checkin: checkinRouter,
+  analytics: analyticsRouter,
   pilot: pilotRouter,
 });
 

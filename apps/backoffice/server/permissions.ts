@@ -18,6 +18,9 @@ export const PERMISSIONS = {
   /** The Check-in screen: departures boarding, guests' details, the reception's marks. */
   'checkin.view': ['owner', 'reservations', 'finance', 'read_only', 'onboard'],
   'checkin.write': ['owner', 'reservations', 'onboard'],
+  /** Analytics: occupancy, pace, channels. Money figures need analytics.money as well. */
+  'analytics.view': ['owner', 'reservations', 'finance', 'read_only'],
+  'analytics.money': ['owner', 'finance'],
   'guests.assign': ['owner', 'reservations'],
   /** Data subject requests: export or erase one guest's personal data. */
   'guests.privacy': ['owner'],

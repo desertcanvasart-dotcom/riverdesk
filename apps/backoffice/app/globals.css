@@ -18,6 +18,11 @@
   --color-bad: #a3261c;
   --color-bad-bg: #fbe8e5;
   --color-info-bg: #e7f0f3;
+  /* Charts (validated for colour-blind separation and contrast): this year, last year. */
+  --color-chart-1: #008f8a;
+  --color-chart-2: #c97416;
+  /* Text on a strong chart fill. */
+  --color-chart-ink: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -36,6 +41,9 @@
     --color-bad: #f19a90;
     --color-bad-bg: #3a1e1b;
     --color-info-bg: #1b2a2e;
+    --color-chart-1: #2aa9a3;
+    --color-chart-2: #c27e2c;
+    --color-chart-ink: #0b1414;
   }
 }
 
