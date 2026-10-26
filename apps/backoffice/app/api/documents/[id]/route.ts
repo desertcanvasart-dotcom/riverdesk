@@ -1,4 +1,9 @@
-import { downloadDocument, getDocumentStatus, type EngineContext } from '@vs/engine';
+import {
+  downloadDocument,
+  getDocumentStatus,
+  PASSPORT_DOCUMENTS,
+  type EngineContext,
+} from '@vs/engine';
 import { isDomainError } from '@vs/contracts';
 import { backofficeDb } from '../../../../server/db';
 import { can } from '../../../../server/permissions';
@@ -20,7 +25,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   };
   try {
     const status = await getDocumentStatus(backofficeDb(), ctx, id);
-    if (status.kind === 'manifest' && !can(staff.role, 'manifests'))
+    if (PASSPORT_DOCUMENTS.includes(status.kind) && !can(staff.role, 'manifests'))
+      return new Response('Forbidden', { status: 403 });
+    // An on-board login downloads only what it asked for (its own vessel's departures).
+    if (staff.role === 'onboard' && status.requestedBy !== staff.staffUserId)
+      return new Response('Not found', { status: 404 });
+    if (staff.role !== 'onboard' && !can(staff.role, 'read'))
       return new Response('Forbidden', { status: 403 });
     const file = await downloadDocument(backofficeDb(), ctx, id);
     return new Response(new Uint8Array(file.content), {

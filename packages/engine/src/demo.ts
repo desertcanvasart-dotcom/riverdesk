@@ -7,6 +7,7 @@ import { cancelBooking } from './booking/cancel';
 import { confirmHold, createHold } from './booking/holds';
 import { createRequest } from './booking/requests';
 import { changeCapacity } from './inventory/capacity';
+import type { GuestInput } from './booking/common';
 import { createQuote } from './pricing/quote';
 import {
   createCancellationPolicy,
@@ -567,13 +568,31 @@ export async function createDemoActivity(
         childAges: c.ages ?? [],
       })),
     });
+  // Made-up check-in details, so the reception's screens and documents look real (Batch D2).
+  const NATIONALITIES = ['GB', 'DE', 'US', 'FR', 'IT', 'ES', 'NL', 'AU'];
+  const DIETS: GuestInput['dietary'][] = [['vegetarian'], [], ['gluten_free'], [], ['halal'], []];
+  let seq = 0;
   const guests = (names: string[][]) =>
-    names.map(([first, last], i) => ({
-      cabin: 0,
-      firstName: first!,
-      lastName: last!,
-      lead: i === 0,
-    }));
+    names.map(([first, last], i): GuestInput => {
+      seq += 1;
+      return {
+        cabin: 0,
+        firstName: first!,
+        lastName: last!,
+        lead: i === 0,
+        nationality: NATIONALITIES[seq % NATIONALITIES.length],
+        passportNumber: `X${String(4_100_000 + seq * 7_919).slice(0, 7)}`,
+        passportCountry: NATIONALITIES[seq % NATIONALITIES.length],
+        // Every fifth passport runs out soon after the cruise: reception sees a warning.
+        passportExpiresOn: (seq % 5 === 0
+          ? addDays(monday, 120)
+          : addDays(monday, 2_000 + seq * 30)) as GuestInput['passportExpiresOn'],
+        visaType: 'e_visa',
+        dietary: DIETS[seq % DIETS.length],
+        ...(i === 0 ? { arrivalFlight: `MS ${700 + seq}`, phone: `+44 7700 900${100 + seq}` } : {}),
+        ...(seq === 3 ? { occasion: 'honeymoon' as const } : {}),
+      };
+    });
   const book = async (
     channelId: string,
     pattern: string,

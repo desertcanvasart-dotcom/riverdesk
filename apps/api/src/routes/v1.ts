@@ -22,6 +22,10 @@ import {
   releaseHold,
   upsertGuests,
   type EngineContext,
+  DIETARY,
+  GUEST_TITLES,
+  OCCASIONS,
+  VISA_TYPES,
   type GuestInput,
   type VsDatabase,
 } from '@vs/engine';
@@ -67,6 +71,29 @@ const guest = z
     date_of_birth: date.optional(),
     passport_number: z.string().min(3).max(30).optional(),
     lead: z.boolean().optional(),
+    // Check-in details (optional): what the vessel's reception and police list need.
+    title: z.enum(GUEST_TITLES).optional(),
+    gender: z.enum(['female', 'male']).optional(),
+    passport_country: z
+      .string()
+      .regex(/^[A-Z]{2}$/)
+      .optional(),
+    passport_issued_on: date.optional(),
+    passport_expires_on: date.optional(),
+    place_of_birth: z.string().min(1).max(100).optional(),
+    visa_type: z.enum(VISA_TYPES).optional(),
+    visa_number: z.string().min(3).max(40).optional(),
+    arrival_date: date.optional(),
+    arrival_flight: z.string().min(1).max(20).optional(),
+    arrival_port: z.string().min(1).max(100).optional(),
+    phone: z.string().min(3).max(30).optional(),
+    emergency_name: z.string().min(1).max(100).optional(),
+    emergency_phone: z.string().min(3).max(30).optional(),
+    dietary: z.array(z.enum(DIETARY)).max(DIETARY.length).optional(),
+    allergies: z.string().min(1).max(300).optional(),
+    medical_notes: z.string().min(1).max(500).optional(),
+    occasion: z.enum(OCCASIONS).optional(),
+    occasion_date: date.optional(),
   })
   .strict();
 const bodies = {
@@ -137,6 +164,25 @@ const toGuests = (guests: z.infer<typeof guest>[]): GuestInput[] =>
     dateOfBirth: g.date_of_birth as GuestInput['dateOfBirth'],
     passportNumber: g.passport_number,
     lead: g.lead ?? false,
+    title: g.title,
+    gender: g.gender,
+    passportCountry: g.passport_country,
+    passportIssuedOn: g.passport_issued_on as GuestInput['passportIssuedOn'],
+    passportExpiresOn: g.passport_expires_on as GuestInput['passportExpiresOn'],
+    placeOfBirth: g.place_of_birth,
+    visaType: g.visa_type,
+    visaNumber: g.visa_number,
+    arrivalDate: g.arrival_date as GuestInput['arrivalDate'],
+    arrivalFlight: g.arrival_flight,
+    arrivalPort: g.arrival_port,
+    phone: g.phone,
+    emergencyName: g.emergency_name,
+    emergencyPhone: g.emergency_phone,
+    dietary: g.dietary,
+    allergies: g.allergies,
+    medicalNotes: g.medical_notes,
+    occasion: g.occasion,
+    occasionDate: g.occasion_date as GuestInput['occasionDate'],
   }));
 
 function idempotencyKey(request: FastifyRequest): string {

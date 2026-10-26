@@ -352,6 +352,50 @@ export async function auditBooking(
 // ---------------------------------------------------------------------------
 // Guests (rule 9: passport numbers encrypted, never logged or audited)
 // ---------------------------------------------------------------------------
+export const GUEST_TITLES = ['mr', 'mrs', 'ms', 'miss', 'dr'] as const;
+export const VISA_TYPES = ['e_visa', 'on_arrival', 'sticker', 'residence', 'not_required'] as const;
+export const DIETARY = [
+  'vegetarian',
+  'vegan',
+  'halal',
+  'kosher',
+  'gluten_free',
+  'lactose_free',
+  'no_pork',
+  'no_seafood',
+  'diabetic',
+] as const;
+export const OCCASIONS = ['birthday', 'honeymoon', 'anniversary', 'other'] as const;
+
+/**
+ * The personal check-in details erased with the passport number: after the retention period
+ * following disembarkation, and on a guest's erasure request. Names stay for accounting.
+ */
+export const ERASED_CHECKIN_DETAILS = {
+  date_of_birth: null,
+  passport_ciphertext: null,
+  passport_key_id: null,
+  passport_country: null,
+  passport_issued_on: null,
+  passport_expires_on: null,
+  place_of_birth: null,
+  visa_type: null,
+  visa_ciphertext: null,
+  visa_key_id: null,
+  arrival_date: null,
+  arrival_flight: null,
+  arrival_port: null,
+  phone: null,
+  emergency_name: null,
+  emergency_phone: null,
+  dietary: [],
+  allergies: null,
+  medical_ciphertext: null,
+  medical_key_id: null,
+  occasion: null,
+  occasion_date: null,
+} as const;
+
 export const guestSchema = z.object({
   /** Index of the cabin in the booking (0-based). */
   cabin: z.number().int().min(0),
@@ -363,9 +407,35 @@ export const guestSchema = z.object({
     .optional(),
   dateOfBirth: dateSchema.optional(),
   passportNumber: z.string().trim().min(3).max(30).optional(),
-  /** An existing guest of this booking: keeps their passport on file when no new number is given. */
+  /**
+   * An existing guest of this booking: keeps their passport number, visa number and medical
+   * notes on file when no new value is given (they are never sent back to the screen).
+   */
   keepPassportOf: z.uuid().optional(),
   lead: z.boolean().default(false),
+  // Check-in details (Batch D2), all optional.
+  title: z.enum(GUEST_TITLES).optional(),
+  gender: z.enum(['female', 'male']).optional(),
+  passportCountry: z
+    .string()
+    .regex(/^[A-Z]{2}$/)
+    .optional(),
+  passportIssuedOn: dateSchema.optional(),
+  passportExpiresOn: dateSchema.optional(),
+  placeOfBirth: z.string().trim().min(1).max(100).optional(),
+  visaType: z.enum(VISA_TYPES).optional(),
+  visaNumber: z.string().trim().min(3).max(40).optional(),
+  arrivalDate: dateSchema.optional(),
+  arrivalFlight: z.string().trim().min(1).max(20).optional(),
+  arrivalPort: z.string().trim().min(1).max(100).optional(),
+  phone: z.string().trim().min(3).max(30).optional(),
+  emergencyName: z.string().trim().min(1).max(100).optional(),
+  emergencyPhone: z.string().trim().min(3).max(30).optional(),
+  dietary: z.array(z.enum(DIETARY)).max(DIETARY.length).optional(),
+  allergies: z.string().trim().min(1).max(300).optional(),
+  medicalNotes: z.string().trim().min(1).max(500).optional(),
+  occasion: z.enum(OCCASIONS).optional(),
+  occasionDate: dateSchema.optional(),
 });
 export type GuestInput = z.infer<typeof guestSchema>;
 
@@ -413,9 +483,14 @@ export async function replaceGuests(
       'lead',
       'passport_ciphertext',
       'passport_key_id',
+      'visa_ciphertext',
+      'visa_key_id',
+      'medical_ciphertext',
+      'medical_key_id',
     ])
     .where('booking_id', '=', bookingId)
     .execute();
+  const previousOf = new Map(before.map((g) => [g.id, g]));
   const kept = new Map(before.filter((g) => g.passport_ciphertext).map((g) => [g.id, g]));
   await tx.deleteFrom('guest').where('booking_id', '=', bookingId).execute();
   const keys = passportKeys();
@@ -425,6 +500,25 @@ export async function replaceGuests(
       guests.map((g) => {
         const previous =
           !g.passportNumber && g.keepPassportOf ? kept.get(g.keepPassportOf) : undefined;
+        const prior = g.keepPassportOf ? previousOf.get(g.keepPassportOf) : undefined;
+        const visa = g.visaNumber
+          ? {
+              visa_ciphertext: encryptField(g.visaNumber, keys.current),
+              visa_key_id: keys.current.id,
+            }
+          : {
+              visa_ciphertext: prior?.visa_ciphertext ?? null,
+              visa_key_id: prior?.visa_key_id ?? null,
+            };
+        const medical = g.medicalNotes
+          ? {
+              medical_ciphertext: encryptField(g.medicalNotes, keys.current),
+              medical_key_id: keys.current.id,
+            }
+          : {
+              medical_ciphertext: prior?.medical_ciphertext ?? null,
+              medical_key_id: prior?.medical_key_id ?? null,
+            };
         return {
           operator_id: ctx.operatorId,
           booking_id: bookingId,
@@ -438,6 +532,25 @@ export async function replaceGuests(
             : (previous?.passport_ciphertext ?? null),
           passport_key_id: g.passportNumber ? keys.current.id : (previous?.passport_key_id ?? null),
           lead: g.lead,
+          title: g.title ?? null,
+          gender: g.gender ?? null,
+          passport_country: g.passportCountry ?? null,
+          passport_issued_on: g.passportIssuedOn ?? null,
+          passport_expires_on: g.passportExpiresOn ?? null,
+          place_of_birth: g.placeOfBirth ?? null,
+          visa_type: g.visaType ?? null,
+          ...visa,
+          arrival_date: g.arrivalDate ?? null,
+          arrival_flight: g.arrivalFlight ?? null,
+          arrival_port: g.arrivalPort ?? null,
+          phone: g.phone ?? null,
+          emergency_name: g.emergencyName ?? null,
+          emergency_phone: g.emergencyPhone ?? null,
+          dietary: g.dietary ?? [],
+          allergies: g.allergies ?? null,
+          ...medical,
+          occasion: g.occasion ?? null,
+          occasion_date: g.occasionDate ?? null,
         };
       }),
     )

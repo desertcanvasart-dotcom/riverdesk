@@ -35,6 +35,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       role={t(profile.role)}
       showPilot={profile.permissions.includes('pilot.view')}
       showPlatform={session.platformAdmin}
+      onboard={profile.role === 'onboard'}
     >
       {children}
     </Shell>

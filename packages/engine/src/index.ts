@@ -21,7 +21,15 @@ export * from './booking/requests';
 export * from './booking/cancel';
 export * from './booking/allotments';
 export * from './booking/amendments';
-export { withRequestKey, guestSchema, type GuestInput } from './booking/common';
+export {
+  withRequestKey,
+  guestSchema,
+  DIETARY,
+  GUEST_TITLES,
+  OCCASIONS,
+  VISA_TYPES,
+  type GuestInput,
+} from './booking/common';
 export * from './booking/payments';
 export * from './channel/clients';
 export * from './channel/reads';
@@ -38,6 +46,7 @@ export * from './backoffice/markets';
 export * from './backoffice/channels';
 export * from './backoffice/settings';
 export * from './backoffice/branding';
+export * from './backoffice/checkin';
 export * from './backoffice/assignment';
 export * from './backoffice/manifest';
 export * from './documents/requests';

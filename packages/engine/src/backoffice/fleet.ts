@@ -42,6 +42,9 @@ export interface FleetVessel {
   name: string;
   type: 'cruise_ship' | 'dahabiya' | 'steam';
   maxGuests: number;
+  /** Where the check-in pack is emailed, and how many hours before a departure (null: off). */
+  onboardEmail: string | null;
+  checkinPackHours: number | null;
   categories: FleetCategory[];
   /** Cabins with no category ahead: added, then taken out of service. */
   cabins: number;
@@ -53,7 +56,7 @@ export async function getFleet(db: VsDatabase, ctx: EngineContext): Promise<Flee
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const vessels = await tx
       .selectFrom('vessel')
-      .select(['id', 'code', 'name', 'type', 'max_guests'])
+      .select(['id', 'code', 'name', 'type', 'max_guests', 'onboard_email', 'checkin_pack_hours'])
       .where('active', '=', true)
       .orderBy('name')
       .execute();
@@ -86,6 +89,8 @@ export async function getFleet(db: VsDatabase, ctx: EngineContext): Promise<Flee
         name: v.name,
         type: v.type as FleetVessel['type'],
         maxGuests: v.max_guests,
+        onboardEmail: v.onboard_email,
+        checkinPackHours: v.checkin_pack_hours,
         categories: own.map((c) => ({
           id: c.id,
           code: c.code,
@@ -176,6 +181,47 @@ export async function updateVessel(
       after: { name: after.name, type: after.type, max_guests: after.max_guests },
     });
     return after;
+  });
+}
+
+export const updateVesselCheckinInput = z.object({
+  vesselId: z.uuid(),
+  onboardEmail: z.union([z.email().max(200), z.literal('')]).nullable(),
+  /** Hours before each departure the check-in pack is emailed; null turns it off. */
+  checkinPackHours: z.number().int().min(1).max(72).nullable(),
+});
+
+/**
+ * The vessel's on-board email and the automatic check-in pack. The pack carries passport
+ * numbers, so it is off until set, and needs an email to be on.
+ */
+export async function updateVesselCheckin(
+  db: VsDatabase,
+  ctx: EngineContext,
+  input: z.input<typeof updateVesselCheckinInput>,
+) {
+  const data = parseInput(updateVesselCheckinInput, input);
+  const email = data.onboardEmail ? data.onboardEmail.toLowerCase() : null;
+  if (data.checkinPackHours !== null && !email)
+    throw new DomainError('VALIDATION_FAILED', {
+      message: 'The automatic check-in pack needs an on-board email',
+      details: { field: 'onboardEmail' },
+    });
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    const before = await lockVessel(tx, data.vesselId);
+    await tx
+      .updateTable('vessel')
+      .set({ onboard_email: email, checkin_pack_hours: data.checkinPackHours })
+      .where('id', '=', data.vesselId)
+      .execute();
+    await audit(tx, ctx.operatorId, ctx.actor, {
+      action: 'vessel.checkin_updated',
+      entity: 'vessel',
+      entityId: data.vesselId,
+      before: { onboardEmail: before.onboard_email, checkinPackHours: before.checkin_pack_hours },
+      after: { onboardEmail: email, checkinPackHours: data.checkinPackHours },
+    });
+    return { onboardEmail: email, checkinPackHours: data.checkinPackHours };
   });
 }
 

@@ -960,6 +960,60 @@ components:
             description: 'Encrypted at rest; never returned.',
           }
         lead: { type: boolean, default: false }
+        title: { type: string, enum: [mr, mrs, ms, miss, dr] }
+        gender: { type: string, enum: [female, male] }
+        passport_country:
+          { type: string, pattern: '^[A-Z]{2}$', description: Issuing country, ISO 3166-1 alpha-2. }
+        passport_issued_on: { $ref: '#/components/schemas/Date' }
+        passport_expires_on: { $ref: '#/components/schemas/Date' }
+        place_of_birth: { type: string, minLength: 1, maxLength: 100 }
+        visa_type: { type: string, enum: [e_visa, on_arrival, sticker, residence, not_required] }
+        visa_number:
+          {
+            type: string,
+            minLength: 3,
+            maxLength: 40,
+            writeOnly: true,
+            description: 'Encrypted at rest; never returned.',
+          }
+        arrival_date: { $ref: '#/components/schemas/Date' }
+        arrival_flight:
+          { type: string, minLength: 1, maxLength: 20, description: Arriving flight, e.g. MS 777. }
+        arrival_port:
+          { type: string, minLength: 1, maxLength: 100, description: Port of entry into Egypt. }
+        phone: { type: string, minLength: 3, maxLength: 30 }
+        emergency_name: { type: string, minLength: 1, maxLength: 100 }
+        emergency_phone: { type: string, minLength: 3, maxLength: 30 }
+        dietary:
+          type: array
+          maxItems: 9
+          items:
+            {
+              type: string,
+              enum:
+                [
+                  vegetarian,
+                  vegan,
+                  halal,
+                  kosher,
+                  gluten_free,
+                  lactose_free,
+                  no_pork,
+                  no_seafood,
+                  diabetic,
+                ],
+            }
+        allergies: { type: string, minLength: 1, maxLength: 300 }
+        medical_notes:
+          {
+            type: string,
+            minLength: 1,
+            maxLength: 500,
+            writeOnly: true,
+            description: 'Medical or mobility needs. Encrypted at rest; never returned.',
+          }
+        occasion: { type: string, enum: [birthday, honeymoon, anniversary, other] }
+        occasion_date: { $ref: '#/components/schemas/Date' }
     ConfirmRequest:
       type: object
       additionalProperties: false

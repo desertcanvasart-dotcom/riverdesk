@@ -3,6 +3,7 @@ import { backofficeDb } from './db';
 import { bookRouter } from './routers/book';
 import { bookingsRouter } from './routers/bookings';
 import { channelsRouter } from './routers/channels';
+import { checkinRouter } from './routers/checkin';
 import { documentsRouter } from './routers/documents';
 import { fleetRouter } from './routers/fleet';
 import { guestsRouter } from './routers/guests';
@@ -35,6 +36,7 @@ export const appRouter = router({
   settings: settingsRouter,
   documents: documentsRouter,
   guests: guestsRouter,
+  checkin: checkinRouter,
   pilot: pilotRouter,
 });
 

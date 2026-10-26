@@ -2,16 +2,22 @@ import type { StaffRole } from '@vs/engine';
 
 /**
  * What each role may do, enforced in every tRPC procedure (never only by hiding buttons).
- * read_only can open every screen and change nothing.
+ * read_only can open every screen and change nothing. onboard (the vessel's reception) sees only
+ * Check-in, for its own vessel, with no prices or payments; the vessel is enforced in the engine.
  */
 export const PERMISSIONS = {
+  /** One's own profile and language. */
+  self: ['owner', 'reservations', 'finance', 'read_only', 'onboard'],
   read: ['owner', 'reservations', 'finance', 'read_only'],
   'bookings.write': ['owner', 'reservations'],
   'inventory.write': ['owner', 'reservations'],
   'payments.write': ['owner', 'finance'],
-  'documents.create': ['owner', 'reservations', 'finance'],
-  /** Manifests carry passport numbers: only the people who board guests. */
-  manifests: ['owner', 'reservations'],
+  'documents.create': ['owner', 'reservations', 'finance', 'onboard'],
+  /** Manifests, check-in files and registration cards carry passport numbers: only the people who board guests. */
+  manifests: ['owner', 'reservations', 'onboard'],
+  /** The Check-in screen: departures boarding, guests' details, the reception's marks. */
+  'checkin.view': ['owner', 'reservations', 'finance', 'read_only', 'onboard'],
+  'checkin.write': ['owner', 'reservations', 'onboard'],
   'guests.assign': ['owner', 'reservations'],
   /** Data subject requests: export or erase one guest's personal data. */
   'guests.privacy': ['owner'],

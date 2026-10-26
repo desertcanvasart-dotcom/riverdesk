@@ -698,3 +698,24 @@ The HTML templates, wording and fonts left the worker for a package the worker a
 
 **2026-10-26 · Bilingual documents (`both`).**
 Arabic first and right-to-left, with the English beneath every heading and label; data with both languages (ports, categories, inclusions) shows both. Dates and numbers use Latin digits, which both readers share. Spreadsheet headers read «عربي / English».
+
+## Batch D2 — check-in
+
+**2026-10-26 · Check-in marks belong to the booked cabin on a departure, not to the guest.**
+A booking's guests are replaced as a list whenever they are edited, so marks kept on guest rows would vanish. `vs.checkin` has one row per booked cabin boarding a departure (passports seen, cards signed, key handed, checked in at).
+
+**2026-10-26 · Who "boards" a departure.**
+A cabin boards a departure when its booking's sailing starts there (same date and port). Guests already aboard from an earlier departure are on the manifest, not on the embarkation sheet.
+
+**2026-10-26 · Check-in details and their protection.**
+All optional. Visa numbers and medical notes are encrypted like passport numbers and never returned to the screen (an existing guest keeps them through `keepPassportOf`). Every personal check-in detail is erased with the passport after disembarkation and on a guest's erasure request; names and nationality stay. Dates of birth stay unencrypted, as before, because age checks need them; they are erased on the same schedule.
+Passport warnings: no number on file, expired, or expiring within six months of the end of the cruise.
+
+**2026-10-26 · The on-board role.**
+`onboard` belongs to exactly one vessel (`staff_user.vessel_id`, carried by `resolve_staff` and `claim_staff_invitation`). It may open only Check-in for that vessel, tick guests in and download that vessel's check-in documents (passport numbers included); balances are left out of its embarkation sheet and screen. The vessel is enforced in the engine on every read and write, and an on-board login can only follow and download documents it requested itself. Like reservations, it does not require the two-step code (see the open question in the D2 report).
+
+**2026-10-26 · The check-in pack by email.**
+The guest details (Excel) and the embarkation sheet, bilingual, emailed to the vessel's on-board address: by button, or automatically N hours before a departure (off until set; needs an email). A departure's moment is its date plus the schedule's boarding time, 12:00 when none is set, in Cairo time. The worker checks every minute; a scheduled send exists once per departure, and every send's outcome is recorded without its content.
+
+**2026-10-26 · Police list columns are provisional.**
+The check-in file follows the field list in `documents-plan.md` § 3 until the owner sends a real police list; then its columns are reordered to match.

@@ -206,6 +206,14 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
   [
+    'checkin',
+    async (page) => {
+      await page.goto(`${BASE}/checkin`);
+      await page.locator('section.rounded-xl').first().waitFor();
+      await page.waitForTimeout(600);
+    },
+  ],
+  [
     'branding',
     async (page, m) => {
       await page.goto(`${BASE}/settings`);

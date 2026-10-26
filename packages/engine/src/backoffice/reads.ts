@@ -135,6 +135,26 @@ export interface BookingDetail extends BookingView {
     dateOfBirth: string | null;
     hasPassport: boolean;
     lead: boolean;
+    // Check-in details (Batch D2). Visa numbers and medical notes are never sent back.
+    title: string | null;
+    gender: string | null;
+    passportCountry: string | null;
+    passportIssuedOn: string | null;
+    passportExpiresOn: string | null;
+    placeOfBirth: string | null;
+    visaType: string | null;
+    hasVisaNumber: boolean;
+    arrivalDate: string | null;
+    arrivalFlight: string | null;
+    arrivalPort: string | null;
+    phone: string | null;
+    emergencyName: string | null;
+    emergencyPhone: string | null;
+    dietary: string[];
+    allergies: string | null;
+    hasMedicalNotes: boolean;
+    occasion: string | null;
+    occasionDate: string | null;
   }[];
   revisions: {
     rev: number;
@@ -189,7 +209,15 @@ export async function getBookingDetail(
       .executeTakeFirstOrThrow();
     const guests = await sql<BookingDetail['guests'][number]>`
       select g.id, bc.seq as cabin, g.first_name as "firstName", g.last_name as "lastName", g.nationality,
-             g.date_of_birth::text as "dateOfBirth", g.passport_ciphertext is not null as "hasPassport", g.lead
+             g.date_of_birth::text as "dateOfBirth", g.passport_ciphertext is not null as "hasPassport", g.lead,
+             g.title, g.gender, g.passport_country as "passportCountry",
+             g.passport_issued_on::text as "passportIssuedOn", g.passport_expires_on::text as "passportExpiresOn",
+             g.place_of_birth as "placeOfBirth", g.visa_type as "visaType",
+             g.visa_ciphertext is not null as "hasVisaNumber", g.arrival_date::text as "arrivalDate",
+             g.arrival_flight as "arrivalFlight", g.arrival_port as "arrivalPort", g.phone,
+             g.emergency_name as "emergencyName", g.emergency_phone as "emergencyPhone", g.dietary,
+             g.allergies, g.medical_ciphertext is not null as "hasMedicalNotes", g.occasion,
+             g.occasion_date::text as "occasionDate"
       from vs.guest g join vs.booking_cabin bc on bc.id = g.booking_cabin_id
       where g.booking_id = ${found.id} order by g.lead desc, bc.seq, g.created_at`.execute(tx);
     const revisions = await sql<BookingDetail['revisions'][number]>`

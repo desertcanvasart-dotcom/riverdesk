@@ -3,13 +3,16 @@ import {
   activeVesselIds,
   bookingDocumentData,
   completeDocument,
+  departureCheckin,
   documentBrand,
+  finishCheckinPack,
   createPendingDocument,
   failDocument,
   getLegManifest,
   getOperatorSettings,
   loadPendingDocument,
   outagePackData,
+  pendingCheckinPacks,
   pruneDocuments,
   vacancyData,
   type EngineContext,
@@ -20,13 +23,16 @@ import { captureError, systemActor, type Config, type Logger } from '@vs/shared'
 import { mailer } from '../documents/mail';
 import {
   bookingDocumentHtml,
+  checkinFileHtml,
+  embarkationSheetHtml,
   manifestHtml,
   outagePackHtml,
+  registrationCardsHtml,
   roomingHtml,
   vacancyHtml,
 } from '@vs/documents';
 import { htmlToPdf, htmlToPng } from '../documents/render';
-import { manifestXlsx, vacancyXlsx } from '../documents/xlsx';
+import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
 
 const TYPES = {
@@ -90,6 +96,29 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       const data = await outagePackData(db, ctx, { vesselId: doc.entityId, from });
       base = `outage-pack-${from}`;
       content = await htmlToPdf(outagePackHtml(data, brand, locale));
+      break;
+    }
+    case 'embarkation_sheet':
+    case 'checkin_file':
+    case 'registration_cards': {
+      // The sheet has no passport numbers; the file and the cards do. The on-board copy
+      // (variant agent) leaves balances out.
+      const data = await departureCheckin(db, ctx, doc.entityId, {
+        vesselId: null,
+        withSensitive: doc.kind !== 'embarkation_sheet',
+        withMoney: doc.kind === 'embarkation_sheet' && doc.variant !== 'agent',
+      });
+      base = `${doc.kind.replace('_', '-')}-${data.leg.departDate}-${data.leg.from.code}`;
+      content =
+        doc.kind === 'checkin_file' && doc.format === 'xlsx'
+          ? await checkinXlsx(data, brand, locale)
+          : await htmlToPdf(
+              doc.kind === 'embarkation_sheet'
+                ? embarkationSheetHtml(data, brand, locale)
+                : doc.kind === 'checkin_file'
+                  ? checkinFileHtml(data, brand, locale)
+                  : registrationCardsHtml(data, brand, locale),
+            );
       break;
     }
     default:
@@ -178,5 +207,72 @@ export function outagePackTask(db: VsDatabase, logger: Logger, config: Config): 
           'outage pack stored but not emailed (no SMTP_URL or ops email)',
         );
       return { stored, sent };
+    });
+}
+
+/**
+ * Every minute: the check-in pack (the check-in file as a spreadsheet and the embarkation
+ * sheet) emailed to the vessel, for scheduled departures entering the window and for button
+ * presses. The files carry passport numbers: they are attached, never stored on the send.
+ */
+export function checkinPacksTask(db: VsDatabase, logger: Logger, config: Config): Task {
+  return () =>
+    forEachOperator(db, logger, 'checkin_packs', async (ctx) => {
+      const pending = await pendingCheckinPacks(db, ctx);
+      let sent = 0;
+      let failed = 0;
+      for (const send of pending) {
+        const mail = mailer(config);
+        if (!mail) {
+          await finishCheckinPack(db, ctx, send.id, {
+            sent: false,
+            error: 'No outgoing mail (SMTP_URL) configured',
+          });
+          failed += 1;
+          continue;
+        }
+        try {
+          const settings = await getOperatorSettings(db, ctx);
+          const locale = 'both' as const;
+          const files = await Promise.all(
+            [
+              { kind: 'checkin_file', format: 'xlsx' },
+              { kind: 'embarkation_sheet', format: 'pdf' },
+            ].map(({ kind, format }) =>
+              renderDocument(db, ctx, {
+                id: send.id,
+                kind,
+                format: format as 'pdf' | 'xlsx',
+                locale,
+                variant: 'full',
+                entityId: send.legId,
+                params: {},
+              }),
+            ),
+          );
+          await mail.sendMail({
+            from: config.MAIL_FROM ?? 'vessel-system <no-reply@localhost>',
+            to: send.sentTo,
+            subject: `${settings.name}: ${files[1]!.filename.replace(/\.pdf$/, '')}`,
+            text: 'Check-in file and embarkation sheet for this departure. They contain passport numbers: keep them confidential and delete them after the cruise.',
+            attachments: files.map((f) => ({
+              filename: f.filename,
+              content: f.content,
+              contentType: f.contentType,
+            })),
+          });
+          await finishCheckinPack(db, ctx, send.id, { sent: true });
+          sent += 1;
+        } catch (error) {
+          logger.error({ err: error, sendId: send.id }, 'check-in pack failed');
+          captureError(error, { sendId: send.id });
+          await finishCheckinPack(db, ctx, send.id, {
+            sent: false,
+            error: error instanceof Error ? error.message : 'send failed',
+          });
+          failed += 1;
+        }
+      }
+      return { sent, failed };
     });
 }

@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
-import { locText, textTranslator, type DocLocale } from '@vs/documents';
-import type { DocumentBrand, LegManifest, VacancyData } from '@vs/engine';
+import { checkinColumns, locText, textTranslator, type DocLocale } from '@vs/documents';
+import type { DepartureCheckin, DocumentBrand, LegManifest, VacancyData } from '@vs/engine';
 import { brandPalette } from '@vs/shared/color';
 
 /**
@@ -151,6 +151,70 @@ export function vacancyXlsx(
       s.nights,
       ...v.categories.map((c) => s.free[c.id] ?? 0),
     ]);
+  }
+  return finish(workbook);
+}
+
+/**
+ * The check-in file: one row per guest boarding, the police list's columns first, then what the
+ * reception and kitchen need. Passport and visa numbers included (permission `manifests`).
+ */
+export function checkinXlsx(
+  d: DepartureCheckin,
+  brand: DocumentBrand,
+  locale: DocLocale,
+): Promise<Buffer> {
+  const t = textTranslator(locale);
+  const workbook = new ExcelJS.Workbook();
+  const ws = sheet(workbook, t('checkin_file'), locale);
+  const from = locText({ ar: d.leg.from.nameAr, en: d.leg.from.nameEn }, locale);
+  const columns = [
+    ...checkinColumns(locale),
+    {
+      header: t('emergencyContact'),
+      width: 22,
+      value: (_: unknown, g: DepartureCheckin['parties'][number]['guests'][number]) =>
+        [g.emergencyName, g.emergencyPhone].filter(Boolean).join(' · '),
+    },
+    {
+      header: t('dietaryTitle'),
+      width: 18,
+      value: (_: unknown, g: DepartureCheckin['parties'][number]['guests'][number]) =>
+        g.dietary.map((x) => t(x)).join(', '),
+    },
+    {
+      header: t('allergies'),
+      width: 18,
+      value: (_: unknown, g: DepartureCheckin['parties'][number]['guests'][number]) =>
+        g.allergies ?? '',
+    },
+    {
+      header: t('medical'),
+      width: 22,
+      value: (_: unknown, g: DepartureCheckin['parties'][number]['guests'][number]) =>
+        g.medicalNotes ?? '',
+    },
+    {
+      header: t('occasion'),
+      width: 14,
+      value: (_: unknown, g: DepartureCheckin['parties'][number]['guests'][number]) =>
+        g.occasion
+          ? `${t(g.occasion === 'other' ? 'otherOccasion' : g.occasion)}${g.occasionDate ? ` ${g.occasionDate}` : ''}`
+          : '',
+    },
+  ];
+  header(
+    workbook,
+    ws,
+    brand,
+    t('checkin_file'),
+    `${d.leg.vessel} · ${d.leg.departDate} · ${from}`,
+    columns,
+  );
+  for (const party of d.parties) {
+    for (const g of party.guests) {
+      ws.addRow(columns.map((c) => c.value(party as never, g)));
+    }
   }
   return finish(workbook);
 }

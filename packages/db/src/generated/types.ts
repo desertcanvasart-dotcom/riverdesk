@@ -293,6 +293,34 @@ export interface ChannelContractRatePlan {
   rate_plan_id: string;
 }
 
+export interface Checkin {
+  booking_cabin_id: string;
+  cards_signed: Generated<boolean>;
+  checked_in_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  key_handed: Generated<boolean>;
+  leg_id: string;
+  operator_id: string;
+  passports_seen: Generated<boolean>;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+}
+
+export interface CheckinPackSend {
+  created_at: Generated<Timestamp>;
+  error: string | null;
+  id: Generated<string>;
+  leg_id: string;
+  operator_id: string;
+  requested_by: string | null;
+  sent_at: Timestamp | null;
+  sent_to: string;
+  status: Generated<string>;
+  trigger: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface ChildPolicy {
   adult_from_age: Generated<number>;
   created_at: Generated<Timestamp>;
@@ -370,19 +398,40 @@ export interface Exception {
 }
 
 export interface Guest {
+  allergies: string | null;
+  arrival_date: string | null;
+  arrival_flight: string | null;
+  arrival_port: string | null;
   booking_cabin_id: string;
   booking_id: string;
   created_at: Generated<Timestamp>;
   date_of_birth: string | null;
+  dietary: Generated<string[]>;
+  emergency_name: string | null;
+  emergency_phone: string | null;
   first_name: string;
+  gender: string | null;
   id: Generated<string>;
   last_name: string;
   lead: Generated<boolean>;
+  medical_ciphertext: Buffer | null;
+  medical_key_id: string | null;
   nationality: string | null;
+  occasion: string | null;
+  occasion_date: string | null;
   operator_id: string;
   passport_ciphertext: Buffer | null;
+  passport_country: string | null;
+  passport_expires_on: string | null;
+  passport_issued_on: string | null;
   passport_key_id: string | null;
+  phone: string | null;
+  place_of_birth: string | null;
+  title: string | null;
   updated_at: Generated<Timestamp>;
+  visa_ciphertext: Buffer | null;
+  visa_key_id: string | null;
+  visa_type: string | null;
 }
 
 export interface Hold {
@@ -775,6 +824,7 @@ export interface StaffInvitation {
   role: string;
   staff_user_id: string | null;
   updated_at: Generated<Timestamp>;
+  vessel_id: string | null;
 }
 
 export interface StaffUser {
@@ -788,6 +838,7 @@ export interface StaffUser {
   operator_id: string;
   role: string;
   updated_at: Generated<Timestamp>;
+  vessel_id: string | null;
 }
 
 export interface Supplement {
@@ -809,11 +860,13 @@ export interface Supplement {
 
 export interface Vessel {
   active: Generated<boolean>;
+  checkin_pack_hours: number | null;
   code: string;
   created_at: Generated<Timestamp>;
   id: Generated<string>;
   max_guests: number;
   name: string;
+  onboard_email: string | null;
   operator_id: string;
   sells_cabins: Generated<boolean>;
   sells_charter: Generated<boolean>;
@@ -886,6 +939,8 @@ export interface DB {
   channel_contract: ChannelContract;
   channel_contract_category: ChannelContractCategory;
   channel_contract_rate_plan: ChannelContractRatePlan;
+  checkin: Checkin;
+  checkin_pack_send: CheckinPackSend;
   child_policy: ChildPolicy;
   child_policy_band: ChildPolicyBand;
   document: Document;

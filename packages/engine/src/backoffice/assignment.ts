@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
 import { audit } from '../audit';
+import { ERASED_CHECKIN_DETAILS } from '../booking/common';
 import { cairoToday, lockVessel, parseInput, type EngineContext, type Tx } from '../internal';
 
 /**
@@ -238,20 +239,35 @@ export async function assignDueCabins(db: VsDatabase, ctx: EngineContext) {
 }
 
 /**
- * Passport numbers and dates of birth are erased a set number of days after disembarkation
- * (operator setting, 90 by default). Names stay for accounting. Worker job, daily.
+ * Passport numbers, dates of birth and the other personal check-in details are erased a set
+ * number of days after disembarkation (operator setting, 90 by default). Names stay for
+ * accounting. Worker job, daily.
  */
 export async function erasePassports(db: VsDatabase, ctx: EngineContext) {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const today = await cairoToday(tx);
-    const result = await sql`
-      update vs.guest g
-      set passport_ciphertext = null, passport_key_id = null, date_of_birth = null
-      from vs.booking b, vs.sailing s, vs.operator_setting o
-      where g.booking_id = b.id and s.id = b.sailing_id
-        and s.disembark_date + o.passport_retention_days < ${today}::date
-        and (g.passport_ciphertext is not null or g.date_of_birth is not null)`.execute(tx);
-    const erased = Number(result.numAffectedRows ?? 0);
+    // Passport numbers, dates of birth and every personal check-in detail (Batch D2) go together.
+    const result = await tx
+      .updateTable('guest')
+      .set({ ...ERASED_CHECKIN_DETAILS, dietary: sql<string[]>`'{}'::text[]` })
+      .where(({ exists, selectFrom }) =>
+        exists(
+          selectFrom('booking as b')
+            .innerJoin('sailing as s', 's.id', 'b.sailing_id')
+            .innerJoin('operator_setting as o', 'o.operator_id', 'b.operator_id')
+            .whereRef('b.id', '=', 'guest.booking_id')
+            .where(sql<boolean>`s.disembark_date + o.passport_retention_days < ${today}::date`),
+        ),
+      )
+      .where(
+        sql<boolean>`(passport_ciphertext is not null or date_of_birth is not null
+          or passport_country is not null or passport_expires_on is not null or visa_type is not null
+          or visa_ciphertext is not null or medical_ciphertext is not null or phone is not null
+          or emergency_name is not null or arrival_date is not null or allergies is not null
+          or cardinality(dietary) > 0 or occasion is not null or place_of_birth is not null)`,
+      )
+      .executeTakeFirst();
+    const erased = Number(result.numUpdatedRows ?? 0);
     if (erased > 0) {
       await audit(tx, ctx.operatorId, ctx.actor, {
         action: 'guests.passports_erased',

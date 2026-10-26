@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { SetupChecklist } from '../../components/setup-checklist';
 import { Badge, Card, PageHeader } from '../../components/ui';
@@ -7,6 +8,8 @@ import { serverCaller } from '../../server/caller';
 
 export default async function HomePage() {
   const caller = await serverCaller();
+  // An on-board login has one screen.
+  if ((await caller.me.profile()).role === 'onboard') redirect('/checkin');
   const [list, profile] = await Promise.all([caller.home.actionList(), caller.me.profile()]);
   // Owners see what is left to set up until the company can sell.
   const setup = profile.permissions.includes('fleet.write') ? await caller.home.setup() : null;

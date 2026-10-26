@@ -1,13 +1,13 @@
 ---
 title: People and roles
-summary: The four roles, what each may do, inviting and removing people.
+summary: The five roles, what each may do, inviting and removing people.
 ---
 
 # People and roles
 
 Everyone has one role. Riverdesk checks the role on the server for every action. Hiding a button is never the only protection.
 
-## The four roles
+## The roles
 
 |                                                     | Owner | Reservations | Finance | Read only |
 | --------------------------------------------------- | :---: | :----------: | :-----: | :-------: |
@@ -21,6 +21,8 @@ Everyone has one role. Riverdesk checks the role on the server for every action.
 | People and company settings                         |   ✓   |              |         |           |
 | Export or erase a guest's data; the Pilot dashboard |   ✓   |              |         |           |
 | Two-step code required                              |   ✓   |              |    ✓    |           |
+
+**On board** is a fifth role for the vessel's purser or receptionist. It belongs to one vessel and opens only **Check-in** for that vessel: ticking guests in and downloading its check-in documents (with passport numbers), with no prices, balances or payments. When you invite someone as **On board**, choose their vessel. See [Check-in](/docs/staff-guide/check-in).
 
 ## Inviting someone
 

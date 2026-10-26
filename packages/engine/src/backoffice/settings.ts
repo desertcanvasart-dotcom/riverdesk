@@ -10,7 +10,18 @@ import { parseInput, type EngineContext, type Tx } from '../internal';
  * person is invited by email and claims it at first sign-in), operator details and defaults.
  */
 
-const role = z.enum(['owner', 'reservations', 'finance', 'read_only']);
+const role = z.enum(['owner', 'reservations', 'finance', 'read_only', 'onboard']);
+
+/** An on-board login belongs to exactly one vessel; no other role has one. */
+function vesselFor(role: string, vesselId: string | null | undefined): string | null {
+  if (role !== 'onboard') return null;
+  if (!vesselId)
+    throw new DomainError('VALIDATION_FAILED', {
+      message: 'An on-board login needs its vessel',
+      details: { field: 'vesselId' },
+    });
+  return vesselId;
+}
 
 export async function listStaff(db: VsDatabase, ctx: EngineContext) {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
@@ -21,6 +32,7 @@ export async function listStaff(db: VsDatabase, ctx: EngineContext) {
         'display_name as displayName',
         'email',
         'role',
+        'vessel_id as vesselId',
         'active',
         'created_at as createdAt',
       ])
@@ -29,7 +41,14 @@ export async function listStaff(db: VsDatabase, ctx: EngineContext) {
       .execute();
     const invitations = await tx
       .selectFrom('staff_invitation')
-      .select(['id', 'email', 'display_name as displayName', 'role', 'expires_at as expiresAt'])
+      .select([
+        'id',
+        'email',
+        'display_name as displayName',
+        'role',
+        'vessel_id as vesselId',
+        'expires_at as expiresAt',
+      ])
       .where('accepted_at', 'is', null)
       .where('expires_at', '>', sql<Date>`now()`)
       .orderBy('created_at', 'desc')
@@ -42,6 +61,8 @@ export const inviteStaffInput = z.object({
   email: z.email().max(200),
   displayName: z.string().trim().min(1).max(200),
   role,
+  /** Required for an on-board login: the vessel it may see. */
+  vesselId: z.uuid().nullish(),
 });
 
 /** The person signs in with this email (verified) and becomes staff with this role. */
@@ -52,6 +73,7 @@ export async function inviteStaff(
 ) {
   const data = parseInput(inviteStaffInput, input);
   const email = data.email.toLowerCase();
+  const vesselId = vesselFor(data.role, data.vesselId);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const existing = await tx
       .selectFrom('staff_user')
@@ -63,8 +85,8 @@ export async function inviteStaff(
     // One open invitation per email across the platform: the unique index answers for every
     // company without this one being able to see the others.
     const invitation = await sql<{ id: string }>`
-      insert into vs.staff_invitation (operator_id, email, display_name, role)
-      values (${ctx.operatorId}, ${email}, ${data.displayName}, ${data.role})
+      insert into vs.staff_invitation (operator_id, email, display_name, role, vessel_id)
+      values (${ctx.operatorId}, ${email}, ${data.displayName}, ${data.role}, ${vesselId})
       on conflict do nothing
       returning id`.execute(tx);
     const row = invitation.rows[0];
@@ -76,7 +98,7 @@ export async function inviteStaff(
       action: 'staff_invitation.created',
       entity: 'staff_invitation',
       entityId: row.id,
-      after: { email, role: data.role },
+      after: { email, role: data.role, vesselId },
     });
     return { invitationId: row.id };
   });
@@ -112,6 +134,7 @@ export async function revokeInvitation(
 export const updateStaffInput = z.object({
   staffUserId: z.uuid(),
   role: role.optional(),
+  vesselId: z.uuid().nullish(),
   active: z.boolean().optional(),
 });
 
@@ -132,12 +155,17 @@ export async function updateStaff(
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const before = await tx
       .selectFrom('staff_user')
-      .select(['id', 'role', 'active'])
+      .select(['id', 'role', 'vessel_id', 'active'])
       .where('id', '=', data.staffUserId)
       .forUpdate()
       .executeTakeFirst();
     if (!before) throw new DomainError('NOT_FOUND', { message: 'Staff member not found' });
-    const after = { role: data.role ?? before.role, active: data.active ?? before.active };
+    const nextRole = data.role ?? before.role;
+    const after = {
+      role: nextRole,
+      vessel_id: vesselFor(nextRole, data.vesselId ?? before.vessel_id),
+      active: data.active ?? before.active,
+    };
     const losesOwner =
       before.role === 'owner' && before.active && (after.role !== 'owner' || !after.active);
     if (losesOwner && (await activeOwners(tx)) <= 1) {
@@ -150,10 +178,15 @@ export async function updateStaff(
       action: 'staff.updated',
       entity: 'staff_user',
       entityId: before.id,
-      before: { role: before.role, active: before.active },
-      after,
+      before: { role: before.role, vesselId: before.vessel_id, active: before.active },
+      after: { role: after.role, vesselId: after.vessel_id, active: after.active },
     });
-    return { staffUserId: before.id, ...after };
+    return {
+      staffUserId: before.id,
+      role: after.role,
+      vesselId: after.vessel_id,
+      active: after.active,
+    };
   });
 }
 

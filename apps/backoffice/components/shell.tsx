@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CalendarPlus,
   ChevronDown,
+  ClipboardCheck,
   ClipboardList,
   Gauge,
   House,
@@ -40,6 +41,7 @@ type Key =
   | 'payments'
   | 'inventory'
   | 'guests'
+  | 'checkin'
   | 'vacancy'
   | 'fleet'
   | 'schedule'
@@ -74,6 +76,7 @@ const SECTIONS: { key: string | null; items: Item[] }[] = [
     items: [
       { key: 'inventory', href: '/inventory', icon: LayoutGrid },
       { key: 'guests', href: '/guests', icon: Users },
+      { key: 'checkin', href: '/checkin', icon: ClipboardCheck },
       { key: 'vacancy', href: '/vacancy', icon: ClipboardList },
     ],
   },
@@ -111,6 +114,7 @@ export function Shell({
   role,
   showPilot = false,
   showPlatform = false,
+  onboard = false,
   children,
 }: {
   operator: string;
@@ -119,6 +123,8 @@ export function Shell({
   showPilot?: boolean;
   /** Platform admins also get a link to the platform area. */
   showPlatform?: boolean;
+  /** An on-board login: Check-in is its only screen. */
+  onboard?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -130,14 +136,20 @@ export function Shell({
   useEffect(() => setFolded(readFolded()), []);
   useEffect(() => setOpen(false), [path]);
   // Waiting requests are the one count worth seeing from every page.
-  const actions = useQuery({ ...trpc.home.actionList.queryOptions(), staleTime: 60_000 });
+  const actions = useQuery({
+    ...trpc.home.actionList.queryOptions(),
+    staleTime: 60_000,
+    enabled: !onboard,
+  });
   const counts: Partial<Record<Key, number>> = { requests: actions.data?.requests.length ?? 0 };
 
   const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
-  const sections = SECTIONS.map((s) => ({
-    ...s,
-    items: s.items.filter((i) => i.key !== 'pilot' || showPilot),
-  }));
+  const sections = onboard
+    ? [{ key: null, items: [{ key: 'checkin' as const, href: '/checkin', icon: ClipboardCheck }] }]
+    : SECTIONS.map((s) => ({
+        ...s,
+        items: s.items.filter((i) => i.key !== 'pilot' || showPilot),
+      }));
   const current = sections
     .flatMap((s) => s.items.map((i) => ({ ...i, section: s.key })))
     .find((i) => isActive(i.href));

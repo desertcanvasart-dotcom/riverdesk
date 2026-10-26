@@ -19,7 +19,12 @@ import {
   expireRequestsTask,
   releaseAllotmentsTask,
 } from './tasks/booking-jobs';
-import { outagePackTask, pruneDocumentsTask, renderDocumentTask } from './tasks/document-jobs';
+import {
+  checkinPacksTask,
+  outagePackTask,
+  pruneDocumentsTask,
+  renderDocumentTask,
+} from './tasks/document-jobs';
 import { nightlyInvariants } from './tasks/nightly-invariants';
 import { pruneRateLimitsTask, webhooksTask } from './tasks/webhook-jobs';
 
@@ -46,6 +51,8 @@ export const CRONTAB = [
   '*/5 * * * * health_alerts ?max=1',
   // 02:00 UTC is 04:00–05:00 in Cairo: the pack is in the inbox before the office opens.
   '0 2 * * * outage_pack ?max=1',
+  // The check-in pack: departures entering their vessel's window, and button presses (within a minute).
+  '* * * * * checkin_packs ?max=1',
 ].join('\n');
 
 export function buildTaskList(
@@ -67,6 +74,7 @@ export function buildTaskList(
     prune_documents: pruneDocumentsTask(db, logger),
     health_alerts: healthAlertsTask(db, logger),
     outage_pack: outagePackTask(db, logger, config),
+    checkin_packs: checkinPacksTask(db, logger, config),
     render_document: renderDocumentTask(db, logger),
   };
 }

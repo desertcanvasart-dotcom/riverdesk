@@ -1,6 +1,6 @@
 /**
  * Renders one booking's documents (Arabic, English and bilingual; full and agency copy) and its
- * first departure's manifest and rooming list to files, for checking layout by eye. Local demo company only; never prints document content.
+ * first departure's manifest, rooming list and check-in documents to files, for checking layout by eye. Local demo company only; never prints document content.
  *   pnpm --filter @vs/worker render-sample <booking-ref> <out-dir>
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -51,6 +51,10 @@ try {
       ['manifest', 'pdf'],
       ['rooming_list', 'pdf'],
       ['manifest', 'xlsx'],
+      ['embarkation_sheet', 'pdf'],
+      ['checkin_file', 'pdf'],
+      ['checkin_file', 'xlsx'],
+      ['registration_cards', 'pdf'],
     ] as const) {
       const file = await renderDocument(db, ctx, {
         id: 'sample',

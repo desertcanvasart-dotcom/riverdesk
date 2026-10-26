@@ -5,14 +5,14 @@ import { procedure, router } from '../trpc';
 import { can, PERMISSIONS, type Permission } from '../permissions';
 
 export const meRouter = router({
-  profile: procedure('read').query(async ({ ctx }) => {
+  profile: procedure('self').query(async ({ ctx }) => {
     const profile = await getStaffProfile(backofficeDb(), ctx.engine, ctx.staff.staffUserId);
     const permissions = (Object.keys(PERMISSIONS) as Permission[]).filter((p) =>
       can(ctx.staff.role, p),
     );
     return { ...profile, permissions };
   }),
-  setLocale: procedure('read')
+  setLocale: procedure('self')
     .input(z.object({ locale: z.enum(['ar', 'en']) }))
     .mutation(async ({ ctx, input }) => {
       await setStaffLocale(backofficeDb(), ctx.engine, ctx.staff.staffUserId, input.locale);

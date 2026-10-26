@@ -48,3 +48,5 @@ Ideas and later work. Nothing here is built until a batch or a named demand asks
 - Routes: board-only or leave-only stops in the editor (today one tick sets both); itineraries spanning more than one extra cycle (the engine allows up to 8).
 - Ships: take a ship out of service (deactivate) once it has no future departures; delete a category that was never used.
 - Website: a contact or demo-request form (today a mailto link), a custom domain and hosting, privacy-friendly analytics if wanted, and docs search.
+- Guest check-in details by CSV import (Batch D2 kept the pilot import to names; details come from the booking screen and the Channel API).
+- Check-in file columns to match the vessels' real police list (waiting for a sample from the owner).

@@ -646,6 +646,34 @@ export interface components {
             passport_number?: string;
             /** @default false */
             lead: boolean;
+            /** @enum {string} */
+            title?: "mr" | "mrs" | "ms" | "miss" | "dr";
+            /** @enum {string} */
+            gender?: "female" | "male";
+            /** @description Issuing country */
+            passport_country?: string;
+            passport_issued_on?: components["schemas"]["Date"];
+            passport_expires_on?: components["schemas"]["Date"];
+            place_of_birth?: string;
+            /** @enum {string} */
+            visa_type?: "e_visa" | "on_arrival" | "sticker" | "residence" | "not_required";
+            /** @description Encrypted at rest; never returned. */
+            visa_number?: string;
+            arrival_date?: components["schemas"]["Date"];
+            /** @description Arriving flight */
+            arrival_flight?: string;
+            /** @description Port of entry into Egypt. */
+            arrival_port?: string;
+            phone?: string;
+            emergency_name?: string;
+            emergency_phone?: string;
+            dietary?: ("vegetarian" | "vegan" | "halal" | "kosher" | "gluten_free" | "lactose_free" | "no_pork" | "no_seafood" | "diabetic")[];
+            allergies?: string;
+            /** @description Medical or mobility needs. Encrypted at rest; never returned. */
+            medical_notes?: string;
+            /** @enum {string} */
+            occasion?: "birthday" | "honeymoon" | "anniversary" | "other";
+            occasion_date?: components["schemas"]["Date"];
         };
         ConfirmRequest: {
             /** @description Your reference; unique per channel forever. */

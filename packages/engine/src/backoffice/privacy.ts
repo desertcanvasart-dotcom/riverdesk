@@ -4,6 +4,7 @@ import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
 import { decryptField, fieldKeyring, loadConfig, type FieldKeyring } from '@vs/shared';
 import { audit } from '../audit';
+import { ERASED_CHECKIN_DETAILS } from '../booking/common';
 import { parseInput, type EngineContext } from '../internal';
 
 /**
@@ -31,6 +32,11 @@ export async function exportGuestData(
       lead: boolean;
       passport_ciphertext: Buffer | null;
       passport_key_id: string | null;
+      details: Record<string, unknown>;
+      visa_ciphertext: Buffer | null;
+      visa_key_id: string | null;
+      medical_ciphertext: Buffer | null;
+      medical_key_id: string | null;
       created_at: Date;
       ref: string;
       status: string;
@@ -40,7 +46,16 @@ export async function exportGuestData(
       operator: string;
     }>`
       select g.first_name, g.last_name, g.nationality, g.date_of_birth::text, g.lead, g.passport_ciphertext,
-             g.passport_key_id, g.created_at, b.ref, b.status, s.embark_date::text, s.disembark_date::text,
+             g.passport_key_id, g.visa_ciphertext, g.visa_key_id, g.medical_ciphertext, g.medical_key_id,
+             jsonb_strip_nulls(jsonb_build_object(
+               'title', g.title, 'gender', g.gender, 'passportCountry', g.passport_country,
+               'passportIssuedOn', g.passport_issued_on, 'passportExpiresOn', g.passport_expires_on,
+               'placeOfBirth', g.place_of_birth, 'visaType', g.visa_type, 'arrivalDate', g.arrival_date,
+               'arrivalFlight', g.arrival_flight, 'arrivalPort', g.arrival_port, 'phone', g.phone,
+               'emergencyName', g.emergency_name, 'emergencyPhone', g.emergency_phone,
+               'dietary', nullif(g.dietary, '{}'), 'allergies', g.allergies, 'occasion', g.occasion,
+               'occasionDate', g.occasion_date)) as details,
+             g.created_at, b.ref, b.status, s.embark_date::text, s.disembark_date::text,
              v.name as vessel, o.name as operator
       from vs.guest g join vs.booking b on b.id = g.booking_id join vs.sailing s on s.id = b.sailing_id
       join vs.vessel v on v.id = b.vessel_id join vs.operator o on o.id = g.operator_id
@@ -64,6 +79,15 @@ export async function exportGuestData(
         passportNumber:
           g.passport_ciphertext && g.passport_key_id
             ? decryptField(Buffer.from(g.passport_ciphertext), g.passport_key_id, keys())
+            : null,
+        ...g.details,
+        visaNumber:
+          g.visa_ciphertext && g.visa_key_id
+            ? decryptField(Buffer.from(g.visa_ciphertext), g.visa_key_id, keys())
+            : null,
+        medicalNotes:
+          g.medical_ciphertext && g.medical_key_id
+            ? decryptField(Buffer.from(g.medical_ciphertext), g.medical_key_id, keys())
             : null,
         leadGuest: g.lead,
         recordedAt: g.created_at.toISOString(),
@@ -96,9 +120,10 @@ export async function eraseGuest(
         first_name: 'Erased',
         last_name: 'Guest',
         nationality: null,
-        date_of_birth: null,
-        passport_ciphertext: null,
-        passport_key_id: null,
+        title: null,
+        gender: null,
+        ...ERASED_CHECKIN_DETAILS,
+        dietary: sql<string[]>`'{}'::text[]`,
       })
       .where('id', '=', data.guestId)
       .returning(['id', 'booking_id'])

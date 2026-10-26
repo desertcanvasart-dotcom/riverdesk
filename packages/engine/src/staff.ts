@@ -2,13 +2,32 @@ import { sql } from 'kysely';
 import type { VsDatabase } from '@vs/db';
 import { audit } from './audit';
 
-export type StaffRole = 'owner' | 'reservations' | 'finance' | 'read_only';
+/** `onboard`: the vessel's reception and purser, limited to one vessel's departures. */
+export type StaffRole = 'owner' | 'reservations' | 'finance' | 'read_only' | 'onboard';
 
 export interface StaffContext {
   staffUserId: string;
   operatorId: string;
   role: StaffRole;
+  /** The one vessel an on-board login may see; null for every other role. */
+  vesselId: string | null;
 }
+
+type StaffRow = {
+  staff_user_id: string;
+  operator_id: string;
+  role: StaffRole;
+  vessel_id: string | null;
+};
+const toContext = (row: StaffRow | undefined): StaffContext | null =>
+  row
+    ? {
+        staffUserId: row.staff_user_id,
+        operatorId: row.operator_id,
+        role: row.role,
+        vesselId: row.vessel_id,
+      }
+    : null;
 
 /**
  * Maps a verified Supabase Auth user id to its operator and role. Runs before the tenant is
@@ -20,15 +39,12 @@ export async function getStaffContext(
   authUserId: string,
 ): Promise<StaffContext | null> {
   const { rows } = await db.withLookupTx((tx) =>
-    sql<{ staff_user_id: string; operator_id: string; role: StaffRole }>`
-      select staff_user_id, operator_id, role from vs.resolve_staff(${authUserId}::uuid)`.execute(
+    sql<StaffRow>`
+      select staff_user_id, operator_id, role, vessel_id from vs.resolve_staff(${authUserId}::uuid)`.execute(
       tx,
     ),
   );
-  const row = rows[0];
-  return row
-    ? { staffUserId: row.staff_user_id, operatorId: row.operator_id, role: row.role }
-    : null;
+  return toContext(rows[0]);
 }
 
 /** Liveness probe for /health endpoints: one round trip as the runtime role. */
@@ -49,15 +65,12 @@ export async function claimStaffInvitation(
 ): Promise<StaffContext | null> {
   const claim = async () => {
     const { rows } = await db.withLookupTx((tx) =>
-      sql<{ staff_user_id: string; operator_id: string; role: StaffRole }>`
-        select staff_user_id, operator_id, role from vs.claim_staff_invitation(${authUserId}::uuid, ${verifiedEmail})`.execute(
+      sql<StaffRow>`
+        select staff_user_id, operator_id, role, vessel_id from vs.claim_staff_invitation(${authUserId}::uuid, ${verifiedEmail})`.execute(
         tx,
       ),
     );
-    const row = rows[0];
-    return row
-      ? { staffUserId: row.staff_user_id, operatorId: row.operator_id, role: row.role }
-      : null;
+    return toContext(rows[0]);
   };
   // A first sign-in loads several parts of a page at once, and each may claim. The losers wait
   // for the winner's lock, then find the invitation already taken; asking once more returns the

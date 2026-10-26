@@ -5,10 +5,11 @@ vi.mock('server-only', () => ({}));
 const { appRouter } = await import('../server/router');
 const { can, MFA_REQUIRED, PERMISSIONS } = await import('../server/permissions');
 
-const staff = (role: 'owner' | 'reservations' | 'finance' | 'read_only') => ({
+const staff = (role: 'owner' | 'reservations' | 'finance' | 'read_only' | 'onboard') => ({
   staffUserId: crypto.randomUUID(),
   operatorId: crypto.randomUUID(),
   role,
+  vesselId: role === 'onboard' ? crypto.randomUUID() : null,
 });
 
 describe('back-office authorization (server side)', () => {
@@ -39,7 +40,9 @@ describe('back-office authorization (server side)', () => {
 
   it('read-only may read and do nothing else', () => {
     for (const permission of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) {
-      expect(can('read_only', permission)).toBe(permission === 'read');
+      expect(can('read_only', permission)).toBe(
+        ['read', 'self', 'checkin.view'].includes(permission),
+      );
     }
     expect(can('finance', 'payments.write')).toBe(true);
     expect(can('finance', 'bookings.write')).toBe(false);
@@ -73,5 +76,40 @@ describe('back-office authorization (server side)', () => {
       const [group, name] = path.split('.') as [string, string];
       await expect(caller[group]![name]!({}), path).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }
+  });
+
+  it('on-board staff get Check-in and their own profile, nothing else', async () => {
+    const allowed = (Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]).filter((p) =>
+      can('onboard', p),
+    );
+    expect(allowed.sort()).toEqual(
+      ['checkin.view', 'checkin.write', 'documents.create', 'manifests', 'self'].sort(),
+    );
+    expect(MFA_REQUIRED).not.toContain('onboard');
+    const session = {
+      authUserId: crypto.randomUUID(),
+      email: null,
+      aal: 'aal1' as const,
+      staff: staff('onboard'),
+      platformAdmin: false,
+      needsMfa: false,
+    };
+    const caller = appRouter.createCaller({ session });
+    for (const call of [
+      () => caller.home.actionList(),
+      () => caller.bookings.search({}),
+      () => caller.payments.ledger({}),
+      () => caller.checkin.vessels(),
+    ]) {
+      await expect(call()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    }
+    // Booking documents are refused before any database work.
+    await expect(
+      caller.documents.request({
+        kind: 'voucher',
+        bookingId: crypto.randomUUID(),
+        locale: 'ar',
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 });

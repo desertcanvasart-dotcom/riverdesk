@@ -115,6 +115,8 @@ export function page(options: {
   subtitle?: string;
   body: string;
   landscape?: boolean;
+  /** No page header or contact strip (each part carries its own, like registration cards). */
+  bare?: boolean;
 }): string {
   const { locale, brand } = options;
   const c = brandPalette(brand.primary, brand.secondary);
@@ -176,7 +178,10 @@ tr { break-inside: avoid; }
 </head>
 <body>
 <div class="sheet">
-<header class="doc-head">
+${
+  options.bare
+    ? ''
+    : `<header class="doc-head">
   <div class="brand">
     ${brand.logo ? `<img class="logo" src="${e(brand.logo)}" alt="">` : ''}
     <div class="name">${e(brand.name)}</div>
@@ -186,9 +191,10 @@ tr { break-inside: avoid; }
     ${options.subtitle ? `<div class="subtitle">${options.subtitle}</div>` : ''}
   </div>
 </header>
-<div class="rule"></div>
+<div class="rule"></div>`
+}
 ${options.body}
-${contactStrip(brand, locale)}
+${options.bare ? '' : contactStrip(brand, locale)}
 </div>
 </body>
 </html>`;

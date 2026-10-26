@@ -21,7 +21,7 @@ import { useTRPC } from '../../../lib/trpc';
 import { BrandingCard } from './branding-card';
 import { MarketsCard } from './markets-card';
 
-const ROLES = ['owner', 'reservations', 'finance', 'read_only'] as const;
+const ROLES = ['owner', 'reservations', 'finance', 'read_only', 'onboard'] as const;
 const NUMBERS = [
   'checkoutHoldMinutes',
   'optionHoldHours',
@@ -45,12 +45,17 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
   const errorText = useErrorText();
   const operator = useQuery(trpc.settings.operator.queryOptions());
   const staff = useQuery(trpc.settings.staff.queryOptions());
+  // An on-board login belongs to one vessel.
+  const vessels = useQuery(trpc.book.vessels.queryOptions());
+  const firstVessel = vessels.data?.[0]?.id ?? null;
+  const vesselName = (id: string | null) => vessels.data?.find((v) => v.id === id)?.name ?? '';
   const [form, setForm] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [invite, setInvite] = useState({
     email: '',
     displayName: '',
     role: 'reservations' as (typeof ROLES)[number],
+    vesselId: null as string | null,
   });
   useEffect(() => {
     if (operator.data)
@@ -78,7 +83,7 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
     trpc.settings.invite.mutationOptions({
       onSuccess: () => {
         setNotice(t('invited'));
-        setInvite({ email: '', displayName: '', role: 'reservations' });
+        setInvite({ email: '', displayName: '', role: 'reservations', vesselId: null });
         void refreshStaff();
       },
     }),
@@ -109,24 +114,46 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
               </Td>
               <Td>
                 {canWrite ? (
-                  <Select
-                    value={s.role}
-                    aria-label={t('role')}
-                    onChange={(e) =>
-                      update.mutate({
-                        staffUserId: s.id,
-                        role: e.target.value as (typeof ROLES)[number],
-                      })
-                    }
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {tr(r)}
-                      </option>
-                    ))}
-                  </Select>
+                  <div className="flex flex-wrap gap-2">
+                    <Select
+                      value={s.role}
+                      aria-label={t('role')}
+                      onChange={(e) => {
+                        const role = e.target.value as (typeof ROLES)[number];
+                        update.mutate({
+                          staffUserId: s.id,
+                          role,
+                          vesselId: role === 'onboard' ? (s.vesselId ?? firstVessel) : null,
+                        });
+                      }}
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {tr(r)}
+                        </option>
+                      ))}
+                    </Select>
+                    {s.role === 'onboard' && (
+                      <Select
+                        value={s.vesselId ?? ''}
+                        aria-label={t('vessel')}
+                        onChange={(e) =>
+                          update.mutate({ staffUserId: s.id, vesselId: e.target.value })
+                        }
+                      >
+                        {vessels.data?.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </div>
                 ) : (
-                  tr(s.role as (typeof ROLES)[number])
+                  <>
+                    {tr(s.role as (typeof ROLES)[number])}
+                    {s.role === 'onboard' && ` · ${vesselName(s.vesselId)}`}
+                  </>
                 )}
               </Td>
               <Td>
@@ -154,6 +181,7 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
                   <span>
                     {i.displayName} · <span dir="ltr">{i.email}</span> ·{' '}
                     {tr(i.role as (typeof ROLES)[number])}
+                    {i.role === 'onboard' && ` · ${vesselName(i.vesselId)}`}
                     <span className="block text-xs text-muted">
                       {t('expires', { date: formatDateTime(i.expiresAt, locale) })}
                     </span>
@@ -171,7 +199,7 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
 
         {canWrite && (
           <form
-            className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
+            className="mt-4 grid gap-2 sm:auto-cols-fr sm:grid-flow-col sm:items-end"
             onSubmit={(e) => {
               e.preventDefault();
               sendInvite.mutate({
@@ -200,9 +228,14 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
             <Field label={t('role')}>
               <Select
                 value={invite.role}
-                onChange={(e) =>
-                  setInvite({ ...invite, role: e.target.value as (typeof ROLES)[number] })
-                }
+                onChange={(e) => {
+                  const role = e.target.value as (typeof ROLES)[number];
+                  setInvite({
+                    ...invite,
+                    role,
+                    vesselId: role === 'onboard' ? (invite.vesselId ?? firstVessel) : null,
+                  });
+                }}
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
@@ -211,6 +244,20 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
                 ))}
               </Select>
             </Field>
+            {invite.role === 'onboard' && (
+              <Field label={t('vessel')}>
+                <Select
+                  value={invite.vesselId ?? ''}
+                  onChange={(e) => setInvite({ ...invite, vesselId: e.target.value })}
+                >
+                  {vessels.data?.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
             <Button type="submit" disabled={sendInvite.isPending}>
               {t('invite')}
             </Button>
