@@ -159,6 +159,9 @@ export async function listPayments(
       receivedOn: string;
       reverses: string | null;
       reversed: boolean;
+      receiptId: string | null;
+      /** Written by a party receipt's allocation: undone on the receipt, not reversed here. */
+      fromAllocation: boolean;
       actor: string | null;
       createdAt: Date;
     }>`
@@ -166,6 +169,7 @@ export async function listPayments(
              b.currency as "bookingCurrency", p.reference, p.received_on::text as "receivedOn",
              p.reverses_payment_id as reverses,
              exists (select from vs.payment r where r.reverses_payment_id = p.id) as reversed,
+             p.receipt_id as "receiptId", (p.allocation_id is not null) as "fromAllocation",
              coalesce(s.display_name, p.actor_label, p.actor_type) as actor, p.created_at as "createdAt"
       from vs.payment p join vs.booking b on b.id = p.booking_id
       left join vs.staff_user s on s.id = p.actor_id

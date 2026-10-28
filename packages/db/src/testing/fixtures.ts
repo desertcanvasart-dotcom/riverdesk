@@ -115,6 +115,8 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   document_counter: invoiceFixture,
   invoice: invoiceFixture,
   invoice_line: invoiceFixture,
+  receipt: invoiceFixture,
+  allocation: invoiceFixture,
   api_client: apiFixture,
   api_client_secret: apiFixture,
   rate_limit_counter: apiFixture,
@@ -476,7 +478,7 @@ async function bookingFixture(db: pg.Pool, operatorId: string): Promise<void> {
 
 const invoiceWorlds = new Map<string, Promise<void>>();
 
-/** One row in every invoicing table (F1), on top of bookingWorld. The invoice stays a draft. */
+/** One row in every invoicing table (F1–F3), on top of bookingWorld. The invoice stays a draft. */
 function invoiceWorld(db: pg.Pool, operatorId: string): Promise<void> {
   const existing = invoiceWorlds.get(operatorId);
   if (existing) return existing;
@@ -513,6 +515,16 @@ function invoiceWorld(db: pg.Pool, operatorId: string): Promise<void> {
                                     unit_amount, amount, tax_rate_id, tax_bps, tax_inclusive)
        values ($1, $2, 0, 'penalty', $3, 'غرامة', 'Penalty', 100, 100, $4, 1400, true)`,
       [o, invoice, booking.id, tax],
+    );
+    const receipt = await one(
+      `insert into vs.receipt (operator_id, billing_party_id, kind, received_on, amount, currency, method, reference)
+       values ($1, $2, 'receipt', '2027-01-01', 100, 'USD', 'bank_transfer', 'fixture') returning id`,
+      [o, party],
+    );
+    await db.query(
+      `insert into vs.allocation (operator_id, receipt_id, invoice_id, booking_id, amount, invoice_amount, reason)
+       values ($1, $2, $3, $4, 100, 100, 'allocated')`,
+      [o, receipt, invoice, booking.id],
     );
   })();
   invoiceWorlds.set(operatorId, created);

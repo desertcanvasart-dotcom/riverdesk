@@ -674,3 +674,56 @@ export async function refreshPaymentStatus(tx: Tx, bookingId: string) {
       else 'unpaid' end
     where b.id = ${bookingId}`.execute(tx);
 }
+
+/** One booking payment, with the receipt it belongs to (invoicing F3). */
+export interface LedgerEntry {
+  bookingId: string;
+  kind: string;
+  method: string;
+  /** In the currency received or paid out; negative for refunds, reversals and unallocations. */
+  amount: bigint;
+  currency: string;
+  fxRate: string | null;
+  bookingAmount: bigint;
+  reference: string;
+  receivedOn: string;
+  receiptId: string;
+  /** Set when a party receipt's allocation wrote it. */
+  allocationId?: string | null;
+  reversesPaymentId?: string;
+  note?: string | null;
+}
+
+/** Appends to the payment ledger and keeps the booking's amount paid and payment status. */
+export async function insertPayment(tx: Tx, ctx: EngineContext, values: LedgerEntry) {
+  const payment = await tx
+    .insertInto('payment')
+    .values({
+      operator_id: ctx.operatorId,
+      booking_id: values.bookingId,
+      kind: values.kind,
+      method: values.method,
+      amount: values.amount,
+      currency: values.currency,
+      fx_rate: values.fxRate,
+      booking_amount: values.bookingAmount,
+      reference: values.reference,
+      received_on: values.receivedOn,
+      reverses_payment_id: values.reversesPaymentId ?? null,
+      note: values.note ?? null,
+      receipt_id: values.receiptId,
+      allocation_id: values.allocationId ?? null,
+      actor_type: ctx.actor.type,
+      actor_id: ctx.actor.type === 'system' ? null : ctx.actor.id,
+      actor_label: ctx.actor.label ?? null,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  await tx
+    .updateTable('booking')
+    .set({ amount_paid: sql<bigint>`amount_paid + ${values.bookingAmount}` })
+    .where('id', '=', values.bookingId)
+    .execute();
+  await refreshPaymentStatus(tx, values.bookingId);
+  return payment;
+}

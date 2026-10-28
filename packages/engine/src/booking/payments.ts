@@ -9,11 +9,18 @@ import { loadQuote } from '../pricing/quote';
 import { dateSchema } from '../schedule/setup';
 import { cancelBooking } from './cancel';
 import {
+  allocateBookingMoney,
+  assertCreditNote,
+  bookingPartyId,
+  insertBookingReceipt,
+  reverseReceiptInTx,
+} from '../finance/receipts';
+import {
   auditBooking,
   bookingEvent,
   insertBookingLines,
+  insertPayment,
   needsFor,
-  refreshPaymentStatus,
   requestKeySchema,
   sailingLegs,
   withRequestKey,
@@ -78,53 +85,6 @@ function bookingAmount(
   return convert(money(amount, currency), fxRate, bookingCurrency).amount;
 }
 
-async function insertPayment(
-  tx: Tx,
-  ctx: EngineContext,
-  values: {
-    bookingId: string;
-    kind: string;
-    method: string;
-    amount: bigint;
-    currency: string;
-    fxRate: string | null;
-    bookingAmount: bigint;
-    reference: string;
-    receivedOn: string;
-    reversesPaymentId?: string;
-    note?: string | null;
-  },
-) {
-  const payment = await tx
-    .insertInto('payment')
-    .values({
-      operator_id: ctx.operatorId,
-      booking_id: values.bookingId,
-      kind: values.kind,
-      method: values.method,
-      amount: values.amount,
-      currency: values.currency,
-      fx_rate: values.fxRate,
-      booking_amount: values.bookingAmount,
-      reference: values.reference,
-      received_on: values.receivedOn,
-      reverses_payment_id: values.reversesPaymentId ?? null,
-      note: values.note ?? null,
-      actor_type: ctx.actor.type,
-      actor_id: ctx.actor.type === 'system' ? null : ctx.actor.id,
-      actor_label: ctx.actor.label ?? null,
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow();
-  await tx
-    .updateTable('booking')
-    .set({ amount_paid: sql<bigint>`amount_paid + ${values.bookingAmount}` })
-    .where('id', '=', values.bookingId)
-    .execute();
-  await refreshPaymentStatus(tx, values.bookingId);
-  return payment;
-}
-
 export interface PaymentResult {
   paymentId: string;
   bookingId: string;
@@ -132,6 +92,10 @@ export interface PaymentResult {
   bookingStatus: string;
   paymentStatus: string;
   bookingAmount: bigint;
+  /** The receipt behind it (invoicing F3). */
+  receiptId: string;
+  /** Put on the booking's open invoice, in the booking currency. */
+  allocated: bigint;
 }
 
 /**
@@ -197,7 +161,18 @@ export async function recordPayment(
 
         // Lock the booking row for the ledger update (after any hold work above).
         await tx.selectFrom('booking').select('id').where('id', '=', peek.id).forUpdate().execute();
+        const receipt = await insertBookingReceipt(tx, ctx, {
+          bookingId: peek.id,
+          kind: 'receipt',
+          amount: data.amount,
+          currency: data.currency,
+          paymentMethod: data.method,
+          reference: data.reference,
+          receivedOn: data.receivedOn,
+          note: data.note,
+        });
         const payment = await insertPayment(tx, ctx, {
+          receiptId: receipt.id,
           bookingId: peek.id,
           kind: data.kind,
           method: data.method,
@@ -209,6 +184,8 @@ export async function recordPayment(
           receivedOn: data.receivedOn,
           note: data.note,
         });
+        // A booking already on an issued invoice pays it at once.
+        const allocated = await allocateBookingMoney(tx, ctx, peek.id, 'booking_payment');
         const after = await tx
           .selectFrom('booking')
           .select(['status', 'payment_status'])
@@ -236,6 +213,8 @@ export async function recordPayment(
             fx_rate: payment.fx_rate,
             booking_amount: amountInBooking,
             reference: payment.reference,
+            receipt_id: receipt.id,
+            allocated,
             outcome,
           },
         });
@@ -245,6 +224,8 @@ export async function recordPayment(
           bookingStatus: after.status,
           paymentStatus: after.payment_status,
           bookingAmount: amountInBooking,
+          receiptId: receipt.id,
+          allocated,
         };
       },
     );
@@ -382,7 +363,11 @@ export const reversePaymentInput = z.object({
   reason: z.string().trim().min(1).max(500),
 });
 
-/** A payment is never edited or deleted: a reversal is a new, opposite entry (once per payment). */
+/**
+ * A payment is never edited or deleted: a reversal is a new, opposite entry (once per payment).
+ * A payment recorded from the booking reverses its receipt with it (and takes it off any invoice).
+ * A payment written by a party receipt's allocation is undone from the receipt instead.
+ */
 export async function reversePayment(
   db: VsDatabase,
   ctx: EngineContext,
@@ -398,6 +383,10 @@ export async function reversePayment(
     if (!original) throw new DomainError('NOT_FOUND', { message: 'Payment not found' });
     if (original.kind === 'reversal')
       throw new DomainError('INVALID_STATE', { message: 'A reversal cannot be reversed' });
+    if (original.allocation_id || original.kind === 'unallocated')
+      throw new DomainError('INVALID_STATE', {
+        message: 'This payment came from a party receipt; take it off the invoice on the receipt',
+      });
     await tx
       .selectFrom('booking')
       .select('id')
@@ -411,23 +400,19 @@ export async function reversePayment(
       .executeTakeFirst();
     if (already)
       throw new DomainError('INVALID_STATE', { message: 'The payment is already reversed' });
-    const reversal = await insertPayment(tx, ctx, {
-      bookingId: original.booking_id,
-      kind: 'reversal',
-      method: original.method,
-      amount: -original.amount,
-      currency: original.currency,
-      fxRate: original.fx_rate,
-      bookingAmount: -original.booking_amount,
-      reference: `reversal of ${original.reference}`,
-      receivedOn: (
-        await sql<{
-          d: string;
-        }>`select (now() at time zone 'Africa/Cairo')::date::text as d`.execute(tx)
-      ).rows[0]!.d,
-      reversesPaymentId: original.id,
-      note: data.reason,
-    });
+    if (!original.receipt_id)
+      throw new DomainError('INVALID_STATE', { message: 'The payment has no receipt' });
+    const { reversalId: receiptReversalId } = await reverseReceiptInTx(
+      tx,
+      ctx,
+      original.receipt_id,
+      data.reason,
+    );
+    const reversal = await tx
+      .selectFrom('payment')
+      .selectAll()
+      .where('reverses_payment_id', '=', original.id)
+      .executeTakeFirstOrThrow();
     await bookingEvent(tx, ctx, original.booking_id, 'payment.recorded', {
       payment_id: reversal.id,
       kind: 'reversal',
@@ -438,7 +423,11 @@ export async function reversePayment(
       action: 'payment.reversed',
       entity: 'payment',
       entityId: original.id,
-      after: { reversal_id: reversal.id, reason: data.reason },
+      after: {
+        reversal_id: reversal.id,
+        receipt_reversal_id: receiptReversalId,
+        reason: data.reason,
+      },
     });
     return { reversalId: reversal.id, bookingId: original.booking_id };
   });
@@ -510,10 +499,15 @@ export const recordRefundInput = z.object({
   fxRate: fxRateSchema.optional(),
   reference: z.string().trim().min(1).max(200),
   refundedOn: dateSchema,
+  /** The credit note this refund pays back, when there is one. */
+  creditNoteId: z.uuid().optional(),
   requestKey: requestKeySchema,
 });
 
-/** A refund is a negative payment, never more than is still refundable. */
+/**
+ * A refund is a negative payment (and a negative receipt), never more than is still refundable,
+ * and never money that still pays one of the booking's invoices (credit that invoice first).
+ */
 export async function recordRefund(
   db: VsDatabase,
   ctx: EngineContext,
@@ -541,7 +535,31 @@ export async function recordRefund(
             details: { refundable: due.refundable.toString(), currency: due.currency },
           });
         }
+        const { rows: held } = await sql<{ held: string }>`
+          select (b.amount_paid - coalesce((select sum(a.invoice_amount) from vs.allocation a where a.booking_id = b.id), 0))::text as held
+          from vs.booking b where b.id = ${booking.id}`.execute(tx);
+        const free = BigInt(held[0]!.held);
+        if (inBooking > free)
+          throw new DomainError('VALIDATION_FAILED', {
+            message:
+              'Part of this money still pays an invoice of the booking; credit the invoice first',
+            details: { refundable: (free > 0n ? free : 0n).toString(), currency: due.currency },
+          });
+        const partyId = await bookingPartyId(tx, ctx, booking.id);
+        if (data.creditNoteId) await assertCreditNote(tx, data.creditNoteId, partyId);
+        const receipt = await insertBookingReceipt(tx, ctx, {
+          bookingId: booking.id,
+          billingPartyId: partyId,
+          kind: 'refund',
+          amount: -data.amount,
+          currency: data.currency,
+          paymentMethod: data.method,
+          reference: data.reference,
+          receivedOn: data.refundedOn,
+          creditNoteId: data.creditNoteId ?? null,
+        });
         const payment = await insertPayment(tx, ctx, {
+          receiptId: receipt.id,
           bookingId: booking.id,
           kind: 'refund',
           method: data.method,
@@ -569,7 +587,11 @@ export async function recordRefund(
             booking_amount: -inBooking,
           },
         });
-        return { paymentId: payment.id, refundable: due.refundable - inBooking };
+        return {
+          paymentId: payment.id,
+          receiptId: receipt.id,
+          refundable: due.refundable - inBooking,
+        };
       },
     );
   });

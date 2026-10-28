@@ -6,15 +6,15 @@ plus the order in which this and the other open plans are built.
 
 ## Roadmap (agreed order, 2026-10-26)
 
-| #   | Batch  | Plan                                     | Status                                   |
-| --- | ------ | ---------------------------------------- | ---------------------------------------- |
-| 1   | D1     | Branding, bilingual documents            | Done (hosted at 0014)                    |
-| 2   | D2     | Check-in documents, on-board login       | Done                                     |
-| 3   | **A1** | Reservations analytics (this plan, § 4)  | Done (A1.1–A1.3)                         |
-| 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, waiting for answers |
-| 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`                      |
-| 6   | **A2** | Money analytics (this plan, § 5)         | Needs invoicing                          |
-| 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`                      |
+| #   | Batch  | Plan                                     | Status                            |
+| --- | ------ | ---------------------------------------- | --------------------------------- |
+| 1   | D1     | Branding, bilingual documents            | Done (hosted at 0014)             |
+| 2   | D2     | Check-in documents, on-board login       | Done                              |
+| 3   | **A1** | Reservations analytics (this plan, § 4)  | Done (A1.1–A1.3)                  |
+| 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, done (F1–F3) |
+| 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`               |
+| 6   | **A2** | Money analytics (this plan, § 5)         | Needs invoicing                   |
+| 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`               |
 
 The nightly snapshot (§ 3) is the first piece of A1 and ships on its own (A1.1) straight after
 D2, because history it does not record cannot be recovered later.

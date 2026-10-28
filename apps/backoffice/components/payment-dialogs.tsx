@@ -21,6 +21,7 @@ export const METHODS = [
 import { CURRENCIES } from '@vs/shared/money';
 import { ChoiceField } from './choice-field';
 import { useReasons } from '../lib/choices';
+import { AttachmentField, fileToAttachment } from './receipt-dialogs';
 
 /** Finds a booking by reference when the dialog was not opened from one. */
 function useBookingByRef(initialRef: string) {
@@ -38,10 +39,13 @@ function useBookingByRef(initialRef: string) {
 
 export function RecordPaymentDialog({
   bookingRef = '',
+  canAttach = true,
   onClose,
   onDone,
 }: {
   bookingRef?: string;
+  /** Receipts (and their files) are finance only; the payment itself needs finance too. */
+  canAttach?: boolean;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -66,7 +70,17 @@ export function RecordPaymentDialog({
   const needsFx = b !== undefined && currency !== b.currency;
   const fxOk = !needsFx || /^\d+(\.\d{1,6})?$/.test(form.fxRate);
   const requestKey = useMemo(() => newRequestKey(), [JSON.stringify(form), b?.id]);
-  const record = useMutation(trpc.payments.record.mutationOptions({ onSuccess: onDone }));
+  const [file, setFile] = useState<File | null>(null);
+  const attach = useMutation(trpc.receipts.attach.mutationOptions({ onSuccess: onDone }));
+  const record = useMutation(
+    trpc.payments.record.mutationOptions({
+      // The photo or PDF goes on the receipt the payment created.
+      onSuccess: async (result) => {
+        if (!file) return onDone();
+        attach.mutate({ receiptId: result.receiptId, attachment: await fileToAttachment(file) });
+      },
+    }),
+  );
   return (
     <Dialog open onClose={onClose} title={t('record')}>
       <form
@@ -192,16 +206,26 @@ export function RecordPaymentDialog({
                 onChange={(e) => setForm({ ...form, reference: e.target.value })}
               />
             </Field>
+            {canAttach && <AttachmentField file={file} onChange={setFile} />}
           </>
         )}
         {record.isError && <Alert tone="bad">{errorText(record.error)}</Alert>}
+        {attach.isError && <Alert tone="bad">{errorText(attach.error)}</Alert>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             {tc('close')}
           </Button>
           <Button
             type="submit"
-            disabled={!b || amount === null || !fxOk || !form.reference.trim() || record.isPending}
+            disabled={
+              !b ||
+              amount === null ||
+              !fxOk ||
+              !form.reference.trim() ||
+              record.isPending ||
+              attach.isPending ||
+              record.isSuccess
+            }
           >
             {t('record')}
           </Button>

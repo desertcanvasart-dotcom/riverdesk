@@ -146,6 +146,20 @@ export function convert(a: Money, rate: string, to: string): Money {
   return { amount: mulDivHalfUp(a.amount, numerator, denominator), currency: target };
 }
 
+/**
+ * The other way round: how much of `from` converts to `target` at `rate` (1 unit of `from` =
+ * `rate` units of the target's currency). Rounded half-up once.
+ */
+export function convertBack(target: Money, rate: string, from: string): Money {
+  const source = currency(from);
+  const shift = minorUnits(target.currency) - minorUnits(source);
+  const { units, scale } = parseDecimal(rate);
+  if (units === 0n) throw new RangeError('Rate must be above zero');
+  const numerator = shift >= 0 ? scale : scale * 10n ** BigInt(-shift);
+  const denominator = shift >= 0 ? units * 10n ** BigInt(shift) : units;
+  return { amount: mulDivHalfUp(target.amount, numerator, denominator), currency: source };
+}
+
 export function formatMinor(a: Money): string {
   const digits = minorUnits(a.currency);
   const negative = a.amount < 0n;

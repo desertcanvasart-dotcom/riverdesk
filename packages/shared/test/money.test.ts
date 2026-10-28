@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   add,
   convert,
+  convertBack,
   decimalToMinor,
   decimalsOf,
   formatMinor,
@@ -47,6 +48,19 @@ describe('money', () => {
     // 33.33 EUR at 1.0851 = 36.166... → 36.17 USD
     expect(convert(money(3_333, 'EUR'), '1.0851', 'USD').amount).toBe(3_617n);
     expect(() => convert(money(1, 'USD'), '-1', 'EUR')).toThrow();
+  });
+
+  it('converts back: how much of one currency makes an amount of another', () => {
+    // 5025.00 EGP at 50.25 EGP per USD = 100.00 USD
+    expect(convertBack(money(502_500, 'EGP'), '50.25', 'USD')).toEqual({
+      amount: 10_000n,
+      currency: 'USD',
+    });
+    // 36.17 USD at 1.0851 USD per EUR = 33.333... → 33.33 EUR
+    expect(convertBack(money(3_617, 'USD'), '1.0851', 'EUR').amount).toBe(3_333n);
+    // 1.250 KWD at 3.25 USD per KWD: 4.06 USD back to KWD = 1.249... → 1.249 KWD
+    expect(convertBack(money(406, 'USD'), '3.25', 'KWD').amount).toBe(1_249n);
+    expect(() => convertBack(money(1, 'USD'), '0', 'EUR')).toThrow();
   });
 
   it('formats for logs and debugging', () => {

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner } from '@vs/db/testing';
 import { isDomainError, type ErrorCode } from '@vs/contracts';
-import { formatMinor, money, mulDivHalfUp } from '@vs/shared';
+import { daysBetween, formatMinor, money, mulDivHalfUp, type BusinessDate } from '@vs/shared';
 import {
   acceptRequest,
   applyAmendment,
@@ -18,6 +18,7 @@ import {
   recordPayment,
   recordRefund,
   reversePayment,
+  todayInCairo,
 } from '../src/index';
 import {
   bookingWorld,
@@ -278,14 +279,19 @@ describe('payments and exceptions', () => {
   });
 
   it.each([
-    [63, 0],
-    [35, 2500],
-    [21, 5000],
-    [7, 10000],
+    [63, 0, Infinity],
+    [35, 2500, 59],
+    [21, 5000, 29],
+    [7, 10000, 14],
   ])(
     'refund after cancelling at M+%i days keeps %i bps and refunds the rest',
-    async (offset, bps) => {
-      const sailing = await w.sailing('ASW-3', offset + 4);
+    async (offset, bps, latest) => {
+      // M is the next Monday (0–6 days away): a week earlier when today's weekday would push
+      // the sailing past the band's last day before embarkation.
+      const ahead = daysBetween((await todayInCairo(w.db)) as BusinessDate, w.M);
+      let embark = offset + 4;
+      while (embark + ahead > latest) embark -= 7;
+      const sailing = await w.sailing('ASW-3', embark);
       const hold = await createHold(w.db, w.ctx, {
         channelId: w.channels.nilecrz,
         quoteId: await w.quote(w.channels.nilecrz, sailing, [{ cat: 'JS' }]),

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner, testConfig } from '@vs/db/testing';
+import { addDays, cairoDayStart, daysBetween, type BusinessDate } from '@vs/shared';
 import {
   analyticsOverview,
   cancelBooking,
@@ -91,7 +92,14 @@ describe('analytics reports (A1.2)', () => {
       twentyEightNightsAgo: null,
     });
     // A snapshot taken a week ago (what was on the books then: the same two cabins).
-    await takeAnalyticsSnapshot(worker, w.ctx, new Date(Date.now() - 7 * 86_400_000));
+    // Noon in Cairo a week ago: the snapshot's night is the run time less two hours, so a test
+    // run just after midnight would otherwise write the night before.
+    const weekAgo = addDays(today as BusinessDate, -7);
+    await takeAnalyticsSnapshot(
+      worker,
+      w.ctx,
+      new Date(cairoDayStart(weekAgo).getTime() + 12 * 3_600_000),
+    );
     overview = await analyticsOverview(w.db, w.ctx, {}, { withMoney: false });
     expect(overview.pace.sevenNightsAgo).toBe(2);
   });
@@ -125,8 +133,11 @@ describe('analytics reports (A1.2)', () => {
     await takeAnalyticsSnapshot(worker, w.ctx);
     const pace = await sailingPace(w.db, w.ctx, { sailingId });
     const days = pace.current.map((p) => p.daysBefore);
-    expect(days).toContain(14);
-    expect(days).toContain(21);
+    // Tonight's snapshot (yesterday's night just after midnight) and the one the overview test
+    // took at noon a week ago; M is 0–6 days from today.
+    const ahead = daysBetween(today as BusinessDate, pace.embarkDate! as BusinessDate);
+    expect([ahead, ahead + 1]).toContain(days.at(-1));
+    expect(days).toContain(ahead + 7);
     expect(pace.current.every((p) => p.cabins === 2)).toBe(true);
     // No sailing of this vessel embarked on the same date a year earlier.
     expect(pace).toMatchObject({ lastYearDate: null, lastYear: [] });

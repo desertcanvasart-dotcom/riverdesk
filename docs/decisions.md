@@ -807,3 +807,23 @@ An Excel workbook (finance only) of every invoice and credit note issued in a pe
 
 **2026-10-26 · Screens.**
 Invoices (under Reservations): a list with type, status and overdue filters, the register, and a manual invoice without a booking for an existing party. An invoice page: lines and totals, the party (editable by finance; issued invoices keep their snapshot), PDF and sharing, linked credit notes; drafts can be edited (language, due date, note, extra lines) or deleted, and issued (with the rate when the currency is not the base); issued invoices get credit notes (whole or by line). The booking page lists its proformas and invoices with Proforma (reservations) and Invoice (finance) buttons. Finance settings (finance only): the company as issuer, bank details, notes, footer, numbering (locked once used), currencies, default terms, and taxes.
+
+## Invoicing F3 — receipts and allocations
+
+**2026-10-29 · Receipts, allocations, credit.**
+A receipt (migration 0020) is money received from or paid back to a billing party; an allocation says how much of a receipt pays an invoice, per booking on it (or its manual lines). Both are append-only: a receipt is reversed by an opposite receipt, an allocation undone by a negative one. Only a receipt's photo or PDF (PNG, JPEG or PDF, at most 5 MB, kept in Postgres) can be added or replaced later; a trigger refuses any other change. A party's credit, per currency, is its receipts less its allocations. Invoice `amount_paid` is the sum of its allocations and its status follows (issued, partially paid, paid); a fully credited invoice stays cancelled.
+
+**2026-10-29 · A booking's money and a party's money.**
+A payment recorded on a booking writes a receipt for that booking. It pays only that booking's share of its invoices; what is left stays with the booking (refunded from the booking, or taken by its next invoice). A receipt recorded for a party (an agency's remittance) is free credit until allocated. Allocating it spreads it over the invoice's bookings, earliest sailing first, then the manual lines, and writes a booking payment for each, so booking payment statuses stay right. Taking it back off writes an `unallocated` entry in the booking ledger (a new payment kind) and the money is credit again. A payment written by an allocation is undone on its receipt, not reversed from the booking.
+
+**2026-10-29 · When money moves by itself.**
+A booking payment recorded while the booking is on an issued invoice is applied to it at once. Issuing an invoice applies its bookings' unused money (deposits) to it. A credit note that leaves an invoice paid beyond what it still bills takes the excess back off it, newest receipt first. Reversing a booking payment reverses its receipt and takes it off its invoices.
+
+**2026-10-29 · Refunds.**
+A booking refund also writes a negative receipt, keeps today's refund cap, and is refused for money that still pays one of the booking's invoices (credit the invoice first). A party's free credit is paid back as a negative receipt, at most that credit. Either may name the credit note it pays back.
+
+**2026-10-29 · Receipt methods and existing payments.**
+Receipt methods: bank transfer, cash, card, agency remittance, collected by the platform. Migration 0020 gave every billing agency a party, every paid booking a party (its lead guest, or the booking ref until one is entered), every existing payment a receipt (`card_office` and `gateway` → card, `channel` → platform; refunds and reversals as negative receipts), and applied payments of bookings already on an issued invoice to it. Request keys for party receipts are scoped to the agency's channel, else the company's back-office channel.
+
+**2026-10-29 · Screens.**
+Payments gets a Receipts tab (finance only): a list with a "money left" filter, Record receipt (party, amount, method, reference, file, and the party's open invoices in that currency filled oldest due first, editable; the rest stays as credit) and Pay back credit. A receipt page shows its allocations, Pay an invoice (with a typed rate across currencies), Take off, Reverse and the file. An invoice page shows what pays it, Record receipt, and Use credit for the party's receipts with money left. The booking payment dialog takes a file for its receipt.

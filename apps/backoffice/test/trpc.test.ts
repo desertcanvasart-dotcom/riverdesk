@@ -101,6 +101,20 @@ describe('back-office authorization (server side)', () => {
       () => caller.finance.updateSettings({ invoicePrefix: 'X' }),
       () => caller.finance.saveTax({ nameAr: 'x', nameEn: 'x', rateBps: 0 }),
       () => caller.invoices.requestRegister({ from: '2026-01-01', to: '2026-01-31' }),
+      () => caller.receipts.list({}),
+      () => caller.receipts.account({ billingPartyId: crypto.randomUUID() }),
+      () =>
+        caller.receipts.record({
+          billingPartyId: crypto.randomUUID(),
+          amount: 100,
+          currency: 'USD',
+          method: 'cash',
+          reference: 'x',
+          receivedOn: '2026-01-01',
+        }),
+      () => caller.receipts.allocate({ receiptId: id.invoiceId, ...id, amount: 1 }),
+      () => caller.receipts.unallocate({ receiptId: id.invoiceId, ...id }),
+      () => caller.receipts.reverse({ receiptId: id.invoiceId, reason: 'x' }),
     ]) {
       await expect(call()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }

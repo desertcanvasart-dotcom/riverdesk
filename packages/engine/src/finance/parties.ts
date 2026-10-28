@@ -30,6 +30,7 @@ export async function ensureBookingParty(
   tx: Tx,
   ctx: EngineContext,
   booking: BookingForParty,
+  options: { fallbackToRef?: boolean } = {},
 ): Promise<{ id: string; kind: 'agency' | 'guest' }> {
   if (billsAgency(booking)) {
     const existing = await tx
@@ -66,9 +67,18 @@ export async function ensureBookingParty(
       });
       return { id: created.id, kind: 'agency' };
     }
-    return ensureBookingParty(tx, ctx, booking);
+    return ensureBookingParty(tx, ctx, booking, options);
   }
-  // A guest party is reused across a booking's invoices: found through its earlier invoices.
+  // A guest party is reused across a booking's invoices and receipts: found through either.
+  const paid = await tx
+    .selectFrom('receipt as r')
+    .innerJoin('billing_party as p', 'p.id', 'r.billing_party_id')
+    .select('p.id')
+    .where('r.booking_id', '=', booking.id)
+    .where('p.kind', '=', 'guest')
+    .orderBy('r.created_at')
+    .executeTakeFirst();
+  if (paid) return { id: paid.id, kind: 'guest' };
   const earlier = await tx
     .selectFrom('invoice_line as l')
     .innerJoin('invoice as i', 'i.id', 'l.invoice_id')
@@ -86,19 +96,21 @@ export async function ensureBookingParty(
     .orderBy('lead', 'desc')
     .orderBy('created_at')
     .executeTakeFirst();
-  if (!lead)
+  if (!lead && !options.fallbackToRef)
     throw new DomainError('VALIDATION_FAILED', {
       message: `Booking ${booking.ref} has no guest to bill; add the lead guest first`,
     });
+  // A payment can come before the guests are entered: the party is named after the booking
+  // until someone renames it.
   const created = await tx
     .insertInto('billing_party')
     .values({
       operator_id: ctx.operatorId,
       kind: 'guest',
-      name: `${lead.first_name} ${lead.last_name}`,
-      phone: lead.phone,
-      country: lead.nationality,
-      eta_party_type: lead.nationality && lead.nationality !== 'EG' ? 'F' : 'P',
+      name: lead ? `${lead.first_name} ${lead.last_name}` : booking.ref,
+      phone: lead?.phone ?? null,
+      country: lead?.nationality ?? null,
+      eta_party_type: lead ? (lead.nationality && lead.nationality !== 'EG' ? 'F' : 'P') : null,
     })
     .returning('id')
     .executeTakeFirstOrThrow();

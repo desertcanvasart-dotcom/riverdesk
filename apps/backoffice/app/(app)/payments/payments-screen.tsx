@@ -152,11 +152,24 @@ export function PaymentsScreen({ canWrite }: { canWrite: boolean }) {
                 </Td>
                 <Td>{p.actor}</Td>
                 <Td>
-                  {canWrite && !p.reversed && p.kind !== 'reversal' && (
-                    <Button variant="ghost" onClick={() => setDialog({ reverse: p.id })}>
-                      {t('reverse')}
-                    </Button>
-                  )}
+                  {canWrite &&
+                    !p.reversed &&
+                    p.kind !== 'reversal' &&
+                    (p.fromAllocation || p.kind === 'unallocated' ? (
+                      p.receiptId && (
+                        <Link
+                          href={`/payments/receipts/${p.receiptId}`}
+                          className="text-sm text-brand"
+                          title={t('fromReceiptHint')}
+                        >
+                          {t('receipt')}
+                        </Link>
+                      )
+                    ) : (
+                      <Button variant="ghost" onClick={() => setDialog({ reverse: p.id })}>
+                        {t('reverse')}
+                      </Button>
+                    ))}
                 </Td>
               </tr>
             ))}

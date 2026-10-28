@@ -23,6 +23,20 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface Allocation {
+  amount: bigint;
+  booking_id: string | null;
+  created_at: Generated<Timestamp>;
+  created_by: string | null;
+  fx_rate: string | null;
+  id: Generated<string>;
+  invoice_amount: bigint;
+  invoice_id: string;
+  operator_id: string;
+  reason: string;
+  receipt_id: string;
+}
+
 export interface Allotment {
   channel_id: string;
   created_at: Generated<Timestamp>;
@@ -763,6 +777,7 @@ export interface Payment {
   actor_id: string | null;
   actor_label: string | null;
   actor_type: string;
+  allocation_id: string | null;
   amount: bigint;
   booking_amount: bigint;
   booking_id: string;
@@ -774,6 +789,7 @@ export interface Payment {
   method: string;
   note: string | null;
   operator_id: string;
+  receipt_id: string | null;
   received_on: string;
   reference: string;
   reverses_payment_id: string | null;
@@ -864,6 +880,27 @@ export interface RatePlan {
   updated_at: Generated<Timestamp>;
   version: Generated<bigint>;
   vessel_id: string;
+}
+
+export interface Receipt {
+  amount: bigint;
+  attachment: Buffer | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
+  billing_party_id: string;
+  booking_id: string | null;
+  created_at: Generated<Timestamp>;
+  credit_note_id: string | null;
+  currency: string;
+  id: Generated<string>;
+  kind: string;
+  method: string;
+  note: string | null;
+  operator_id: string;
+  received_by: string | null;
+  received_on: string;
+  reference: string;
+  reverses_receipt_id: string | null;
 }
 
 export interface Sailing {
@@ -1090,6 +1127,7 @@ export interface WebhookEndpoint {
 }
 
 export interface DB {
+  allocation: Allocation;
   allotment: Allotment;
   amendment_fee_rule: AmendmentFeeRule;
   analytics_leg_day: AnalyticsLegDay;
@@ -1142,6 +1180,7 @@ export interface DB {
   rate: Rate;
   rate_limit_counter: RateLimitCounter;
   rate_plan: RatePlan;
+  receipt: Receipt;
   sailing: Sailing;
   sailing_leg: SailingLeg;
   sailing_pattern: SailingPattern;

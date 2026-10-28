@@ -63,3 +63,4 @@ export * from './finance/settings';
 export * from './finance/parties';
 export * from './finance/invoices';
 export * from './finance/documents';
+export * from './finance/receipts';

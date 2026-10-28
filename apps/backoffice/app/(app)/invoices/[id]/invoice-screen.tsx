@@ -23,6 +23,7 @@ import { cairoTodayIso } from '../../../../lib/dates';
 import { useErrorText } from '../../../../lib/errors';
 import { formatDate, formatMoney, minorToInput, parseMoney } from '../../../../lib/format';
 import { useTRPC } from '../../../../lib/trpc';
+import { AllocateDialog, RecordReceiptDialog } from '../../../../components/receipt-dialogs';
 import { invoiceTone } from '../invoice-status';
 import { LinesEditor, type LineDraft } from '../invoices-screen';
 
@@ -259,6 +260,18 @@ export function InvoiceScreen({
             )}
             {!draft && <p className="mt-2 text-xs text-muted">{t('snapshotHint')}</p>}
           </Card>
+          {type === 'invoice' && !draft && (
+            <PaymentsCard
+              invoiceId={invoice.id}
+              partyId={party.id}
+              partyName={party.name}
+              currency={invoice.currency}
+              payments={query.data.payments}
+              open={due > 0n && invoice.status !== 'cancelled'}
+              canFinance={canFinance}
+              onChanged={() => void refresh()}
+            />
+          )}
           <ShareCard invoiceId={invoice.id} number={invoice.number ?? refs[0] ?? ''} type={type} />
           {(creditNotes.length > 0 || invoice.credits_invoice_id) && (
             <Card title={type === 'credit_note' ? t('creditsInvoice') : t('creditNotes')}>
@@ -792,5 +805,133 @@ function PartyDialog({
         </div>
       </div>
     </Dialog>
+  );
+}
+
+/** What pays this invoice, and recording or applying money to it (finance). */
+function PaymentsCard({
+  invoiceId,
+  partyId,
+  partyName,
+  currency,
+  payments,
+  open,
+  canFinance,
+  onChanged,
+}: {
+  invoiceId: string;
+  partyId: string;
+  partyName: string;
+  currency: string;
+  payments: {
+    receiptId: string;
+    receivedOn: string;
+    reference: string;
+    method: string;
+    currency: string;
+    amount: bigint;
+    invoiceAmount: bigint;
+  }[];
+  open: boolean;
+  canFinance: boolean;
+  onChanged: () => void;
+}) {
+  const t = useTranslations('receipts');
+  const locale = useLocale();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [dialog, setDialog] = useState<
+    'record' | { receiptId: string; left: bigint; currency: string } | null
+  >(null);
+  // Party receipts with money left (a booking's own receipts pay its invoices by themselves).
+  const credit = useQuery(
+    trpc.receipts.list.queryOptions(
+      { billingPartyId: partyId, unallocated: true },
+      { enabled: canFinance && open },
+    ),
+  );
+  const usable = (credit.data ?? []).filter((r) => !r.booking_id);
+  const done = () => {
+    setDialog(null);
+    onChanged();
+    void queryClient.invalidateQueries({ queryKey: trpc.receipts.pathKey() });
+  };
+  return (
+    <Card
+      title={t('payments')}
+      actions={
+        canFinance &&
+        open && (
+          <Button variant="ghost" onClick={() => setDialog('record')}>
+            {t('record')}
+          </Button>
+        )
+      }
+    >
+      {payments.length === 0 ? (
+        <p className="text-sm text-muted">{t('noPayments')}</p>
+      ) : (
+        <ul className="divide-y divide-line text-sm">
+          {payments.map((p) => (
+            <li key={p.receiptId} className="flex justify-between gap-2 py-2">
+              <span>
+                {canFinance ? (
+                  <Link href={`/payments/receipts/${p.receiptId}`} className="text-brand">
+                    {formatDate(p.receivedOn, locale)}
+                  </Link>
+                ) : (
+                  formatDate(p.receivedOn, locale)
+                )}
+                <span className="block text-xs text-muted">
+                  {t(`method_${p.method as 'cash'}`)} · <span dir="ltr">{p.reference}</span>
+                </span>
+              </span>
+              <span className="whitespace-nowrap tabular-nums">
+                {formatMoney(p.invoiceAmount, currency, locale)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {canFinance && open && usable.length > 0 && (
+        <div className="mt-3 flex flex-col gap-2">
+          {usable.map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="text-muted">
+                {t('creditAvailable', {
+                  party: partyName,
+                  amount: formatMoney(r.left, r.currency, locale),
+                })}
+              </span>
+              <Button
+                variant="secondary"
+                onClick={() => setDialog({ receiptId: r.id, left: r.left, currency: r.currency })}
+              >
+                {t('applyCredit')}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      {dialog === 'record' && (
+        <RecordReceiptDialog
+          partyId={partyId}
+          invoiceId={invoiceId}
+          onClose={() => setDialog(null)}
+          onDone={done}
+        />
+      )}
+      {dialog && typeof dialog === 'object' && (
+        <AllocateDialog
+          receiptId={dialog.receiptId}
+          partyId={partyId}
+          currency={dialog.currency}
+          left={dialog.left}
+          invoiceId={invoiceId}
+          onClose={() => setDialog(null)}
+          onDone={done}
+        />
+      )}
+    </Card>
   );
 }

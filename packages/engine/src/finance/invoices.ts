@@ -8,6 +8,7 @@ import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal
 import { dateSchema } from '../schedule/setup';
 import { loadFinanceSettings } from './settings';
 import { ensureBookingParty } from './parties';
+import { allocateBookingMoney, invoiceAllocations, rebalanceInvoice } from './receipts';
 
 /**
  * Invoices, proformas and credit notes (invoicing F1, docs/invoicing-plan.md § 3.3).
@@ -737,6 +738,10 @@ export async function issueInvoice(
       .where('id', '=', draft.id)
       .returningAll()
       .executeTakeFirstOrThrow();
+    // Deposits and other payments its bookings already have pay it at once.
+    let paid = 0n;
+    for (const b of bookings)
+      paid += await allocateBookingMoney(tx, ctx, b.id, 'invoice_issued', issued.id);
     await audit(tx, ctx.operatorId, ctx.actor, {
       action: 'invoice.issued',
       entity: 'invoice',
@@ -748,6 +753,7 @@ export async function issueInvoice(
         currency: issued.currency,
         fx_rate: issued.fx_rate,
         bookings: bookings.map((b) => b.ref),
+        paid,
       },
     });
     return {
@@ -756,6 +762,7 @@ export async function issueInvoice(
       issueDate: today,
       dueDate: issued.due_date!,
       total: issued.total,
+      amountPaid: paid,
     };
   });
 }
@@ -783,6 +790,26 @@ export async function issueCreditNote(
 ) {
   const data = parseInput(creditNoteInput, input);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    // Its bookings first (their payments may change), then the invoice, like the payment flow.
+    const bookingIds = await tx
+      .selectFrom('invoice_line')
+      .select('booking_id')
+      .distinct()
+      .where('invoice_id', '=', data.invoiceId)
+      .where('booking_id', 'is not', null)
+      .execute();
+    if (bookingIds.length)
+      await tx
+        .selectFrom('booking')
+        .select('id')
+        .where(
+          'id',
+          'in',
+          bookingIds.map((b) => b.booking_id!),
+        )
+        .orderBy('id')
+        .forUpdate()
+        .execute();
     const invoice = await tx
       .selectFrom('invoice')
       .selectAll()
@@ -935,6 +962,13 @@ export async function issueCreditNote(
       })
       .where('id', '=', invoice.id)
       .execute();
+    // What was paid beyond what the invoice still bills becomes credit again.
+    await rebalanceInvoice(tx, ctx, invoice.id);
+    const after = await tx
+      .selectFrom('invoice')
+      .select(['status', 'amount_paid'])
+      .where('id', '=', invoice.id)
+      .executeTakeFirstOrThrow();
     await audit(tx, ctx.operatorId, ctx.actor, {
       action: 'credit_note.issued',
       entity: 'invoice',
@@ -945,7 +979,8 @@ export async function issueCreditNote(
       creditNoteId: note.id,
       number,
       total: totals.total,
-      invoiceStatus: credited === invoice.total ? 'cancelled' : invoice.status,
+      invoiceStatus: after.status,
+      invoiceAmountPaid: after.amount_paid,
     };
   });
 }
@@ -1036,6 +1071,7 @@ export async function getInvoice(db: VsDatabase, ctx: EngineContext, input: { in
       .where('credits_invoice_id', '=', invoiceId)
       .orderBy('created_at')
       .execute();
-    return { invoice, lines, party, creditNotes };
+    const payments = await invoiceAllocations(tx, invoiceId);
+    return { invoice, lines, party, creditNotes, payments };
   });
 }
