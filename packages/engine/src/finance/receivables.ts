@@ -300,7 +300,7 @@ function bucketOf(daysPastDue: number): AgingBucket {
  * notes issued and money allocated by then are taken off. A party's money received by then and
  * not yet on an invoice is shown beside them.
  */
-async function agingFor(tx: Tx, asOf: string): Promise<AgingData> {
+export async function getAgingInTx(tx: Tx, asOf: string): Promise<AgingData> {
   const { rows: invoices } = await sql<{
     party_id: string;
     party_name: string;
@@ -412,7 +412,7 @@ export async function getAging(
 ) {
   const data = parseInput(agingInput, input);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) =>
-    agingFor(tx, data.asOf ?? (await cairoToday(tx))),
+    getAgingInTx(tx, data.asOf ?? (await cairoToday(tx))),
   );
 }
 
@@ -426,7 +426,7 @@ export async function agingDocumentData(
   ctx: EngineContext,
   params: AgingParams,
 ): Promise<AgingData> {
-  return db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) => agingFor(tx, params.asOf));
+  return db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) => getAgingInTx(tx, params.asOf));
 }
 
 export const requestAgingInput = z.object({

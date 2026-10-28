@@ -16,6 +16,8 @@ import {
   agingDocumentData,
   type StatementParams,
   type AgingParams,
+  financeDocumentData,
+  type FinanceDocumentParams,
   loadPendingDocument,
   outagePackData,
   pendingCheckinPacks,
@@ -46,6 +48,7 @@ import {
 import { analyticsXlsx } from '../documents/analytics-xlsx';
 import { invoiceRegisterXlsx } from '../documents/invoice-xlsx';
 import { agingXlsx, statementXlsx } from '../documents/receivables-xlsx';
+import { financeTableBase, financeTableCsv, financeTableXlsx } from '../documents/finance-table';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
@@ -54,6 +57,7 @@ const TYPES = {
   pdf: 'application/pdf',
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   png: 'image/png',
+  csv: 'text/csv; charset=utf-8',
 } as const;
 
 /** Builds the file for one pending document. Never logs content (manifests hold passports). */
@@ -174,6 +178,20 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       const params = doc.params as unknown as AgingParams;
       content = await agingXlsx(await agingDocumentData(db, ctx, params), brand, locale);
       base = `receivables-aging-${params.asOf}`;
+      break;
+    }
+    case 'finance_report':
+    case 'accountant_export': {
+      const table = await financeDocumentData(
+        db,
+        ctx,
+        doc.params as unknown as FinanceDocumentParams,
+      );
+      content =
+        doc.format === 'csv'
+          ? financeTableCsv(table, locale)
+          : await financeTableXlsx(table, brand, locale);
+      base = financeTableBase(table);
       break;
     }
     default:

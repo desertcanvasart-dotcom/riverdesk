@@ -16,6 +16,7 @@ export default async function InvoicesPage() {
           <>
             <LinkButton href="/invoices/statements">{t('statements')}</LinkButton>
             <LinkButton href="/invoices/receivables">{t('receivables')}</LinkButton>
+            <LinkButton href="/invoices/reports">{t('reports')}</LinkButton>
             {canFinance && <LinkButton href="/invoices/settings">{t('settings')}</LinkButton>}
           </>
         }

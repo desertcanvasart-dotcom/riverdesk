@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { AccountCodesCard } from '../../../../components/account-codes';
 import { Dialog } from '../../../../components/dialog';
 import {
   Alert,
@@ -204,6 +205,7 @@ export function FinanceSettingsScreen() {
       </div>
 
       <TaxesCard />
+      <AccountCodesCard />
     </div>
   );
 }

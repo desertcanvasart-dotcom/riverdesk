@@ -77,6 +77,7 @@ describe('back-office authorization (server side)', () => {
             'invoices.requestPdf',
             'receivables.requestStatement',
             'receivables.requestAging',
+            'financeReports.requestReport',
           ].includes(path),
       );
     expect(mutations).toEqual(
@@ -121,6 +122,13 @@ describe('back-office authorization (server side)', () => {
       () => caller.receipts.allocate({ receiptId: id.invoiceId, ...id, amount: 1 }),
       () => caller.receipts.unallocate({ receiptId: id.invoiceId, ...id }),
       () => caller.receipts.reverse({ receiptId: id.invoiceId, reason: 'x' }),
+      () => caller.financeReports.accountCodes(),
+      () =>
+        caller.financeReports.exportPreview({
+          content: 'journal',
+          from: '2026-01-01',
+          to: '2026-01-31',
+        }),
     ]) {
       await expect(call()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }

@@ -228,7 +228,7 @@ export async function downloadDocument(db: VsDatabase, ctx: EngineContext, docum
 export interface PendingDocument {
   id: string;
   kind: string;
-  format: 'pdf' | 'xlsx' | 'png';
+  format: 'pdf' | 'xlsx' | 'png' | 'csv';
   locale: 'ar' | 'en' | 'both';
   variant: 'full' | 'agent';
   entityId: string;

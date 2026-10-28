@@ -16,6 +16,7 @@ import { paymentsRouter } from './routers/payments';
 import { pilotRouter } from './routers/pilot';
 import { receiptsRouter } from './routers/receipts';
 import { receivablesRouter } from './routers/receivables';
+import { financeReportsRouter } from './routers/finance-reports';
 import { ratesRouter } from './routers/rates';
 import { requestsRouter } from './routers/requests';
 import { routesRouter } from './routers/routes';
@@ -41,6 +42,7 @@ export const appRouter = router({
   payments: paymentsRouter,
   receipts: receiptsRouter,
   receivables: receivablesRouter,
+  financeReports: financeReportsRouter,
   settings: settingsRouter,
   documents: documentsRouter,
   guests: guestsRouter,

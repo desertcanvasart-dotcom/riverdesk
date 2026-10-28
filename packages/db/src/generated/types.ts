@@ -23,6 +23,16 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AccountMapping {
+  code: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  kind: string;
+  operator_id: string;
+  ref_id: string | null;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface Allocation {
   amount: bigint;
   booking_id: string | null;
@@ -1127,6 +1137,7 @@ export interface WebhookEndpoint {
 }
 
 export interface DB {
+  account_mapping: AccountMapping;
   allocation: Allocation;
   allotment: Allotment;
   amendment_fee_rule: AmendmentFeeRule;

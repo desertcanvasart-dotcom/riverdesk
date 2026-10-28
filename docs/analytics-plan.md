@@ -12,7 +12,7 @@ plus the order in which this and the other open plans are built.
 | 2   | D2     | Check-in documents, on-board login       | Done                              |
 | 3   | **A1** | Reservations analytics (this plan, § 4)  | Done (A1.1–A1.3)                  |
 | 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, done (F1–F3) |
-| 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`, F4 done      |
+| 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`, F4–F5 done   |
 | 6   | **A2** | Money analytics (this plan, § 5)         | Needs invoicing                   |
 | 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`               |
 
