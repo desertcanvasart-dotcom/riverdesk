@@ -51,9 +51,9 @@ const table: FinanceTable = {
 describe('finance tables', () => {
   it('writes CSV with a BOM, quoted text and decimals in each row’s currency', () => {
     const text = financeTableCsv(table, 'en').toString('utf8');
-    expect(text.startsWith('\uFEFFDate,Description,Currency,Debit,Base currency,Debit (base)\r\n')).toBe(
-      true,
-    );
+    expect(
+      text.startsWith('\uFEFFDate,Description,Currency,Debit,Base currency,Debit (base)\r\n'),
+    ).toBe(true);
     expect(text).toContain('2026-10-05,"Sun, ""Sea"" & Co",KWD,1.250,EGP,20312.50\r\n');
     expect(text).toContain('2026-10-06,شركة النيل,USD,0.99,EGP,\r\n');
     expect(financeTableBase(table)).toBe('finance-journal-2026-10-01-2026-10-31');
