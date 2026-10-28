@@ -130,7 +130,28 @@ export function ChannelsScreen({
                         · {t('validFrom', { date: formatDate(k.validFrom, locale) })}
                       </span>
                       {k.stopSell && <Badge tone="bad">{t('stopped')}</Badge>}
+                      {k.paymentMode === 'credit' && (
+                        <span className="block text-xs text-muted">
+                          {t(`creditMode_${k.creditLimitMode as 'block'}`)}
+                        </span>
+                      )}
                     </span>
+                    {canChannels && k.paymentMode === 'credit' && (
+                      <Button
+                        variant="ghost"
+                        disabled={updateContract.isPending}
+                        onClick={() =>
+                          updateContract.mutate({
+                            contractId: k.id,
+                            creditLimitMode: k.creditLimitMode === 'warn' ? 'block' : 'warn',
+                          })
+                        }
+                      >
+                        {k.creditLimitMode === 'warn'
+                          ? t('creditModeToBlock')
+                          : t('creditModeToWarn')}
+                      </Button>
+                    )}
                     {canChannels && (
                       <Button
                         variant="ghost"

@@ -12,8 +12,15 @@ import { GuestsEditor } from './guests-editor';
 import { InvoicesCard } from './invoices-card';
 import { PaymentActions } from './payment-actions';
 
-export default async function BookingPage({ params }: { params: Promise<{ ref: string }> }) {
+export default async function BookingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ ref: string }>;
+  searchParams: Promise<{ credit?: string }>;
+}) {
   const { ref } = await params;
+  const { credit } = await searchParams;
   const caller = await serverCaller();
   const booking = await caller.bookings
     .detail({ ref: decodeURIComponent(ref) })
@@ -35,6 +42,11 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
   const s = booking.sailing;
   const categories = vessels.find((v) => v.id === s.vesselId)?.categories ?? [];
   const editable = ['requested', 'held', 'offered', 'confirmed'].includes(booking.status);
+  // Just booked over a warn-mode credit limit: the agency's exposure now.
+  const exposure =
+    credit === 'over'
+      ? await caller.receivables.creditExposure({ channelId: booking.channel.id })
+      : null;
 
   return (
     <>
@@ -74,6 +86,16 @@ export default async function BookingPage({ params }: { params: Promise<{ ref: s
         }
       />
 
+      {exposure && exposure.limit !== null && exposure.currency && (
+        <div className="mb-4">
+          <Alert tone="warn">
+            {t('creditOver', {
+              exposure: formatMoney(exposure.exposure, exposure.currency, locale),
+              limit: formatMoney(exposure.limit, exposure.currency, locale),
+            })}
+          </Alert>
+        </div>
+      )}
       {booking.holdExpiresAt && booking.status === 'held' && (
         <div className="mb-4">
           <Alert tone="warn">

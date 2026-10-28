@@ -513,6 +513,8 @@ export const createContractInput = z.object({
   /** Invoicing: days the agency has to pay an invoice (else the company default). */
   creditTermsDays: z.number().int().min(0).max(365).optional(),
   contractRef: z.string().trim().min(1).max(60).optional(),
+  /** Over the credit limit: block (a request for approval) or warn (confirm, and say so). */
+  creditLimitMode: z.enum(['warn', 'block']).default('block'),
 });
 
 export async function createContract(
@@ -547,6 +549,7 @@ export async function createContract(
         valid_to: data.validTo ?? null,
         credit_terms_days: data.creditTermsDays ?? null,
         contract_ref: data.contractRef ?? null,
+        credit_limit_mode: data.creditLimitMode,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -589,6 +592,7 @@ export const updateContractInput = z.object({
   active: z.boolean().optional(),
   creditTermsDays: z.number().int().min(0).max(365).nullable().optional(),
   contractRef: z.string().trim().min(1).max(60).nullable().optional(),
+  creditLimitMode: z.enum(['warn', 'block']).optional(),
 });
 
 export async function updateContract(
@@ -615,6 +619,7 @@ export async function updateContract(
         ...(data.active !== undefined ? { active: data.active } : {}),
         ...(data.creditTermsDays !== undefined ? { credit_terms_days: data.creditTermsDays } : {}),
         ...(data.contractRef !== undefined ? { contract_ref: data.contractRef } : {}),
+        ...(data.creditLimitMode !== undefined ? { credit_limit_mode: data.creditLimitMode } : {}),
       })
       .where('id', '=', data.contractId)
       .returningAll()

@@ -194,6 +194,7 @@ export function ContractDialog({
     priceAdjustment: 'none' as 'none' | 'markup' | 'commission',
     percent: '0',
     validFrom: cairoTodayIso(),
+    creditLimitMode: 'block' as 'block' | 'warn',
   });
   const { name: marketName } = useMarkets();
   const [plans, setPlans] = useState<Set<string>>(new Set());
@@ -213,6 +214,7 @@ export function ContractDialog({
             priceAdjustment: form.priceAdjustment,
             adjustmentBps: Math.round(percent * 100),
             validFrom: form.validFrom,
+            creditLimitMode: form.creditLimitMode,
             categoryIds: vessel?.categories.map((c) => c.id) ?? [],
             ratePlanIds: [...plans],
           });
@@ -256,6 +258,22 @@ export function ContractDialog({
               ))}
             </Select>
           </Field>
+          {form.paymentMode === 'credit' && (
+            <Field label={t('creditMode')}>
+              <Select
+                value={form.creditLimitMode}
+                onChange={(e) =>
+                  setForm({ ...form, creditLimitMode: e.target.value as 'block' | 'warn' })
+                }
+              >
+                {(['block', 'warn'] as const).map((k) => (
+                  <option key={k} value={k}>
+                    {t(`creditMode_${k}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field label={t('from')}>
             <Input
               type="date"

@@ -51,7 +51,7 @@ Prices are integer **minor units**: `{"amount":117000,"currency":"USD"}` is 1,17
 
 **On-request contracts** use `POST /v1/requests` with the quote instead of a hold. Then wait for `request.decided`. If the company offers an alternative (`offer.created`), accept it with `POST /v1/offers/{id}/accept`.
 
-**Agent credit.** On a credit contract, if the agent is over its credit limit, confirm returns `status: "requested"` with `reason: "credit_limit"`. The company decides.
+**Agent credit.** On a credit contract, if the agent is over its credit limit, confirm returns `status: "requested"` with `reason: "credit_limit"`. The company decides. A contract the company sets to warn instead confirms the booking and returns `status: "confirmed"` with `reason: "credit_limit_warning"`. What counts against the limit: confirmed bookings not yet invoiced, plus open invoices, less money the agency has paid that is not yet on an invoice.
 
 ## 4. Change and cancel
 

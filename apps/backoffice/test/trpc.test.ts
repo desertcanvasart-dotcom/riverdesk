@@ -67,11 +67,17 @@ describe('back-office authorization (server side)', () => {
     const mutations = Object.entries(appRouter._def.procedures)
       .filter(([, procedure]) => (procedure as { _def: { type: string } })._def.type === 'mutation')
       .map(([path]) => path)
-      // Changing one's own language is allowed to everyone, and an Analytics export or an
-      // invoice PDF only makes a file of what the person can already see.
+      // Changing one's own language is allowed to everyone, and an Analytics export, an
+      // invoice PDF, a statement or the aging only makes a file of what the person can see.
       .filter(
         (path) =>
-          path !== 'me.setLocale' && path !== 'analytics.export' && path !== 'invoices.requestPdf',
+          ![
+            'me.setLocale',
+            'analytics.export',
+            'invoices.requestPdf',
+            'receivables.requestStatement',
+            'receivables.requestAging',
+          ].includes(path),
       );
     expect(mutations).toEqual(
       expect.arrayContaining(['book.create', 'bookings.cancel', 'requests.accept']),
@@ -142,6 +148,7 @@ describe('back-office authorization (server side)', () => {
       () => caller.home.actionList(),
       () => caller.bookings.search({}),
       () => caller.payments.ledger({}),
+      () => caller.receivables.aging({}),
       () => caller.checkin.vessels(),
     ]) {
       await expect(call()).rejects.toMatchObject({ code: 'FORBIDDEN' });

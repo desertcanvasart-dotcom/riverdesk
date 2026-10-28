@@ -90,6 +90,40 @@ export default async function HomePage() {
       })),
     },
     {
+      key: 'invoicesDue',
+      items: list.invoicesDue.map((i) => ({
+        id: i.invoiceId,
+        href: `/invoices/${i.invoiceId}`,
+        text: `${i.number} · ${i.party} · ${formatMoney(i.due, i.currency, locale)}`,
+        badge: (
+          <Badge tone={i.overdue ? 'bad' : 'warn'}>
+            {i.overdue ? t('overdue') : t('due', { date: formatDate(i.dueDate, locale) })}
+          </Badge>
+        ),
+      })),
+    },
+    {
+      key: 'unallocatedReceipts',
+      // The receipt pages are finance only.
+      items: profile.permissions.includes('finance')
+        ? list.unallocatedReceipts.map((r) => ({
+            id: r.receiptId,
+            href: `/payments/receipts/${r.receiptId}`,
+            text: `${r.party} · ${formatDate(r.receivedOn, locale)}`,
+            badge: <Badge tone="warn">{formatMoney(r.left, r.currency, locale)}</Badge>,
+          }))
+        : [],
+    },
+    {
+      key: 'uninvoicedSailed',
+      items: list.uninvoicedSailed.map((b) => ({
+        id: b.bookingId,
+        href: `/bookings/${b.ref}`,
+        text: b.ref,
+        badge: <Badge tone="warn">{formatDate(b.embarkDate, locale)}</Badge>,
+      })),
+    },
+    {
       key: 'missingGuests',
       items: list.missingGuests.map((g) => ({
         id: g.bookingId,

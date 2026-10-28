@@ -12,6 +12,10 @@ import {
   getOperatorSettings,
   invoiceDocumentData,
   invoiceRegisterData,
+  statementDocumentData,
+  agingDocumentData,
+  type StatementParams,
+  type AgingParams,
   loadPendingDocument,
   outagePackData,
   pendingCheckinPacks,
@@ -31,6 +35,8 @@ import {
   embarkationSheetHtml,
   invoiceFileBase,
   invoiceHtml,
+  statementFileBase,
+  statementHtml,
   manifestHtml,
   outagePackHtml,
   registrationCardsHtml,
@@ -39,6 +45,7 @@ import {
 } from '@vs/documents';
 import { analyticsXlsx } from '../documents/analytics-xlsx';
 import { invoiceRegisterXlsx } from '../documents/invoice-xlsx';
+import { agingXlsx, statementXlsx } from '../documents/receivables-xlsx';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
@@ -152,6 +159,21 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       const rows = await invoiceRegisterData(db, ctx, params);
       content = await invoiceRegisterXlsx(rows, params, brand, locale);
       base = `invoice-register-${params.from}-${params.to}`;
+      break;
+    }
+    case 'statement': {
+      const data = await statementDocumentData(db, ctx, doc.params as unknown as StatementParams);
+      content =
+        doc.format === 'xlsx'
+          ? await statementXlsx(data, brand, locale)
+          : await htmlToPdf(statementHtml(data, brand, locale));
+      base = statementFileBase(data);
+      break;
+    }
+    case 'aging': {
+      const params = doc.params as unknown as AgingParams;
+      content = await agingXlsx(await agingDocumentData(db, ctx, params), brand, locale);
+      base = `receivables-aging-${params.asOf}`;
       break;
     }
     default:

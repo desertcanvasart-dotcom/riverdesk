@@ -4,6 +4,7 @@ import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
 import { audit } from '../audit';
 import { parseInput, type EngineContext, type Tx } from '../internal';
+import { creditExposure, type CreditExposure } from '../finance/receivables';
 import { loadQuote, useQuote, type Quote } from '../pricing/quote';
 import {
   auditBooking,
@@ -264,8 +265,11 @@ export interface ConfirmResult {
   paymentDueBy?: Date;
   /** True when the channel_ref already existed and that booking is returned. */
   existing?: boolean;
-  /** Why a confirmation became something else (e.g. 'credit_limit' → a request). */
+  /** Why a confirmation became something else (e.g. 'credit_limit' → a request), or
+   * 'credit_limit_warning' when a warn-mode contract confirmed over the limit. */
   reason?: string;
+  /** Warn mode: the limit and the exposure with this booking. */
+  creditWarning?: { limit: bigint; exposure: bigint; currency: string };
 }
 
 /**
@@ -332,10 +336,13 @@ export async function confirmHold(
 
         if (!prepaid) {
           if (!hold) return diagnoseHold(tx, data.holdId);
-          if (
-            contract.payment_mode === 'credit' &&
-            (await exceedsCredit(tx, peek.channel_id, quote))
-          ) {
+          const credit =
+            contract.payment_mode === 'credit'
+              ? await creditCheck(tx, peek.channel_id, quote)
+              : null;
+          // Over the limit: a request for approval, unless the contract only warns (and the
+          // channel has credit at all).
+          if (credit?.over && !(contract.credit_limit_mode === 'warn' && credit.allowed)) {
             return creditRequest(tx, ctx, {
               hold,
               quote,
@@ -377,6 +384,28 @@ export async function confirmHold(
             hold_id: hold.id,
             total: booking.total,
           });
+          if (credit?.over) {
+            const creditWarning = {
+              limit: credit.exposure.limit!,
+              exposure: credit.exposure.exposure + booking.total,
+              currency: credit.exposure.currency!,
+            };
+            await auditBooking(
+              tx,
+              ctx,
+              'booking.credit_limit_warning',
+              booking.id,
+              null,
+              creditWarning,
+            );
+            return {
+              bookingId: booking.id,
+              ref: booking.ref,
+              status: 'confirmed',
+              reason: 'credit_limit_warning',
+              creditWarning,
+            };
+          }
           return { bookingId: booking.id, ref: booking.ref, status: 'confirmed' };
         }
 
@@ -637,22 +666,25 @@ export async function expireHolds(
  * off until set per agent; a booking in another currency than the limit counts as over it.
  * Locks the channel row so two confirmations of one agent cannot both pass the check.
  */
+/**
+ * Whether a credit booking would take the agency over its limit (spec § Credit rules, invoicing
+ * plan § 3.7). The channel row is locked so concurrent bookings queue. Exposure counts confirmed
+ * bookings not yet invoiced, open invoices, less the agency's unapplied money.
+ */
+export async function creditCheck(
+  tx: Tx,
+  channelId: string,
+  quote: Quote,
+): Promise<{ over: boolean; allowed: boolean; exposure: CreditExposure }> {
+  await tx.selectFrom('channel').select('id').where('id', '=', channelId).forUpdate().execute();
+  const exposure = await creditExposure(tx, channelId);
+  if (!exposure.allowed || exposure.limit === null || exposure.currency !== quote.currency)
+    return { over: true, allowed: false, exposure };
+  return { over: exposure.exposure + quote.total > exposure.limit, allowed: true, exposure };
+}
+
 export async function exceedsCredit(tx: Tx, channelId: string, quote: Quote): Promise<boolean> {
-  const channel = await tx
-    .selectFrom('channel')
-    .selectAll()
-    .where('id', '=', channelId)
-    .forUpdate()
-    .executeTakeFirstOrThrow();
-  if (!channel.credit_allowed || channel.credit_limit === null) return true;
-  if (channel.credit_currency !== quote.currency) return true;
-  const { rows } = await sql<{ exposure: string }>`
-    select coalesce(sum(total + fees - amount_paid), 0)::text as exposure
-    from vs.booking
-    where channel_id = ${channelId} and status = 'confirmed' and currency = ${quote.currency}`.execute(
-    tx,
-  );
-  return BigInt(rows[0]!.exposure) + quote.total > channel.credit_limit;
+  return (await creditCheck(tx, channelId, quote)).over;
 }
 
 /**

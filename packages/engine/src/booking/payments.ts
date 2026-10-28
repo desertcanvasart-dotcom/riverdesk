@@ -636,6 +636,26 @@ export interface ActionList {
     to: string;
     unassigned: number;
   }[];
+  /** Invoicing F4: issued invoices due within 3 days, and overdue ones. */
+  invoicesDue: {
+    invoiceId: string;
+    number: string;
+    party: string;
+    due: bigint;
+    currency: string;
+    dueDate: string;
+    overdue: boolean;
+  }[];
+  /** Money received from a party and not yet on an invoice. */
+  unallocatedReceipts: {
+    receiptId: string;
+    party: string;
+    left: bigint;
+    currency: string;
+    receivedOn: string;
+  }[];
+  /** Bookings that sailed in the last 7 days and are on no issued invoice. */
+  uninvoicedSailed: { bookingId: string; ref: string; embarkDate: string }[];
 }
 
 /** What needs doing today, by urgency. Cairo dates from the database clock. */
@@ -706,8 +726,38 @@ export async function getActionList(db: VsDatabase, ctx: EngineContext): Promise
         and l.depart_date between ${today}::date and ${today}::date + 7
       group by l.id, fp.code, tp.code
       order by l.depart_date`.execute(tx);
+    const invoicesDue = await sql<ActionList['invoicesDue'][number]>`
+      select i.id as "invoiceId", i.number, p.name as party,
+             (i.total - i.amount_credited - i.amount_paid) as due, i.currency,
+             i.due_date::text as "dueDate", i.due_date < ${today}::date as overdue
+      from vs.invoice i join vs.billing_party p on p.id = i.billing_party_id
+      where i.type = 'invoice' and i.status in ('issued', 'partially_paid')
+        and i.due_date <= ${today}::date + 3
+      order by i.due_date, i.number`.execute(tx);
+    const unallocatedReceipts = await sql<ActionList['unallocatedReceipts'][number]>`
+      select * from (
+        select r.id as "receiptId", p.name as party,
+               (r.amount - coalesce((select sum(a.amount) from vs.allocation a where a.receipt_id = r.id), 0))::bigint as left,
+               r.currency, r.received_on::text as "receivedOn"
+        from vs.receipt r join vs.billing_party p on p.id = r.billing_party_id
+        where r.kind = 'receipt' and r.booking_id is null
+          and not exists (select from vs.receipt x where x.reverses_receipt_id = r.id)
+      ) x where x.left > 0
+      order by "receivedOn"`.execute(tx);
+    const uninvoicedSailed = await sql<ActionList['uninvoicedSailed'][number]>`
+      select b.id as "bookingId", b.ref, s.embark_date::text as "embarkDate"
+      from vs.booking b join vs.sailing s on s.id = b.sailing_id
+      where b.status in ('confirmed', 'completed')
+        and s.embark_date between ${today}::date - 7 and ${today}::date
+        and not exists (select from vs.invoice_line l join vs.invoice i on i.id = l.invoice_id
+                        where l.booking_id = b.id and i.type = 'invoice' and i.status <> 'draft'
+                          and i.status <> 'cancelled')
+      order by s.embark_date, b.ref`.execute(tx);
     return {
       today,
+      invoicesDue: invoicesDue.rows,
+      unallocatedReceipts: unallocatedReceipts.rows,
+      uninvoicedSailed: uninvoicedSailed.rows,
       missingGuests: missing.rows,
       unassignedDepartures: unassigned.rows,
       holdsExpiringToday: holds.rows,

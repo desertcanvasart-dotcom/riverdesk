@@ -12,7 +12,13 @@ export default async function InvoicesPage() {
       <PageHeader
         title={t('title')}
         subtitle={t('subtitle')}
-        actions={canFinance && <LinkButton href="/invoices/settings">{t('settings')}</LinkButton>}
+        actions={
+          <>
+            <LinkButton href="/invoices/statements">{t('statements')}</LinkButton>
+            <LinkButton href="/invoices/receivables">{t('receivables')}</LinkButton>
+            {canFinance && <LinkButton href="/invoices/settings">{t('settings')}</LinkButton>}
+          </>
+        }
       />
       <InvoicesScreen canFinance={canFinance} />
     </>

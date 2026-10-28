@@ -827,3 +827,20 @@ Receipt methods: bank transfer, cash, card, agency remittance, collected by the 
 
 **2026-10-29 · Screens.**
 Payments gets a Receipts tab (finance only): a list with a "money left" filter, Record receipt (party, amount, method, reference, file, and the party's open invoices in that currency filled oldest due first, editable; the rest stays as credit) and Pay back credit. A receipt page shows its allocations, Pay an invoice (with a typed rate across currencies), Take off, Reverse and the file. An invoice page shows what pays it, Record receipt, and Use credit for the party's receipts with money left. The booking payment dialog takes a file for its receipt.
+
+## Invoicing F4 — statements, aging, credit limit, Today
+
+**2026-10-29 · Statements.**
+A party's statement for a period, per currency: the opening balance (everything before the start), then every invoice and credit note by issue date and every receipt, refund and reversal by the day received, with a running balance, then the closing balance. What the party owes is positive: an invoice adds its total, a credit note and money received take theirs off, a refund paid out adds it back. Under the closing balance it shows today's open invoices and the money not yet on an invoice; when everything is in one currency, closing balance = open invoices − that money (tested). A PDF in Arabic, English or both (new document kind `statement`, migration 0021, entity `billing_party`) or a workbook. Anyone who can see invoices may read and print one.
+
+**2026-10-29 · Aging.**
+Open invoice balances as they stood at the end of a chosen date (credit notes issued and allocations made by then taken off), by days past the due date: not yet due, 1–30, 31–60, 61–90, over 90. One row per party and currency, with the money it had received by then and not yet applied, the net, and totals per currency. On screen and as a workbook (document kind `aging`).
+
+**2026-10-29 · Credit exposure and warn mode.**
+An agency's exposure, in its limit currency, is its confirmed bookings not on an issued invoice (total + fees − paid), plus its open invoices, less its money received and not yet on an invoice; bookings and invoices in another currency are not counted. A credit booking that would take it over the limit becomes a request for approval (block, the default) or, on a contract set to warn, is confirmed with `reason: credit_limit_warning`, audited, and the booking page shows the exposure against the limit. A channel without credit, or with its limit in another currency, always gets a request. The mode is chosen on the contract (new contract, or the toggle on an existing one).
+
+**2026-10-29 · Today.**
+Four new lists: invoices overdue or due within 3 days, money received from a party and not yet on an invoice (finance only, it links to the receipt), and bookings that embarked in the last 7 days and are on no issued invoice.
+
+**2026-10-29 · Screens.**
+Invoices gets Statements (party, period, table per currency, PDF in each language and Excel) and Receivables (aging as of a date, Excel; each party links to its statement).

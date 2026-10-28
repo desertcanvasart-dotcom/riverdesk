@@ -109,7 +109,10 @@
     "hoursLeft": "{h, number} h left",
     "overdue": "Overdue",
     "due": "Due {date}",
-    "open": "Open"
+    "open": "Open",
+    "invoicesDue": "Invoices overdue or due within 3 days",
+    "unallocatedReceipts": "Money received, not yet on an invoice",
+    "uninvoicedSailed": "Sailed in the last 7 days without an invoice"
   },
   "roles": {
     "owner": "Owner",
@@ -246,7 +249,8 @@
     "exportData": "Export data",
     "erase": "Erase",
     "eraseTitle": "Erase this guest's personal data?",
-    "eraseHelp": "The name is replaced and nationality, date of birth and passport are removed. This cannot be undone. Use it for a data deletion request."
+    "eraseHelp": "The name is replaced and nationality, date of birth and passport are removed. This cannot be undone. Use it for a data deletion request.",
+    "creditOver": "Confirmed over the agency’s credit limit: it now owes {exposure} against a limit of {limit}."
   },
   "requests": {
     "title": "Requests",
@@ -508,7 +512,12 @@
     "allCategoriesNote": "All cabin categories of the vessel are included.",
     "none": "Nothing yet.",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "creditMode": "Over the credit limit",
+    "creditMode_block": "Over the credit limit: needs approval",
+    "creditMode_warn": "Over the credit limit: confirms with a warning",
+    "creditModeToWarn": "Warn only",
+    "creditModeToBlock": "Require approval"
   },
   "payments": {
     "title": "Payments",
@@ -1596,7 +1605,9 @@
     "ratePercent": "Rate (%)",
     "inclusiveHint": "Prices already include this tax",
     "defaultHint": "Apply to booking lines by default",
-    "activeLabel": "Active"
+    "activeLabel": "Active",
+    "statements": "Statements",
+    "receivables": "Receivables"
   },
   "receipts": {
     "title": "Receipts",
@@ -1670,5 +1681,39 @@
     "method_agency_remittance": "Agency remittance",
     "method_platform": "Collected by the platform",
     "done": "Saved."
+  },
+  "receivables": {
+    "statementTitle": "Statements",
+    "statementSubtitle": "A party’s invoices, credit notes, payments and refunds in a period, with a running balance.",
+    "agingTitle": "Receivables",
+    "agingSubtitle": "Open invoice balances by days past due, per party, as of a date.",
+    "pickParty": "Choose a party and a period.",
+    "noMovements": "No invoices or payments for this party yet.",
+    "inCurrency": "In {currency}",
+    "date": "Date",
+    "document": "Document",
+    "debit": "Debit",
+    "credit": "Credit",
+    "balance": "Balance",
+    "opening": "Opening balance",
+    "closing": "Closing balance",
+    "openNow": "Today: open invoices {open} · paid, not yet on an invoice {credit}",
+    "signs": "A positive balance is owed to the company; a negative balance is credit in the party’s favour.",
+    "pdf_ar": "PDF (Arabic)",
+    "pdf_en": "PDF (English)",
+    "pdf_both": "PDF (both)",
+    "excel": "Excel",
+    "asOf": "As of",
+    "nothingOpen": "No open invoices and no unapplied money.",
+    "party": "Party",
+    "bucket_current": "Not yet due",
+    "bucket_d1_30": "1–30 days",
+    "bucket_d31_60": "31–60 days",
+    "bucket_d61_90": "61–90 days",
+    "bucket_d90_plus": "Over 90 days",
+    "open": "Open",
+    "unapplied": "Unapplied",
+    "net": "Net",
+    "allParties": "All parties"
   }
 }

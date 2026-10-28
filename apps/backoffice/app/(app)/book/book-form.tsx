@@ -132,7 +132,11 @@ export function BookForm({ vessels, canBook }: { vessels: Vessel[]; canBook: boo
 
   const create = useMutation(
     trpc.book.create.mutationOptions({
-      onSuccess: (result) => router.push(`/bookings/${result.ref}`),
+      // Over a warn-mode credit limit the booking confirms; its page says so.
+      onSuccess: (result) =>
+        router.push(
+          `/bookings/${result.ref}${result.reason === 'credit_limit_warning' ? '?credit=over' : ''}`,
+        ),
     }),
   );
   const selected = availability.data?.sailings.find((s) => s.sailingId === sailingId);
