@@ -66,3 +66,4 @@ export * from './finance/documents';
 export * from './finance/receipts';
 export * from './finance/receivables';
 export * from './finance/reports';
+export * from './demo-invoicing';

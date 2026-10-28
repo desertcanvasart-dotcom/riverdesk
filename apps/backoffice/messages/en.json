@@ -1724,7 +1724,7 @@
     "report_production": "Production",
     "report_collections": "Collections",
     "report_outstanding": "Outstanding",
-    "hint_revenue": "Invoiced revenue before tax, by invoice month, vessel, sailing and channel, less credit notes.",
+    "hint_revenue": "Invoiced revenue before tax and before agency commission, by invoice month, vessel, sailing and channel, less credit notes; the commission deducted is its own column.",
     "hint_production": "Bookings by embarkation date: what was booked, what is invoiced, and what is not invoiced yet.",
     "hint_collections": "Money received and paid back, by month and method.",
     "hint_outstanding": "Open invoices and unapplied money per party, as of a date.",
@@ -1804,6 +1804,7 @@
     "col_debit": "Debit",
     "col_credit": "Credit",
     "col_base_debit": "Debit (base)",
-    "col_base_credit": "Credit (base)"
+    "col_base_credit": "Credit (base)",
+    "col_commission": "Commission deducted"
   }
 }

@@ -30,3 +30,7 @@ A direct booking waiting for payment becomes **confirmed** as soon as the paymen
 ## Reversing a mistake
 
 **Reverse** on a ledger line adds the opposite entry, with a reason. Use it only for a payment entered by mistake. Money returned to a guest is a refund.
+
+## Receipts
+
+Every payment also writes a receipt, and an agency's single transfer for several bookings is recorded as a receipt of its own. See [Receipts and credit](/docs/staff-guide/receipts-and-credit). A payment that came from an agency's receipt is undone on the receipt, not reversed here.

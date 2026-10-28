@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { loadConfig, required, systemActor } from '@vs/shared';
 import {
   createDemoActivity,
+  createDemoInvoicing,
   createDemoPricing,
   createDemoVessel,
   DEMO_OPERATOR_ID,
@@ -78,6 +79,14 @@ try {
     const logo = readFileSync(new URL('./demo-logo.png', import.meta.url)).toString('base64');
     await setLogo(db, ctx, { base64: logo });
     console.log('demo branding: logo and contact details');
+  }
+  // Invoicing: issuer details, invoices, receipts, a credit note and account codes, once.
+  const receipts = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx.selectFrom('receipt').select('id').where('booking_id', 'is', null).limit(1).execute(),
+  );
+  if (receipts.length === 0) {
+    await createDemoInvoicing(db, ctx);
+    console.log('demo invoicing: invoices, receipts, a credit note and account codes');
   }
 } finally {
   await db.close();

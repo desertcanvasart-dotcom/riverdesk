@@ -146,8 +146,11 @@ describe('invoicing F5: finance reports, account codes, accountant exports', () 
       currency: 'USD',
       credited: 1_000n,
     });
-    // Net = invoiced − credited; tax 14% included: 1140 credited = 1000 + 140 tax.
+    // Net = invoiced − credited; tax 14% included: 1140 credited = 1000 + 140 tax. The 10%
+    // commission is its own column, so revenue stays gross.
     expect(row.net).toBe((row.invoiced as bigint) - 1_000n);
+    expect(row.commission as bigint).toBeGreaterThan(0n);
+    expect((row.invoiced as bigint) / (row.commission as bigint)).toBe(10n);
     expect((row.invoiced as bigint) + (row.tax as bigint) + 1_140n - 1_000n).toBeGreaterThan(0n);
   });
 

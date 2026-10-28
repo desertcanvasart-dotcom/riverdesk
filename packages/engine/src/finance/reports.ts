@@ -56,13 +56,20 @@ export type FinanceReportParams = z.infer<typeof financeReportInput>;
 
 const NET = sql`case when l.tax_inclusive then l.amount - l.tax_amount else l.amount end`;
 
+/**
+ * Revenue is the cabins, fees and penalties invoiced, before tax and gross of agency commission;
+ * the commission deducted on agency invoices is its own column (the journal posts it apart).
+ */
 async function revenue(tx: Tx, p: FinanceReportParams): Promise<FinanceTable> {
   const { rows } = await sql<Record<string, FinanceCell>>`
     select to_char(i.issue_date, 'YYYY-MM') as month, v.name as vessel, s.embark_date::text as embark,
            ch.name as channel, i.currency,
-           sum(case when i.type = 'invoice' then ${NET} else 0 end)::bigint as invoiced,
-           sum(case when i.type = 'credit_note' then ${NET} else 0 end)::bigint as credited,
-           sum(case when i.type = 'invoice' then ${NET} else -(${NET}) end)::bigint as net,
+           sum(case when i.type = 'invoice' and l.kind <> 'commission' then ${NET} else 0 end)::bigint as invoiced,
+           sum(case when i.type = 'credit_note' and l.kind <> 'commission' then ${NET} else 0 end)::bigint as credited,
+           sum(case when l.kind <> 'commission' then
+                 case when i.type = 'invoice' then ${NET} else -(${NET}) end else 0 end)::bigint as net,
+           -sum(case when l.kind = 'commission' then
+                 case when i.type = 'invoice' then ${NET} else -(${NET}) end else 0 end)::bigint as commission,
            sum(case when i.type = 'invoice' then l.tax_amount else -l.tax_amount end)::bigint as tax
     from vs.invoice_line l
     join vs.invoice i on i.id = l.invoice_id
@@ -90,6 +97,7 @@ async function revenue(tx: Tx, p: FinanceReportParams): Promise<FinanceTable> {
       col('invoiced', 'money'),
       col('credited', 'money'),
       col('net', 'money'),
+      col('commission', 'money'),
       col('tax', 'money'),
     ],
     rows,

@@ -1,6 +1,6 @@
 # Invoices, payments and receivables — Phase 0 plan
 
-Status: **building — F1 and F2 done (2026-10-26), F3, F4 and F5 done (2026-10-29), F6 next.** The owner asked to keep building without
+Status: **done — F1 and F2 (2026-10-26), F3–F6 (2026-10-29).** The owner asked to keep building without
 answering § 8 one by one, so the recommended answers below were taken; any can still be changed
 before the batch that uses it. Agreed order: see `analytics-plan.md` § Roadmap.
 

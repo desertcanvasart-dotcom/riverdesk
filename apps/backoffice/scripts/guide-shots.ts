@@ -253,6 +253,92 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
       await page.waitForTimeout(800);
     },
   ],
+  // Invoicing (F1–F5): the demo company's sample invoices, receipts and credit note.
+  [
+    'invoices',
+    async (page) => {
+      await page.goto(`${BASE}/invoices`);
+      await page.locator('table').first().waitFor();
+    },
+  ],
+  [
+    'invoice',
+    async (page) => {
+      await page.goto(`${BASE}/invoices`);
+      await page
+        .getByRole('row')
+        .filter({ hasText: 'Cairo Travel' })
+        .getByRole('link')
+        .first()
+        .click();
+      await page.waitForURL(/\/invoices\/[0-9a-f-]{36}$/);
+      await page.locator('section.rounded-xl').nth(2).waitFor();
+    },
+  ],
+  [
+    'record-receipt',
+    async (page, m) => {
+      await page.goto(`${BASE}/payments/receipts`);
+      await page.getByRole('button', { name: m.receipts!.record, exact: true }).click();
+      const d = page.locator('dialog');
+      await d.locator('select').first().selectOption({ label: 'Cairo Travel (agent)' });
+      await d.getByText(m.receipts!.allocateTo!).waitFor();
+      await d.locator('input[inputmode=decimal]').first().fill('500');
+      await d.locator('input[dir=ltr]').nth(1).fill('SWIFT 7790-CT');
+      await page.waitForTimeout(400);
+    },
+  ],
+  [
+    'receipts',
+    async (page) => {
+      await page.goto(`${BASE}/payments/receipts`);
+      await page.locator('table').first().waitFor();
+    },
+  ],
+  [
+    'receipt',
+    async (page) => {
+      await page.goto(`${BASE}/payments/receipts`);
+      await page
+        .getByRole('row')
+        .filter({ hasText: 'Cairo Travel' })
+        .getByRole('link')
+        .first()
+        .click();
+      await page.waitForURL(/\/payments\/receipts\/[0-9a-f-]{36}$/);
+      await page.locator('table').first().waitFor();
+    },
+  ],
+  [
+    'statement',
+    async (page) => {
+      await page.goto(`${BASE}/invoices/statements`);
+      await page.locator('select').first().selectOption({ label: 'Cairo Travel (agent)' });
+      await page.locator('table').first().waitFor();
+    },
+  ],
+  [
+    'aging',
+    async (page) => {
+      await page.goto(`${BASE}/invoices/receivables`);
+      await page.locator('table').first().waitFor();
+    },
+  ],
+  [
+    'finance-reports',
+    async (page) => {
+      await page.goto(`${BASE}/invoices/reports`);
+      await page.locator('table').first().waitFor();
+    },
+  ],
+  [
+    'account-codes',
+    async (page, m) => {
+      await page.goto(`${BASE}/invoices/settings`);
+      const title = page.locator(`h2:text-is("${m.financeReports!.codesTitle}")`);
+      await title.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 72));
+    },
+  ],
 ];
 
 const only = process.argv[2];
