@@ -2,7 +2,9 @@ import {
   ArrowRight,
   BellRing,
   CalendarCheck2,
+  ChartColumn,
   ChevronDown,
+  ClipboardCheck,
   CircleAlert,
   Compass,
   Copy,
@@ -14,6 +16,7 @@ import {
   LockKeyhole,
   Network,
   PhoneCall,
+  Receipt,
   ShieldCheck,
   SlidersHorizontal,
   type LucideIcon,
@@ -31,7 +34,17 @@ type Stat = { value: string; label: string };
 type Question = { q: string; a: string };
 
 const PROBLEM_ICONS: LucideIcon[] = [Copy, CircleAlert, FileStack];
-const PILLAR_ICONS: LucideIcon[] = [ShieldCheck, PhoneCall, Network, Languages, FileText, BellRing];
+const PILLAR_ICONS: LucideIcon[] = [
+  ShieldCheck,
+  PhoneCall,
+  Network,
+  Languages,
+  FileText,
+  BellRing,
+  Receipt,
+  ClipboardCheck,
+  ChartColumn,
+];
 const CHARTER_ICONS: LucideIcon[] = [KeyRound, LockKeyhole, SlidersHorizontal, Handshake];
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {

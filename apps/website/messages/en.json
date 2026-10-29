@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Riverdesk · Reservations for Nile cruise companies",
-    "description": "Riverdesk runs a Nile cruise company's reservations: live availability, phone bookings in under a minute, agencies and online channels on one inventory, vouchers and manifests in Arabic and English. Built to prevent double bookings — with an automatic check every night."
+    "description": "Riverdesk runs a Nile cruise company's reservations: live availability, phone bookings in under a minute, agencies and online channels on one inventory, invoices and receivables, check-in and on-board extras, and every document in Arabic and English. Built to prevent double bookings — with an automatic check every night."
   },
   "nav": {
     "features": "Features",
@@ -45,7 +45,7 @@
   "home": {
     "eyebrow": "For Nile cruise companies",
     "title": "Every cabin, every channel, one source of truth.",
-    "subtitle": "Riverdesk runs your reservations: live availability across every departure, a phone booking in under a minute, agencies and online channels selling from the same inventory, and vouchers and manifests in Arabic and English. It is built so that a cabin can never be sold twice.",
+    "subtitle": "Riverdesk runs your reservations and the money around them: live availability across every departure, a phone booking in under a minute, agencies and online channels selling from the same inventory, invoices and statements, check-in at the gangway and every document in Arabic and English. It is built so that a cabin can never be sold twice.",
     "problemTitle": "Spreadsheets and WhatsApp were never built for this",
     "problems": [
       {
@@ -81,11 +81,23 @@
       },
       {
         "title": "Documents ready to print",
-        "text": "Vouchers, itineraries, payment schedules, manifests, rooming lists and the weekly vacancy sheet — PDF or Excel, in both languages."
+        "text": "Vouchers, manifests, embarkation sheets, boarding passes, the daily programme and every other document a cruise needs — in your colours, in Arabic, English or both."
       },
       {
         "title": "A clear Today screen",
         "text": "Requests waiting, holds about to expire, deposits and balances due, missing guest names, cabins to assign: what to do, most urgent first."
+      },
+      {
+        "title": "Invoices and receivables",
+        "text": "Invoices with numbers that never skip, receipts spread over invoices, statements of account and credit limits — and the files your accountant asks for."
+      },
+      {
+        "title": "Check-in and on board",
+        "text": "The gangway on a phone: who boards, passports to check, the police list. Then extras charged to each cabin and paid at reception."
+      },
+      {
+        "title": "Know your numbers",
+        "text": "Occupancy and booking pace, which channels sell, cash in and what is still owed, revenue and what leaks away in commission."
       }
     ],
     "howTitle": "How it works",
@@ -100,7 +112,7 @@
       },
       {
         "title": "Run the day from Today",
-        "text": "Take bookings, answer requests, record payments, print documents. Cabins are assigned and manifests prepared before each departure."
+        "text": "Take bookings, answer requests, issue invoices and record payments, print documents. Cabins are assigned and the check-in prepared before each departure."
       }
     ],
     "channelsTitle": "Agencies and online platforms connect directly",
@@ -110,6 +122,7 @@
       "Each company's data is isolated by the database itself",
       "Passport numbers are encrypted and never logged",
       "Two-step sign-in for owners and finance",
+      "Invoice numbers never skip, and an issued invoice is never edited",
       "Every change recorded in an audit log",
       "A nightly PDF so the office keeps working during an outage"
     ],
@@ -147,7 +160,7 @@
   },
   "features": {
     "title": "Features",
-    "intro": "Everything a Nile cruise reservations office needs, from the first enquiry to the passenger manifest.",
+    "intro": "Everything a Nile cruise company needs, from the first enquiry to check-in at the gangway, extras on board and the last invoice.",
     "items": [
       {
         "key": "today",
@@ -197,7 +210,17 @@
       {
         "key": "payments",
         "title": "Payments",
-        "text": "A ledger of every payment, refund and correction, in any currency with its exchange rate. Nothing is edited or deleted: mistakes are reversed."
+        "text": "A ledger of every payment, refund and correction, in any currency with its exchange rate, each behind its own receipt. Nothing is edited or deleted: mistakes are reversed."
+      },
+      {
+        "key": "invoices",
+        "title": "Invoices and receipts",
+        "text": "Proformas, invoices and credit notes with numbers that never skip, your legal details, logo and tax lines, in Arabic, English or both. Agencies are billed the full price with their commission deducted on the invoice; direct guests are billed themselves. An issued invoice is never edited: a mistake is corrected with a credit note.\n\nRecord what an agency or a guest pays once, with a photo of the transfer slip, and spread it over their invoices. Deposits already paid are applied when the invoice is issued, and the PDF goes straight to WhatsApp from a phone."
+      },
+      {
+        "key": "statements",
+        "title": "Statements and reports",
+        "text": "A statement of account for any agency or guest, what is owed by how late it is, and credit limits that warn or stop new bookings. Reports on revenue, production, collections and what is outstanding, and the files your accountant asks for: the invoice register, the payments and a journal with your own account codes. Excel or CSV."
       },
       {
         "key": "guests",
@@ -205,14 +228,34 @@
         "text": "Who is aboard each departure, as a list or as a cabin map deck by deck. Cabins are assigned automatically before the cut-off and moved with two clicks when needed. Manifests and rooming lists in PDF and Excel."
       },
       {
+        "key": "checkin",
+        "title": "Check-in",
+        "text": "The reception's screen for the gangway, on a phone or tablet: who boards each departure, cabin by cabin, with diets, allergies, special occasions and passports to check, and a tap for each step. The embarkation sheet, the guest details for the police list and pre-filled registration cards.\n\nThe vessel's purser gets an on-board login that sees only their own vessel, and the check-in pack can be emailed to the vessel automatically before each departure."
+      },
+      {
+        "key": "folios",
+        "title": "Extras on board",
+        "text": "A price list for the bar, laundry, spa, excursions and tips. Staff charge each cabin from a phone; a charge entered by mistake is voided with a reason, never deleted. At the end of the cruise the folio becomes an invoice, the guest pays at reception in any currency, and the guest folio and the purser's shift report are ready to print. Where the contract says so, the agency pays instead.\n\nExtras appear in your analytics, reports and accountant's journal like the rest of your revenue."
+      },
+      {
+        "key": "documents",
+        "title": "Documents",
+        "text": "Every document a Nile cruise works with, in your colours and with your logo, in Arabic, English or both: vouchers, itineraries, payment schedules, pre-departure information, transfer vouchers, boarding passes with a QR code, luggage tags, door cards, the daily programme, diet and occasion lists for the kitchen, excursion groups by language, the table plan, the muster list, the housekeeping sheet and feedback forms."
+      },
+      {
         "key": "vacancy",
         "title": "Vacancy sheet",
         "text": "Free cabins for the coming weeks, as a PDF, Excel file or an image to send on WhatsApp to agencies not yet connected."
       },
       {
+        "key": "analytics",
+        "title": "Analytics",
+        "text": "Occupancy by cabin category, booking pace against last year, which channels, markets and nationalities sell, how far ahead guests book, and how holds, cancellations and amendments behave.\n\nFor owners and finance: cash in against what fell due and what is still to come, revenue by sailing or booking month with what leaks away in commission, refunds and discounts, currency exposure, and how fast each agency pays. Every table exports to Excel."
+      },
+      {
         "key": "settings",
         "title": "People and settings",
-        "text": "Invite staff by email with a role — owner, reservations, finance or read-only. Owners and finance use two-step sign-in. Your markets (who each price is for, and who must show residency or ID), and company defaults for holds, deadlines and the voucher text."
+        "text": "Invite staff by email with a role: owner, reservations, finance, read-only, or on board for one vessel's crew. Owners and finance use two-step sign-in.\n\nYour branding (logo, colours and contact details on every document), your markets (who each price is for, and who must show residency or ID), and company defaults for holds, deadlines and the voucher text."
       }
     ],
     "jump": "Jump to",
