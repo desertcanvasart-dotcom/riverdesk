@@ -15,7 +15,8 @@
     "sandbox-setup": "tsx scripts/sandbox-setup.ts",
     "perf": "tsx scripts/perf.ts",
     "import-bookings": "tsx scripts/import-bookings.ts",
-    "seed-company": "tsx scripts/seed-company.ts"
+    "seed-company": "tsx scripts/seed-company.ts",
+    "wipe-company": "tsx scripts/wipe-company.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",
