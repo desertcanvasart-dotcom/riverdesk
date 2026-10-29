@@ -154,7 +154,9 @@ export function Shell({
   });
   const counts: Partial<Record<Key, number>> = { requests: actions.data?.requests.length ?? 0 };
 
-  const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+  // A page and the pages under it, never a longer name (/bookings is not /book).
+  const isActive = (href: string) =>
+    href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`);
   const sections = onboard
     ? [{ key: null, items: [{ key: 'checkin' as const, href: '/checkin', icon: ClipboardCheck }] }]
     : SECTIONS.map((s) => ({
