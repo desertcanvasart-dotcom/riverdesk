@@ -137,7 +137,7 @@ Grouped by when they are used. ✓ exists today; ★ proposed for the first roun
 **Departure**
 
 - ★ Disembarkation and transfer list: who leaves when, flights, luggage times
-- Guest folio of extras (drinks, laundry, tips), linked to invoicing
+- Guest folio of extras (drinks, laundry, tips), linked to invoicing (planned in `folio-plan.md`)
 - Feedback form
 
 ## 6. Proposed batches (each stops for review)
