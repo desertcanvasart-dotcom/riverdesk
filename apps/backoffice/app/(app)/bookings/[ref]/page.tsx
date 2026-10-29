@@ -266,6 +266,16 @@ export default async function BookingPage({
                   label: td('predeparture'),
                   input: { kind: 'predeparture', bookingId: booking.id },
                 },
+                {
+                  key: 'transfer_voucher',
+                  label: td('transfer_voucher'),
+                  input: { kind: 'transfer_voucher', bookingId: booking.id },
+                },
+                {
+                  key: 'boarding_pass',
+                  label: td('boarding_pass'),
+                  input: { kind: 'boarding_pass', bookingId: booking.id },
+                },
               ]}
             />
           </Card>

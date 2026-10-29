@@ -33,8 +33,18 @@ const GUIDE: Record<
 };
 
 export async function createDemoOperations(db: VsDatabase, ctx: EngineContext, vesselId: string) {
+  const decks =
+    (await getOperationsSettings(db, ctx)).vessels.find((v) => v.id === vesselId)?.decks ?? [];
   await updateVesselDay(db, ctx, {
     vesselId,
+    // D4: one muster station per deck, and tables of four.
+    musterStations: Object.fromEntries(
+      decks.map((deck, i) => [
+        deck,
+        `${['A', 'B', 'C', 'D'][i % 4]} — ${['aft lounge', 'forward lounge', 'sun deck bar', 'reception'][i % 4]}`,
+      ]),
+    ),
+    tableSize: 4,
     boardingTime: '12:00',
     breakfastTime: '07:00',
     lunchTime: '13:00',

@@ -19,6 +19,9 @@ export const BOOKING_DOCUMENTS = [
   'cancellation_terms',
   // Batch D3: where and when to board, what to bring.
   'predeparture',
+  // Batch D4: transfers to and from the vessel; a boarding pass per cabin with a QR code.
+  'transfer_voucher',
+  'boarding_pass',
 ] as const;
 export const LEG_DOCUMENTS = ['manifest', 'rooming_list'] as const;
 /**
@@ -41,11 +44,25 @@ export const OPERATIONS_DOCUMENTS = [
   'door_cards',
   'disembarkation_list',
 ] as const;
+/**
+ * The remaining stationery (Batch D4), per departure, PDF: luggage tags and door-to-door items for
+ * those boarding; excursion groups, the table plan and the muster list for everyone aboard;
+ * feedback forms for those leaving. No passport numbers, no money.
+ */
+export const STATIONERY_DOCUMENTS = [
+  'luggage_tags',
+  'excursion_list',
+  'table_plan',
+  'muster_list',
+  'feedback_forms',
+] as const;
 /** What an on-board login may print, for its own vessel. */
 export const ONBOARD_DOCUMENTS: readonly string[] = [
   ...CHECKIN_DOCUMENTS,
   ...OPERATIONS_DOCUMENTS,
+  ...STATIONERY_DOCUMENTS,
   'daily_programme',
+  'housekeeping_sheet',
 ];
 /** Documents carrying passport numbers. */
 export const PASSPORT_DOCUMENTS: readonly string[] = [
@@ -84,6 +101,14 @@ export const requestDocumentInput = z.union([
     locale,
     format: z.enum(['pdf', 'xlsx']).default('pdf'),
   }),
+  z.object({
+    kind: z.enum(STATIONERY_DOCUMENTS),
+    legId: z.uuid(),
+    locale,
+    format: z.literal('pdf').default('pdf'),
+  }),
+  /** Every cabin of a vessel on one day: leaving, arriving, staying, empty. */
+  z.object({ kind: z.literal('housekeeping_sheet'), vesselId: z.uuid(), date: dateSchema, locale }),
   /** One page per day for a vessel, to print and slide under doors. */
   z.object({
     kind: z.literal('daily_programme'),
@@ -151,7 +176,9 @@ export async function requestDocument(
                   ? { from: data.from, weeks: data.weeks }
                   : data.kind === 'daily_programme'
                     ? { from: data.from, days: data.days }
-                    : {},
+                    : data.kind === 'housekeeping_sheet'
+                      ? { date: data.date }
+                      : {},
               )}::jsonb,
               ${ctx.actor.type === 'staff' ? ctx.actor.id : null},
               -- Documents with passport numbers live a day, others a week.

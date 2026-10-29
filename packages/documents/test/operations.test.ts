@@ -40,6 +40,7 @@ const guest = (over: Partial<CheckinGuest>): CheckinGuest => ({
   arrivalDate: null,
   arrivalFlight: null,
   arrivalPort: null,
+  language: null,
   departureDate: null,
   departureFlight: null,
   departureTime: null,
@@ -164,6 +165,9 @@ describe('on-board operations documents', () => {
         checkoutTime: null,
         programmeNoteAr: null,
         programmeNoteEn: 'Galabeya party on the last night.',
+        musterStations: {},
+        tableSize: 4,
+        decks: [],
       },
       days: [
         {

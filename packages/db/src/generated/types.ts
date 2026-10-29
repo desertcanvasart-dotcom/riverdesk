@@ -531,6 +531,7 @@ export interface Guest {
   first_name: string;
   gender: string | null;
   id: Generated<string>;
+  language: string | null;
   last_name: string;
   lead: Generated<boolean>;
   medical_ciphertext: Buffer | null;
@@ -1107,6 +1108,7 @@ export interface Vessel {
   luggage_time: string | null;
   lunch_time: string | null;
   max_guests: number;
+  muster_stations: Generated<Json>;
   name: string;
   onboard_email: string | null;
   operator_id: string;
@@ -1114,6 +1116,7 @@ export interface Vessel {
   programme_note_en: string | null;
   sells_cabins: Generated<boolean>;
   sells_charter: Generated<boolean>;
+  table_size: Generated<number>;
   tea_time: string | null;
   type: string;
   updated_at: Generated<Timestamp>;

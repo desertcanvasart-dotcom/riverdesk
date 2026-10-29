@@ -431,6 +431,11 @@ export const guestSchema = z.object({
   arrivalDate: dateSchema.optional(),
   arrivalFlight: z.string().trim().min(1).max(20).optional(),
   arrivalPort: z.string().trim().min(1).max(100).optional(),
+  /** Preferred language for guided visits (Batch D4), ISO 639-1; else read from nationality. */
+  language: z
+    .string()
+    .regex(/^[a-z]{2}$/)
+    .optional(),
   // Leaving Egypt (Batch D3), for the disembarkation and transfer list.
   departureDate: dateSchema.optional(),
   departureFlight: z.string().trim().min(1).max(20).optional(),
@@ -553,6 +558,7 @@ export async function replaceGuests(
           arrival_date: g.arrivalDate ?? null,
           arrival_flight: g.arrivalFlight ?? null,
           arrival_port: g.arrivalPort ?? null,
+          language: g.language ?? null,
           departure_date: g.departureDate ?? null,
           departure_flight: g.departureFlight ?? null,
           departure_time: g.departureTime ?? null,

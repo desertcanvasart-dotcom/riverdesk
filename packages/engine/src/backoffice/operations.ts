@@ -49,6 +49,11 @@ export interface VesselDay {
   checkoutTime: string | null;
   programmeNoteAr: string | null;
   programmeNoteEn: string | null;
+  /** D4: muster station by deck (the decks are the cabins' decks). */
+  musterStations: Record<string, string>;
+  /** D4: guests per restaurant table. */
+  tableSize: number;
+  decks: string[];
 }
 
 export interface PortGuide {
@@ -86,6 +91,12 @@ async function loadVessels(tx: Tx, vesselId?: string): Promise<VesselDay[]> {
       sql<string | null>`to_char(checkout_time, 'HH24:MI')`.as('checkoutTime'),
       'programme_note_ar as programmeNoteAr',
       'programme_note_en as programmeNoteEn',
+      sql<Record<string, string>>`muster_stations`.as('musterStations'),
+      'table_size as tableSize',
+      sql<string[]>`array(select distinct c.deck from vs.cabin c
+                          where c.vessel_id = vessel.id and c.deck is not null order by c.deck)`.as(
+        'decks',
+      ),
     ])
     .orderBy('name');
   if (vesselId) query = query.where('id', '=', vesselId);
@@ -138,6 +149,9 @@ export const updateVesselDayInput = z.object({
   checkoutTime: time.optional(),
   programmeNoteAr: text(1000).optional(),
   programmeNoteEn: text(1000).optional(),
+  /** Deck → muster station; an empty station removes the deck. */
+  musterStations: z.record(z.string().trim().min(1).max(40), z.string().trim().max(120)).optional(),
+  tableSize: z.number().int().min(2).max(12).optional(),
 });
 
 export async function updateVesselDay(
@@ -153,11 +167,21 @@ export async function updateVesselDay(
   }
   if (data.programmeNoteAr !== undefined) set.programme_note_ar = data.programmeNoteAr;
   if (data.programmeNoteEn !== undefined) set.programme_note_en = data.programmeNoteEn;
+  const extra: Record<string, unknown> = {};
+  if (data.musterStations !== undefined)
+    extra.muster_stations = JSON.stringify(
+      Object.fromEntries(Object.entries(data.musterStations).filter(([, v]) => v)),
+    );
+  if (data.tableSize !== undefined) extra.table_size = data.tableSize;
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const before = (await loadVessels(tx, vesselId))[0];
     if (!before) throw new DomainError('NOT_FOUND', { message: 'Vessel not found' });
-    if (Object.keys(set).length)
-      await tx.updateTable('vessel').set(set).where('id', '=', vesselId).execute();
+    if (Object.keys(set).length + Object.keys(extra).length)
+      await tx
+        .updateTable('vessel')
+        .set({ ...set, ...extra })
+        .where('id', '=', vesselId)
+        .execute();
     const after = (await loadVessels(tx, vesselId))[0]!;
     await audit(tx, ctx.operatorId, ctx.actor, {
       action: 'vessel.day_updated',

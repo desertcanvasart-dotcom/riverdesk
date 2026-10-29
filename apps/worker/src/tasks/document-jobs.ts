@@ -20,6 +20,11 @@ import {
   dailyProgrammeData,
   getOperationsSettings,
   predepartureData,
+  boardingPassData,
+  excursionData,
+  housekeepingData,
+  transferVoucherData,
+  vesselSettingsOf,
   type FinanceDocumentParams,
   loadPendingDocument,
   outagePackData,
@@ -47,6 +52,14 @@ import {
   doorCardsHtml,
   occasionListHtml,
   predepartureHtml,
+  boardingPassHtml,
+  excursionListHtml,
+  feedbackFormsHtml,
+  housekeepingHtml,
+  luggageTagsHtml,
+  musterListHtml,
+  tablePlanHtml,
+  transferVoucherHtml,
   statementHtml,
   manifestHtml,
   outagePackHtml,
@@ -59,6 +72,7 @@ import { invoiceRegisterXlsx } from '../documents/invoice-xlsx';
 import { agingXlsx, statementXlsx } from '../documents/receivables-xlsx';
 import { financeTableBase, financeTableCsv, financeTableXlsx } from '../documents/finance-table';
 import { operationsXlsx } from '../documents/operations-xlsx';
+import QRCode from 'qrcode';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
@@ -240,6 +254,67 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       });
       content = await htmlToPdf(dailyProgrammeHtml(data, brand, locale));
       base = `daily-programme-${data.days[0]?.date ?? ''}`;
+      break;
+    }
+    case 'transfer_voucher': {
+      const data = await transferVoucherData(db, ctx, doc.entityId);
+      content = await htmlToPdf(transferVoucherHtml(data, brand, locale));
+      base = `${data.ref}-transfers`;
+      break;
+    }
+    case 'boarding_pass': {
+      const data = await boardingPassData(db, ctx, doc.entityId);
+      // The QR code carries the booking and cabin only (RD:<ref>:<cabin>), nothing personal.
+      const qr = Object.fromEntries(
+        await Promise.all(
+          data.passes.map(
+            async (pass) =>
+              [pass.code, await QRCode.toString(pass.code, { type: 'svg', margin: 0 })] as const,
+          ),
+        ),
+      );
+      content = await htmlToPdf(boardingPassHtml(data, brand, locale, qr));
+      base = `${data.ref}-boarding-pass`;
+      break;
+    }
+    case 'luggage_tags':
+    case 'table_plan':
+    case 'muster_list':
+    case 'feedback_forms': {
+      // Tags for those boarding; tables and muster for everyone aboard; feedback for those leaving.
+      const data = await departureCheckin(db, ctx, doc.entityId, {
+        vesselId: null,
+        mode:
+          doc.kind === 'luggage_tags'
+            ? 'boarding'
+            : doc.kind === 'feedback_forms'
+              ? 'leaving'
+              : 'aboard',
+      });
+      const vessel = await vesselSettingsOf(db, ctx, data.leg.vesselId);
+      content = await htmlToPdf(
+        doc.kind === 'luggage_tags'
+          ? luggageTagsHtml(data, brand, locale)
+          : doc.kind === 'table_plan'
+            ? tablePlanHtml(data, brand, locale, vessel.tableSize)
+            : doc.kind === 'muster_list'
+              ? musterListHtml(data, brand, locale, vessel.musterStations)
+              : feedbackFormsHtml(data, brand, locale),
+      );
+      base = `${doc.kind}-${data.leg.departDate}-${data.leg.from.code}`;
+      break;
+    }
+    case 'excursion_list': {
+      const data = await excursionData(db, ctx, doc.entityId);
+      content = await htmlToPdf(excursionListHtml(data, brand, locale));
+      base = `excursions-${data.departDate}`;
+      break;
+    }
+    case 'housekeeping_sheet': {
+      const day = (doc.params as { date?: string }).date!;
+      const data = await housekeepingData(db, ctx, doc.entityId, day);
+      content = await htmlToPdf(housekeepingHtml(data, brand, locale));
+      base = `housekeeping-${day}`;
       break;
     }
     case 'finance_report':

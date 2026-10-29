@@ -22,10 +22,12 @@
     "graphile-worker": "^0.18.0",
     "nodemailer": "^10.2.1",
     "playwright": "^1.64.1",
+    "qrcode": "^1.5.4",
     "tsx": "^4.23.15"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
     "@vs/db": "workspace:*"
   }
 }

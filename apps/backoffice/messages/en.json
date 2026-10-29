@@ -628,7 +628,15 @@
     "occasion_list": "Special occasions",
     "door_cards": "Door cards",
     "disembarkation_list": "Disembarkation and transfers",
-    "daily_programme": "Daily programme (7 days)"
+    "daily_programme": "Daily programme (7 days)",
+    "transfer_voucher": "Transfer voucher",
+    "boarding_pass": "Boarding passes",
+    "luggage_tags": "Luggage tags",
+    "excursion_list": "Excursion groups",
+    "table_plan": "Table plan",
+    "muster_list": "Muster list",
+    "feedback_forms": "Feedback forms",
+    "housekeeping_sheet": "Housekeeping (that day)"
   },
   "guests": {
     "title": "Guests & manifests",
@@ -1333,7 +1341,19 @@
     "none": "—",
     "departureDate": "Leaves Egypt on",
     "departureFlight": "Flight home",
-    "departureTime": "Flight time"
+    "departureTime": "Flight time",
+    "language": "Language for guided visits",
+    "lang_ar": "Arabic",
+    "lang_en": "English",
+    "lang_de": "German",
+    "lang_fr": "French",
+    "lang_it": "Italian",
+    "lang_es": "Spanish",
+    "lang_pt": "Portuguese",
+    "lang_nl": "Dutch",
+    "lang_ru": "Russian",
+    "lang_zh": "Chinese",
+    "lang_ja": "Japanese"
   },
   "analytics": {
     "title": "Analytics",
@@ -1920,6 +1940,10 @@
     "dressCodeAr": "Dress code (Arabic)",
     "dressCodeEn": "Dress code (English)",
     "documentsAr": "Passport and visa (Arabic)",
-    "documentsEn": "Passport and visa (English)"
+    "documentsEn": "Passport and visa (English)",
+    "muster": "Muster stations",
+    "musterHint": "One station per deck: the muster list groups cabins by it.",
+    "deckStation": "{deck} deck",
+    "tableSize": "Guests per restaurant table"
   }
 }

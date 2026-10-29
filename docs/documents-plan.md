@@ -1,6 +1,6 @@
 # Branding and the cruise document library — plan
 
-Status: **approved 2026-10-26 with the recommended answers; Batches D1 (branding), D2 (check-in) and D3 (on board, 2026-10-29) done** (overall order in `analytics-plan.md` § Roadmap). This covers
+Status: **approved 2026-10-26 with the recommended answers; Batches D1 (branding), D2 (check-in), D3 (on board) and D4 (the remaining stationery, 2026-10-29) done — the library is complete** (overall order in `analytics-plan.md` § Roadmap). This covers
 the owner's request of 2026-10-26: simple, effective branding per company; a well-designed
 embarkation sheet; a check-in file with every passenger's full details that can reach the staff on
 board for each departure; and the complete set of documents ("stationery") a Nile cruise usually

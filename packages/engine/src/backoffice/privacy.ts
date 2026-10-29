@@ -52,7 +52,7 @@ export async function exportGuestData(
                'passportIssuedOn', g.passport_issued_on, 'passportExpiresOn', g.passport_expires_on,
                'placeOfBirth', g.place_of_birth, 'visaType', g.visa_type, 'arrivalDate', g.arrival_date,
                'arrivalFlight', g.arrival_flight, 'arrivalPort', g.arrival_port,
-               'departureDate', g.departure_date, 'departureFlight', g.departure_flight,
+               'language', g.language, 'departureDate', g.departure_date, 'departureFlight', g.departure_flight,
                'departureTime', to_char(g.departure_time, 'HH24:MI'), 'phone', g.phone,
                'emergencyName', g.emergency_name, 'emergencyPhone', g.emergency_phone,
                'dietary', nullif(g.dietary, '{}'), 'allergies', g.allergies, 'occasion', g.occasion,

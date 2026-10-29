@@ -83,9 +83,13 @@ try {
   }
   // On board (D3): the vessel's day and the port guide, once.
   const day = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
-    tx.selectFrom('vessel').select('boarding_time').where('id', '=', vesselId).executeTakeFirst(),
+    tx
+      .selectFrom('vessel')
+      .select(['boarding_time', 'muster_stations'])
+      .where('id', '=', vesselId)
+      .executeTakeFirst(),
   );
-  if (!day?.boarding_time) {
+  if (!day?.boarding_time || Object.keys(day.muster_stations as object).length === 0) {
     await createDemoOperations(db, ctx, vesselId);
     console.log('demo operations: boarding and meal times, berths and visits');
   }

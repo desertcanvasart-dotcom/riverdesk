@@ -53,6 +53,8 @@ export function OperationsCard({ canWrite }: { canWrite: boolean }) {
   const vessel = data.data?.vessels.find((v) => v.id === (vesselId || data.data?.vessels[0]?.id));
   const port = data.data?.ports.find((p) => p.id === (portId || data.data?.ports[0]?.id));
   const [times, setTimes] = useState<Record<string, string>>({});
+  const [muster, setMuster] = useState<Record<string, string>>({});
+  const [tableSize, setTableSize] = useState('4');
   const [portForm, setPortForm] = useState<Record<string, string>>({});
   const [texts, setTexts] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -62,6 +64,10 @@ export function OperationsCard({ canWrite }: { canWrite: boolean }) {
       programmeNoteAr: vessel.programmeNoteAr ?? '',
       programmeNoteEn: vessel.programmeNoteEn ?? '',
     });
+    setMuster(
+      Object.fromEntries(vessel.decks.map((deck) => [deck, vessel.musterStations[deck] ?? ''])),
+    );
+    setTableSize(String(vessel.tableSize));
   }, [vessel?.id, data.dataUpdatedAt]);
   useEffect(() => {
     if (!port) return;
@@ -138,6 +144,34 @@ export function OperationsCard({ canWrite }: { canWrite: boolean }) {
             />
           </Field>
         </div>
+        {vessel && vessel.decks.length > 0 && (
+          <div className="mt-3">
+            <p className="text-sm font-medium">{t('muster')}</p>
+            <p className="mb-2 text-xs text-muted">{t('musterHint')}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {vessel.decks.map((deck) => (
+                <Field key={deck} label={t('deckStation', { deck })}>
+                  <Input
+                    disabled={!canWrite}
+                    maxLength={120}
+                    value={muster[deck] ?? ''}
+                    onChange={(e) => setMuster({ ...muster, [deck]: e.target.value })}
+                  />
+                </Field>
+              ))}
+              <Field label={t('tableSize')}>
+                <Input
+                  type="number"
+                  min={2}
+                  max={12}
+                  disabled={!canWrite}
+                  value={tableSize}
+                  onChange={(e) => setTableSize(e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+        )}
         {canWrite && vessel && (
           <Button
             className="mt-3"
@@ -148,6 +182,8 @@ export function OperationsCard({ canWrite }: { canWrite: boolean }) {
                 ...Object.fromEntries(TIMES.map((k) => [k, times[k] || null])),
                 programmeNoteAr: times.programmeNoteAr || null,
                 programmeNoteEn: times.programmeNoteEn || null,
+                musterStations: muster,
+                tableSize: Math.min(12, Math.max(2, Number(tableSize) || 4)),
               })
             }
           >

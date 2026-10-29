@@ -664,6 +664,8 @@ export interface components {
             arrival_flight?: string;
             /** @description Port of entry into Egypt. */
             arrival_port?: string;
+            /** @description Preferred language for guided visits (ISO 639-1, e.g. de). */
+            language?: string;
             /**
              * Format: date
              * @description Day the guest leaves Egypt.

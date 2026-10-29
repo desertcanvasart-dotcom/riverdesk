@@ -628,7 +628,15 @@
     "occasion_list": "المناسبات الخاصة",
     "door_cards": "بطاقات الأبواب",
     "disembarkation_list": "المغادرة والانتقالات",
-    "daily_programme": "البرنامج اليومي (7 أيام)"
+    "daily_programme": "البرنامج اليومي (7 أيام)",
+    "transfer_voucher": "قسيمة الانتقالات",
+    "boarding_pass": "بطاقات الصعود",
+    "luggage_tags": "بطاقات الأمتعة",
+    "excursion_list": "مجموعات الزيارات",
+    "table_plan": "توزيع الطاولات",
+    "muster_list": "قائمة التجمع",
+    "feedback_forms": "استبيانات الرأي",
+    "housekeeping_sheet": "الإشراف الداخلي (ذلك اليوم)"
   },
   "guests": {
     "title": "الضيوف والكشوف",
@@ -1333,7 +1341,19 @@
     "none": "—",
     "departureDate": "مغادرة مصر في",
     "departureFlight": "رحلة العودة",
-    "departureTime": "موعد الرحلة"
+    "departureTime": "موعد الرحلة",
+    "language": "لغة الزيارات المرشدة",
+    "lang_ar": "العربية",
+    "lang_en": "الإنجليزية",
+    "lang_de": "الألمانية",
+    "lang_fr": "الفرنسية",
+    "lang_it": "الإيطالية",
+    "lang_es": "الإسبانية",
+    "lang_pt": "البرتغالية",
+    "lang_nl": "الهولندية",
+    "lang_ru": "الروسية",
+    "lang_zh": "الصينية",
+    "lang_ja": "اليابانية"
   },
   "analytics": {
     "title": "التحليلات",
@@ -1920,6 +1940,10 @@
     "dressCodeAr": "الملابس المناسبة (عربي)",
     "dressCodeEn": "الملابس المناسبة (إنجليزي)",
     "documentsAr": "جواز السفر والتأشيرة (عربي)",
-    "documentsEn": "جواز السفر والتأشيرة (إنجليزي)"
+    "documentsEn": "جواز السفر والتأشيرة (إنجليزي)",
+    "muster": "نقاط التجمع",
+    "musterHint": "نقطة تجمع لكل طابق: تُجمّع قائمة التجمع الكبائن حسبها.",
+    "deckStation": "طابق {deck}",
+    "tableSize": "عدد الضيوف على طاولة المطعم"
   }
 }

@@ -23,6 +23,7 @@ const DETAIL_FIELDS = [
   'arrivalDate',
   'arrivalFlight',
   'arrivalPort',
+  'language',
   'departureDate',
   'departureFlight',
   'departureTime',
@@ -407,6 +408,11 @@ function CheckinDetails({
         {text('arrivalDate', 'date')}
         {text('arrivalFlight')}
         {text('arrivalPort')}
+        {choice(
+          'language',
+          ['ar', 'en', 'de', 'fr', 'it', 'es', 'pt', 'nl', 'ru', 'zh', 'ja'],
+          'lang_',
+        )}
         {text('departureDate', 'date')}
         {text('departureFlight')}
         {text('departureTime', 'time')}

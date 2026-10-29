@@ -157,8 +157,8 @@ export function doorCardsHtml(d: DepartureCheckin, brand: DocumentBrand, locale:
 </section>`,
   );
   const body = `<style>
-.sheet { break-after: page; }
-.sheet:last-child { break-after: auto; }
+.cut-sheet { break-after: page; }
+.cut-sheet:last-child { break-after: auto; }
 .door { height: 125mm; border: 1.5px solid var(--brand-line); border-radius: 12px; margin-bottom: 6mm; padding: 10mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; break-inside: avoid; }
 .door img { max-height: 18mm; max-width: 50mm; margin-bottom: 6mm; }
 .door .brand { font-weight: 700; color: var(--brand-text); margin-bottom: 6mm; }
@@ -173,7 +173,7 @@ ${
   cards.length
     ? Array.from(
         { length: Math.ceil(cards.length / 2) },
-        (_, i) => `<div class="sheet">${cards.slice(i * 2, i * 2 + 2).join('')}</div>`,
+        (_, i) => `<div class="cut-sheet">${cards.slice(i * 2, i * 2 + 2).join('')}</div>`,
       ).join('')
     : `<p class="muted">${t('none')}</p>`
 }`;

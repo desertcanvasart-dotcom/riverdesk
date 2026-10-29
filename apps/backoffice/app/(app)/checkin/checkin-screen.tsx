@@ -233,6 +233,25 @@ function Departure({
                 label: `${td('disembarkation_list')} · Excel`,
                 input: { kind: 'disembarkation_list', legId, format: 'xlsx' },
               },
+              // The remaining stationery (D4).
+              ...(
+                [
+                  'luggage_tags',
+                  'excursion_list',
+                  'table_plan',
+                  'muster_list',
+                  'feedback_forms',
+                ] as const
+              ).map((kind) => ({
+                key: kind,
+                label: td(kind),
+                input: { kind, legId, format: 'pdf' as const },
+              })),
+              {
+                key: 'housekeeping',
+                label: td('housekeeping_sheet'),
+                input: { kind: 'housekeeping_sheet', vesselId: leg.vesselId, date: leg.departDate },
+              },
               {
                 key: 'programme',
                 label: td('daily_programme'),

@@ -1,5 +1,5 @@
 /**
- * Renders the on-board operations documents (Batch D3) for the demo company's first departure
+ * Renders the on-board operations documents (Batches D3 and D4) for the demo company's first departure
  * with guests, and the pre-departure sheet of its first booking, to files for checking layout
  * by eye. Local demo company only.
  *   pnpm --filter @vs/worker render-operations-sample <out-dir>
@@ -35,15 +35,29 @@ try {
   );
   mkdirSync(outDir, { recursive: true });
   const jobs = [
-    ...(['diet_list', 'occasion_list', 'door_cards', 'disembarkation_list'] as const).map(
-      (kind) => ({
-        kind,
-        entityId: first.leg_id,
-        params: {},
-      }),
-    ),
+    ...(
+      [
+        'diet_list',
+        'occasion_list',
+        'door_cards',
+        'disembarkation_list',
+        // D4
+        'luggage_tags',
+        'excursion_list',
+        'table_plan',
+        'muster_list',
+        'feedback_forms',
+      ] as const
+    ).map((kind) => ({
+      kind,
+      entityId: first.leg_id,
+      params: {},
+    })),
     { kind: 'daily_programme', entityId: first.vessel_id, params: { from: first.depart, days: 3 } },
     { kind: 'predeparture', entityId: first.booking_id, params: {} },
+    { kind: 'transfer_voucher', entityId: first.booking_id, params: {} },
+    { kind: 'boarding_pass', entityId: first.booking_id, params: {} },
+    { kind: 'housekeeping_sheet', entityId: first.vessel_id, params: { date: first.depart } },
   ];
   for (const job of jobs)
     for (const locale of ['en', 'ar'] as const) {

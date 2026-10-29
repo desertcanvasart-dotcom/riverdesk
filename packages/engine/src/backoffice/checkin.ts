@@ -37,6 +37,7 @@ export interface CheckinGuest {
   arrivalDate: string | null;
   arrivalFlight: string | null;
   arrivalPort: string | null;
+  language: string | null;
   departureDate: string | null;
   departureFlight: string | null;
   departureTime: string | null;
@@ -214,6 +215,7 @@ export async function departureCheckin(
               arrival_date: string | null;
               arrival_flight: string | null;
               arrival_port: string | null;
+              language: string | null;
               departure_date: string | null;
               departure_flight: string | null;
               departure_time: string | null;
@@ -231,7 +233,7 @@ export async function departureCheckin(
                      g.nationality, g.date_of_birth::text, g.place_of_birth, g.passport_country,
                      g.passport_issued_on::text, g.passport_expires_on::text, g.passport_ciphertext,
                      g.passport_key_id, g.visa_type, g.visa_ciphertext, g.visa_key_id,
-                     g.arrival_date::text, g.arrival_flight, g.arrival_port, g.departure_date::text,
+                     g.arrival_date::text, g.arrival_flight, g.arrival_port, g.language, g.departure_date::text,
                      g.departure_flight, to_char(g.departure_time, 'HH24:MI') as departure_time,
                      g.phone, g.emergency_name,
                      g.emergency_phone, g.dietary, g.allergies, g.medical_ciphertext, g.medical_key_id,
@@ -285,6 +287,7 @@ export async function departureCheckin(
             arrivalDate: g.arrival_date,
             arrivalFlight: g.arrival_flight,
             arrivalPort: g.arrival_port,
+            language: g.language,
             departureDate: g.departure_date,
             departureFlight: g.departure_flight,
             departureTime: g.departure_time,
