@@ -22,6 +22,8 @@ export const PERMISSIONS = {
   /** Extras on board (E1): see each cabin's folio, and post or void its charges. */
   'folio.view': ['owner', 'reservations', 'finance', 'onboard'],
   'folio.write': ['owner', 'finance', 'onboard'],
+  /** E2: close a folio (issues its invoice) and take payment for it at reception. */
+  'folio.settle': ['owner', 'finance', 'onboard'],
   /** Analytics: occupancy, pace, channels. Money figures need analytics.money as well. */
   'analytics.view': ['owner', 'reservations', 'finance', 'read_only'],
   'analytics.money': ['owner', 'finance'],

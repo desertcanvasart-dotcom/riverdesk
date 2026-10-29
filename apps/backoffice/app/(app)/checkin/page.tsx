@@ -15,6 +15,7 @@ export default async function CheckinPage() {
         canFleet={profile.permissions.includes('fleet.write')}
         canFolio={profile.permissions.includes('folio.view')}
         canFolioWrite={profile.permissions.includes('folio.write')}
+        canFolioSettle={profile.permissions.includes('folio.settle')}
         onboard={profile.role === 'onboard'}
       />
     </>

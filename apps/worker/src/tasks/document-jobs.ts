@@ -22,6 +22,8 @@ import {
   predepartureData,
   boardingPassData,
   excursionData,
+  folioShiftReportData,
+  guestFolioData,
   housekeepingData,
   transferVoucherData,
   vesselSettingsOf,
@@ -55,6 +57,8 @@ import {
   boardingPassHtml,
   excursionListHtml,
   feedbackFormsHtml,
+  folioShiftReportHtml,
+  guestFolioHtml,
   housekeepingHtml,
   luggageTagsHtml,
   musterListHtml,
@@ -71,6 +75,7 @@ import { analyticsXlsx } from '../documents/analytics-xlsx';
 import { invoiceRegisterXlsx } from '../documents/invoice-xlsx';
 import { agingXlsx, statementXlsx } from '../documents/receivables-xlsx';
 import { financeTableBase, financeTableCsv, financeTableXlsx } from '../documents/finance-table';
+import { folioShiftXlsx } from '../documents/folio-xlsx';
 import { operationsXlsx } from '../documents/operations-xlsx';
 import QRCode from 'qrcode';
 import { htmlToPdf, htmlToPng } from '../documents/render';
@@ -315,6 +320,22 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       const data = await housekeepingData(db, ctx, doc.entityId, day);
       content = await htmlToPdf(housekeepingHtml(data, brand, locale));
       base = `housekeeping-${day}`;
+      break;
+    }
+    case 'guest_folio': {
+      const data = await guestFolioData(db, ctx, doc.entityId);
+      content = await htmlToPdf(guestFolioHtml(data, brand, locale));
+      base = `folio-${data.cabin ?? data.ref}`;
+      break;
+    }
+    case 'folio_shift_report': {
+      const day = (doc.params as { date?: string }).date!;
+      const data = await folioShiftReportData(db, ctx, doc.entityId, day);
+      content =
+        doc.format === 'xlsx'
+          ? await folioShiftXlsx(data, brand, locale)
+          : await htmlToPdf(folioShiftReportHtml(data, brand, locale));
+      base = `extras-shift-${day}`;
       break;
     }
     case 'finance_report':

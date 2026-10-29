@@ -153,6 +153,7 @@ describe('back-office authorization (server side)', () => {
         'checkin.view',
         'checkin.write',
         'documents.create',
+        'folio.settle',
         'folio.view',
         'folio.write',
         'manifests',

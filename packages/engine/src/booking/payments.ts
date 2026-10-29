@@ -656,6 +656,16 @@ export interface ActionList {
   }[];
   /** Bookings that sailed in the last 7 days and are on no issued invoice. */
   uninvoicedSailed: { bookingId: string; ref: string; embarkDate: string }[];
+  /** Extras E2: folios still open on or after their cabin's last day aboard. */
+  openFolios: {
+    bookingId: string;
+    ref: string;
+    cabin: string | null;
+    vessel: string;
+    disembarkDate: string;
+    total: bigint;
+    currency: string;
+  }[];
 }
 
 /** What needs doing today, by urgency. Cairo dates from the database clock. */
@@ -753,8 +763,21 @@ export async function getActionList(db: VsDatabase, ctx: EngineContext): Promise
                         where l.booking_id = b.id and i.type = 'invoice' and i.status <> 'draft'
                           and i.status <> 'cancelled')
       order by s.embark_date, b.ref`.execute(tx);
+    const openFolios = await sql<ActionList['openFolios'][number]>`
+      select b.id as "bookingId", b.ref, v.name as vessel, s.disembark_date::text as "disembarkDate",
+             (select cab.number from vs.booking_line bl join vs.cabin cab on cab.id = bl.assigned_cabin_id
+              where bl.booking_cabin_id = f.booking_cabin_id order by bl.created_at desc limit 1) as cabin,
+             coalesce((select sum(c.amount) from vs.folio_charge c where c.folio_id = f.id), 0)::bigint as total,
+             f.currency
+      from vs.folio f
+      join vs.booking b on b.id = f.booking_id
+      join vs.sailing s on s.id = b.sailing_id
+      join vs.vessel v on v.id = f.vessel_id
+      where f.status = 'open' and s.disembark_date <= ${today}::date
+      order by s.disembark_date, b.ref`.execute(tx);
     return {
       today,
+      openFolios: openFolios.rows,
       invoicesDue: invoicesDue.rows,
       unallocatedReceipts: unallocatedReceipts.rows,
       uninvoicedSailed: uninvoicedSailed.rows,

@@ -39,6 +39,7 @@ export function CheckinScreen({
   canFleet,
   canFolio,
   canFolioWrite,
+  canFolioSettle,
   onboard,
 }: {
   canWrite: boolean;
@@ -46,6 +47,7 @@ export function CheckinScreen({
   canFleet: boolean;
   canFolio: boolean;
   canFolioWrite: boolean;
+  canFolioSettle: boolean;
   onboard: boolean;
 }) {
   const t = useTranslations('checkin');
@@ -101,6 +103,7 @@ export function CheckinScreen({
           canPassports={canPassports}
           canFolio={canFolio}
           canFolioWrite={canFolioWrite}
+          canFolioSettle={canFolioSettle}
           onboard={onboard}
         />
       )}
@@ -125,6 +128,7 @@ function Departure({
   canPassports,
   canFolio,
   canFolioWrite,
+  canFolioSettle,
   onboard,
 }: {
   legId: string;
@@ -132,6 +136,7 @@ function Departure({
   canPassports: boolean;
   canFolio: boolean;
   canFolioWrite: boolean;
+  canFolioSettle: boolean;
   onboard: boolean;
 }) {
   const t = useTranslations('checkin');
@@ -313,7 +318,7 @@ function Departure({
       )}
 
       {view === 'folios' ? (
-        <Folios legId={legId} canWrite={canFolioWrite} />
+        <Folios legId={legId} canWrite={canFolioWrite} canSettle={canFolioSettle} />
       ) : (
         <CheckinList
           legId={legId}

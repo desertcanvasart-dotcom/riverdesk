@@ -115,6 +115,15 @@ export default async function HomePage() {
         : [],
     },
     {
+      key: 'openFolios',
+      items: list.openFolios.map((f) => ({
+        id: f.bookingId + (f.cabin ?? ''),
+        href: '/checkin',
+        text: `${f.vessel} · ${f.cabin ?? f.ref} · ${formatMoney(f.total, f.currency, locale)}`,
+        badge: <Badge tone="warn">{formatDate(f.disembarkDate, locale)}</Badge>,
+      })),
+    },
+    {
       key: 'uninvoicedSailed',
       items: list.uninvoicedSailed.map((b) => ({
         id: b.bookingId,

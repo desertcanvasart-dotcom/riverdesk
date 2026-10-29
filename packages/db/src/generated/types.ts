@@ -347,6 +347,7 @@ export interface ChannelContract {
   created_at: Generated<Timestamp>;
   credit_limit_mode: Generated<string>;
   credit_terms_days: number | null;
+  folio_to_agency: Generated<boolean>;
   id: Generated<string>;
   operator_id: string;
   option_hold_hours: Generated<number>;

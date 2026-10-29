@@ -2,12 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner } from '@vs/db/testing';
 import { isDomainError, type ErrorCode } from '@vs/contracts';
 import {
+  cancelBooking,
+  closeFolio,
   departureFolios,
   getExtrasSettings,
   getFolio,
+  payFolio,
   postCharge,
   saveExtraItem,
   staffBook,
+  updateContract,
   updateVesselFolio,
   voidCharge,
 } from '../src/index';
@@ -24,12 +28,13 @@ describe('extras E1: price list and folios', () => {
   let legId: string;
   let cabins: string[];
   let water: string;
+  let bookingId: string;
   const office = { vesselId: null };
 
   beforeAll(async () => {
     w = await bookingWorld();
     const sailingId = await w.sailing('LXR-4', 42);
-    await staffBook(w.db, w.ctx, {
+    ({ bookingId } = await staffBook(w.db, w.ctx, {
       channelId: w.agents.credit,
       sailingId,
       market: 'international',
@@ -43,7 +48,7 @@ describe('extras E1: price list and folios', () => {
         { cabin: 1, firstName: 'Jean', lastName: 'Martin' },
       ],
       requestKey: 'folios-1',
-    });
+    }));
     const { rows } = await owner().query<{ id: string }>(
       `select l.id from vs.leg l join vs.sailing s on s.embark_date = l.depart_date and s.embark_port_id = l.from_port_id
        where s.id = $1 and l.vessel_id = s.vessel_id`,
@@ -218,7 +223,7 @@ describe('extras E1: price list and folios', () => {
       [cabins[1]],
     );
     const charge = rows[0]!;
-    await db.query(`update vs.folio set status = 'closed', closed_at = now() where id = $1`, [
+    await db.query(`update vs.folio set status = 'void', closed_at = now() where id = $1`, [
       charge.folio_id,
     ]);
     expect(
@@ -237,5 +242,117 @@ describe('extras E1: price list and folios', () => {
     await db.query(`update vs.folio set status = 'open', closed_at = null where id = $1`, [
       charge.folio_id,
     ]);
+  });
+
+  it('refuses to cancel a booking while a folio holds charges', async () => {
+    expect(await codeOf(cancelBooking(w.db, w.ctx, { bookingId, reason: 'Test' }))).toBe(
+      'INVALID_STATE',
+    );
+  });
+
+  it('closes a folio into an invoice of extras, then takes payment at reception', async () => {
+    // The folio is in USD, the company's base currency EGP: a rate is needed.
+    expect(
+      await codeOf(closeFolio(w.db, w.ctx, { legId, bookingCabinId: cabins[0]! }, office)),
+    ).toBe('VALIDATION_FAILED');
+    const closed = await closeFolio(
+      w.db,
+      w.ctx,
+      { legId, bookingCabinId: cabins[0]!, fxRate: '50' },
+      office,
+    );
+    expect(closed.folio).toMatchObject({
+      status: 'closed',
+      billTo: 'guest',
+      invoice: { total: 600n, balance: 600n, party: 'Klaus Meyer', status: 'issued' },
+    });
+    const { rows } = await owner().query<{ kind: string; description_en: string; amount: string }>(
+      `select kind, description_en, amount::text from vs.invoice_line where invoice_id = $1 order by seq`,
+      [closed.folio!.invoice!.id],
+    );
+    // The voided glass leaves no line; the water is one Bar line for its day.
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: 'extra', amount: '600' });
+    expect(rows[0]!.description_en).toMatch(/^Bar — \d{4}-\d{2}-\d{2} — cabin /);
+    expect(
+      await codeOf(
+        postCharge(w.db, w.ctx, { legId, bookingCabinId: cabins[0]!, itemId: water }, office),
+      ),
+    ).toBe('INVALID_STATE');
+    expect(
+      await codeOf(
+        payFolio(
+          w.db,
+          w.ctx,
+          { legId, bookingCabinId: cabins[0]!, amount: 700, currency: 'USD', method: 'cash' },
+          office,
+        ),
+      ),
+    ).toBe('VALIDATION_FAILED');
+    await payFolio(
+      w.db,
+      w.ctx,
+      { legId, bookingCabinId: cabins[0]!, amount: 200, currency: 'USD', method: 'card' },
+      office,
+    );
+    // The rest in Egyptian pounds at the reception's rate: 400 US cents = 20,000 piastres.
+    const paid = await payFolio(
+      w.db,
+      w.ctx,
+      {
+        legId,
+        bookingCabinId: cabins[0]!,
+        amount: 20_000,
+        currency: 'EGP',
+        method: 'cash',
+        fxRate: '50',
+      },
+      office,
+    );
+    expect(paid.folio!.invoice).toMatchObject({ balance: 0n, status: 'paid' });
+    const folios = await departureFolios(w.db, w.ctx, legId, office);
+    expect(folios.cabins[0]!.folio).toMatchObject({ status: 'closed', balance: 0n });
+    expect(folios.baseCurrency).toBe('EGP');
+    expect(folios.lastRate).toBe('50');
+  });
+
+  it('bills the agency only where its contract says so', async () => {
+    expect(
+      await codeOf(
+        closeFolio(
+          w.db,
+          w.ctx,
+          { legId, bookingCabinId: cabins[1]!, billTo: 'agency', fxRate: '50' },
+          office,
+        ),
+      ),
+    ).toBe('INVALID_STATE');
+    const { rows } = await owner().query<{ contract_id: string }>(
+      `select contract_id from vs.booking where id = $1`,
+      [bookingId],
+    );
+    await updateContract(w.db, w.ctx, { contractId: rows[0]!.contract_id, folioToAgency: true });
+    const closed = await closeFolio(
+      w.db,
+      w.ctx,
+      { legId, bookingCabinId: cabins[1]!, billTo: 'agency', fxRate: '50' },
+      office,
+    );
+    expect(closed.folio).toMatchObject({ billTo: 'agency', invoice: { total: 1050n } });
+    expect(closed.agency).toMatchObject({ allowed: true });
+    expect(
+      await codeOf(
+        payFolio(
+          w.db,
+          w.ctx,
+          { legId, bookingCabinId: cabins[1]!, amount: 100, currency: 'USD', method: 'cash' },
+          office,
+        ),
+      ),
+    ).toBe('INVALID_STATE');
+  });
+
+  it('lets the booking be cancelled once its folios are closed', async () => {
+    expect(await codeOf(cancelBooking(w.db, w.ctx, { bookingId, reason: 'Test' }))).toBe('ok');
   });
 });

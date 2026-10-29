@@ -135,6 +135,9 @@ export function ChannelsScreen({
                           {t(`creditMode_${k.creditLimitMode as 'block'}`)}
                         </span>
                       )}
+                      {k.folioToAgency && (
+                        <span className="block text-xs text-muted">{t('folioAgencyPays')}</span>
+                      )}
                     </span>
                     {canChannels && k.paymentMode === 'credit' && (
                       <Button
@@ -150,6 +153,20 @@ export function ChannelsScreen({
                         {k.creditLimitMode === 'warn'
                           ? t('creditModeToBlock')
                           : t('creditModeToWarn')}
+                      </Button>
+                    )}
+                    {canChannels && k.paymentMode !== 'vessel_prepaid' && (
+                      <Button
+                        variant="ghost"
+                        disabled={updateContract.isPending}
+                        onClick={() =>
+                          updateContract.mutate({
+                            contractId: k.id,
+                            folioToAgency: !k.folioToAgency,
+                          })
+                        }
+                      >
+                        {k.folioToAgency ? t('folioToGuest') : t('folioToAgency')}
                       </Button>
                     )}
                     {canChannels && (

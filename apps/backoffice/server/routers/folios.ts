@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import {
+  closeFolio,
+  closeFolioInput,
   departureFolios,
   getExtrasSettings,
   getFolio,
   folioInput,
+  payFolio,
+  payFolioInput,
   postCharge,
   postChargeInput,
   saveExtraItem,
@@ -50,4 +54,13 @@ export const foliosRouter = router({
     .mutation(({ ctx, input }) =>
       voidCharge(backofficeDb(), ctx.engine, input, scopeOf(ctx.staff)),
     ),
+  /** E2: closing issues the folio's invoice; payment at reception allocates to it. */
+  close: procedure('folio.settle')
+    .input(closeFolioInput)
+    .mutation(({ ctx, input }) =>
+      closeFolio(backofficeDb(), ctx.engine, input, scopeOf(ctx.staff)),
+    ),
+  pay: procedure('folio.settle')
+    .input(payFolioInput)
+    .mutation(({ ctx, input }) => payFolio(backofficeDb(), ctx.engine, input, scopeOf(ctx.staff))),
 });

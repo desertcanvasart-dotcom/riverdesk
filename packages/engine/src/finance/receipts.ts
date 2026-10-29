@@ -432,6 +432,8 @@ async function allocateInTx(
   invoiceId: string,
   amount: bigint,
   fxRate: string | undefined,
+  /** Folio payments: the invoice amount already converted at the reception's rate. */
+  invoiceAmount?: bigint,
 ) {
   const invoice = await tx
     .selectFrom('invoice')
@@ -490,7 +492,8 @@ async function allocateInTx(
         details: { field: 'fxRate' },
       });
     rate = fxRate;
-    invoiceTotal = convert(money(amount, receipt.currency), fxRate, invoice.currency).amount;
+    invoiceTotal =
+      invoiceAmount ?? convert(money(amount, receipt.currency), fxRate, invoice.currency).amount;
   }
   if (invoiceTotal <= 0n)
     throw new DomainError('VALIDATION_FAILED', { message: 'The amount is too small' });
@@ -800,6 +803,67 @@ export async function recordReceipt(
       },
     );
   });
+}
+
+/**
+ * Money received for one invoice in the caller's transaction, allocated to it at once (a folio
+ * paid at reception). The invoice must have no bookings, so nothing on the booking ledger moves.
+ */
+export async function receiveForInvoice(
+  tx: Tx,
+  ctx: EngineContext,
+  values: {
+    invoiceId: string;
+    billingPartyId: string;
+    amount: bigint;
+    currency: string;
+    method: ReceiptMethod;
+    reference: string;
+    receivedOn: string;
+    fxRate?: string;
+    /** With fxRate: the invoice amount, converted by the caller (see allocateInTx). */
+    invoiceAmount?: bigint;
+    note?: string | null;
+  },
+) {
+  const created = await tx
+    .insertInto('receipt')
+    .values({
+      operator_id: ctx.operatorId,
+      billing_party_id: values.billingPartyId,
+      kind: 'receipt',
+      received_on: values.receivedOn,
+      amount: values.amount,
+      currency: values.currency,
+      method: values.method,
+      reference: values.reference,
+      note: values.note ?? null,
+      received_by: staffId(ctx),
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const receipt = await lockReceipt(tx, created.id);
+  await audit(tx, ctx.operatorId, ctx.actor, {
+    action: 'receipt.recorded',
+    entity: 'receipt',
+    entityId: receipt.id,
+    after: {
+      amount: values.amount,
+      currency: values.currency,
+      method: values.method,
+      reference: values.reference,
+    },
+  });
+  const allocated = await allocateInTx(
+    tx,
+    ctx,
+    receipt,
+    values.invoiceId,
+    values.amount,
+    values.fxRate,
+    values.invoiceAmount,
+  );
+  return { receiptId: receipt.id, invoiceAmount: allocated.invoiceAmount };
 }
 
 export const allocateReceiptInput = z.object({

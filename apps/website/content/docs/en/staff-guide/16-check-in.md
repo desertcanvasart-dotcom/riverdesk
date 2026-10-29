@@ -61,7 +61,22 @@ The price list, the vessels that keep folios and their currency are set by owner
 
 ![Extras on board](/screens/{locale}/guide-extras-settings.jpg 'The price list in Invoices → Settings.')
 
-Closing a folio, taking payment at reception and printing the guest's folio come next.
+### Closing a folio and taking payment
+
+Cabins whose cruise ends at this departure are marked **Leaving**. Before they go, open the folio:
+
+![Closing a folio](/screens/{locale}/guide-folio-close.jpg 'The bottom of a folio: the rate for the invoice and Close folio.')
+
+1. **Who pays:** the guest, or the booking's agency where its contract says the agency pays its guests' extras (**Channels → Agency pays extras** on the contract). Otherwise the guest always pays.
+2. **Close folio and issue invoice.** The folio becomes an invoice in your normal numbering, one line per category and day, with your tax lines. When the folio currency is not your base currency, type the rate (1 USD = ? EGP) for the invoice; the last rate used is filled in. Nothing more can be charged to a closed folio; a correction afterwards is a credit note on the invoice.
+3. **Take payment** (guest only): the balance is filled in. Choose cash or card and the currency. Paid in another currency, type the rate (1 USD = 48.50 EGP) and the screen shows what it covers. Part payments are fine; the badge turns **Paid** when nothing is left.
+4. **Guest folio** prints the folio for the guest: every charge by day, the invoice, the payments, the balance and a signature line.
+
+A folio with nothing left on it (everything voided) closes with nothing to pay. A folio billed to the agency goes on the agency's invoices and statement and is paid with them.
+
+**Extras shift report** (PDF or Excel), at the top of the Folios tab, is the purser's day on the vessel: charges by category, voids with their reasons, every payment taken at reception, the cash and card to hand over by currency, folios closed and still open.
+
+A booking, or a cabin removed from it, cannot be cancelled while its folio has charges: close the folio first. **Today** lists folios still open on or after the cabin's last day aboard.
 
 ## Where the details come from
 

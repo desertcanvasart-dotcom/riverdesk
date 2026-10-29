@@ -35,6 +35,7 @@ export async function listChannelsDetail(db: VsDatabase, ctx: EngineContext) {
       requestSlaHours: number;
       stopSell: boolean;
       creditLimitMode: string;
+      folioToAgency: boolean;
       active: boolean;
       validFrom: string;
       validTo: string | null;
@@ -42,7 +43,7 @@ export async function listChannelsDetail(db: VsDatabase, ctx: EngineContext) {
       select k.id, k.channel_id as "channelId", v.name as vessel, v.id as "vesselId", k.allocation,
              k.payment_mode as "paymentMode", k.price_adjustment as "priceAdjustment", k.adjustment_bps as "adjustmentBps",
              k.visible_free_cap as "visibleFreeCap", k.checkout_hold_minutes as "checkoutHoldMinutes",
-             k.option_hold_hours as "optionHoldHours", k.request_sla_hours as "requestSlaHours", k.stop_sell as "stopSell", k.credit_limit_mode as "creditLimitMode",
+             k.option_hold_hours as "optionHoldHours", k.request_sla_hours as "requestSlaHours", k.stop_sell as "stopSell", k.credit_limit_mode as "creditLimitMode", k.folio_to_agency as "folioToAgency",
              k.active, k.valid_from::text as "validFrom", k.valid_to::text as "validTo"
       from vs.channel_contract k join vs.vessel v on v.id = k.vessel_id
       order by v.name`.execute(tx);

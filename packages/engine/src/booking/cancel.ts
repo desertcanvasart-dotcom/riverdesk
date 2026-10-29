@@ -15,6 +15,7 @@ import {
   requestKeySchema,
   withRequestKey,
 } from './common';
+import { settleFoliosBeforeCancel } from '../backoffice/folios';
 import { releaseHoldLines } from './holds';
 import { releaseUnits } from './units';
 
@@ -81,6 +82,8 @@ export async function cancelBooking(
       { scopeId: peek.channel_id, key: data.requestKey, action: 'booking.cancel', input: data },
       async () => {
         if (peek.status === 'held') return cancelHeld(tx, ctx, data.bookingId, data.reason);
+        // Extras charged on board are never lost with the booking (folio-plan.md § 3).
+        await settleFoliosBeforeCancel(tx, ctx, data.bookingId);
         const booking = await tx
           .updateTable('booking')
           .set({ status: 'cancelled', cancelled_at: sql<Date>`now()`, cancel_reason: data.reason })

@@ -112,7 +112,8 @@
     "open": "Open",
     "invoicesDue": "Invoices overdue or due within 3 days",
     "unallocatedReceipts": "Money received, not yet on an invoice",
-    "uninvoicedSailed": "Sailed in the last 7 days without an invoice"
+    "uninvoicedSailed": "Sailed in the last 7 days without an invoice",
+    "openFolios": "Folios still open on or after the last day aboard"
   },
   "roles": {
     "owner": "Owner",
@@ -517,7 +518,10 @@
     "creditMode_block": "Over the credit limit: needs approval",
     "creditMode_warn": "Over the credit limit: confirms with a warning",
     "creditModeToWarn": "Warn only",
-    "creditModeToBlock": "Require approval"
+    "creditModeToBlock": "Require approval",
+    "folioToAgency": "Agency pays extras",
+    "folioToGuest": "Guests pay extras",
+    "folioAgencyPays": "The agency pays its guests' extras on board"
   },
   "payments": {
     "title": "Payments",
@@ -636,7 +640,9 @@
     "table_plan": "Table plan",
     "muster_list": "Muster list",
     "feedback_forms": "Feedback forms",
-    "housekeeping_sheet": "Housekeeping (that day)"
+    "housekeeping_sheet": "Housekeeping (that day)",
+    "guest_folio": "Guest folio",
+    "folio_shift_report": "Extras shift report"
   },
   "guests": {
     "title": "Guests & manifests",
@@ -1996,6 +2002,22 @@
     "voidReason": "Why",
     "confirmVoid": "Void charge",
     "keep": "Keep",
-    "total": "Total"
+    "total": "Total",
+    "toPay": "To pay",
+    "paid": "Paid",
+    "leaving": "Leaving",
+    "billTo": "Who pays",
+    "billGuest": "The guest",
+    "invoiceRate": "1 {from} = ? {to} (for the invoice)",
+    "close": "Close folio and issue invoice",
+    "voidFolio": "Closed with nothing to pay.",
+    "closedInto": "Invoice",
+    "amount": "Amount",
+    "method": "Paid by",
+    "cash": "Cash",
+    "card": "Card",
+    "payRate": "1 {from} = ? {to}",
+    "takePayment": "Take payment",
+    "equals": "= {amount} on the folio"
   }
 }

@@ -63,6 +63,8 @@ export const ONBOARD_DOCUMENTS: readonly string[] = [
   ...STATIONERY_DOCUMENTS,
   'daily_programme',
   'housekeeping_sheet',
+  'guest_folio',
+  'folio_shift_report',
 ];
 /** Documents carrying passport numbers. */
 export const PASSPORT_DOCUMENTS: readonly string[] = [
@@ -117,6 +119,16 @@ export const requestDocumentInput = z.union([
     days: z.number().int().min(1).max(14).default(7),
     locale,
   }),
+  /** Extras E2: one cabin's folio, for the guest. */
+  z.object({ kind: z.literal('guest_folio'), folioId: z.uuid(), locale }),
+  /** Extras E2: the purser's day on one vessel — charges, voids, takings, folios closed. */
+  z.object({
+    kind: z.literal('folio_shift_report'),
+    vesselId: z.uuid(),
+    date: dateSchema,
+    locale,
+    format: z.enum(['pdf', 'xlsx']).default('pdf'),
+  }),
   z.object({ kind: z.literal('outage_pack'), vesselId: z.uuid(), locale }),
   z.object({
     kind: z.literal('vacancy_sheet'),
@@ -151,18 +163,21 @@ export async function requestDocument(
       ? { entity: 'booking', entityId: data.bookingId, format: 'pdf', table: 'booking' as const }
       : 'legId' in data
         ? { entity: 'leg', entityId: data.legId, format: data.format, table: 'leg' as const }
-        : {
-            entity: 'vessel',
-            entityId: data.vesselId,
-            format: data.kind === 'vacancy_sheet' ? data.format : 'pdf',
-            table: 'vessel' as const,
-          };
+        : 'folioId' in data
+          ? { entity: 'folio', entityId: data.folioId, format: 'pdf', table: 'folio' as const }
+          : {
+              entity: 'vessel',
+              entityId: data.vesselId,
+              format:
+                data.kind === 'vacancy_sheet' || data.kind === 'folio_shift_report'
+                  ? data.format
+                  : 'pdf',
+              table: 'vessel' as const,
+            };
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const exists = await tx
       .selectFrom(target.table)
-      .select(
-        target.table === 'booking' || target.table === 'leg' ? 'vessel_id' : 'id as vessel_id',
-      )
+      .select(target.table === 'vessel' ? 'id as vessel_id' : 'vessel_id')
       .where('id', '=', target.entityId)
       .executeTakeFirst();
     if (!exists || (scope.vesselId && exists.vessel_id !== scope.vesselId))
@@ -176,7 +191,7 @@ export async function requestDocument(
                   ? { from: data.from, weeks: data.weeks }
                   : data.kind === 'daily_programme'
                     ? { from: data.from, days: data.days }
-                    : data.kind === 'housekeeping_sheet'
+                    : data.kind === 'housekeeping_sheet' || data.kind === 'folio_shift_report'
                       ? { date: data.date }
                       : {},
               )}::jsonb,

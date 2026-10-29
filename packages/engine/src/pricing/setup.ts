@@ -593,6 +593,8 @@ export const updateContractInput = z.object({
   creditTermsDays: z.number().int().min(0).max(365).nullable().optional(),
   contractRef: z.string().trim().min(1).max(60).nullable().optional(),
   creditLimitMode: z.enum(['warn', 'block']).optional(),
+  /** Extras E2: the agency pays its guests' folios. */
+  folioToAgency: z.boolean().optional(),
 });
 
 export async function updateContract(
@@ -620,6 +622,7 @@ export async function updateContract(
         ...(data.creditTermsDays !== undefined ? { credit_terms_days: data.creditTermsDays } : {}),
         ...(data.contractRef !== undefined ? { contract_ref: data.contractRef } : {}),
         ...(data.creditLimitMode !== undefined ? { credit_limit_mode: data.creditLimitMode } : {}),
+        ...(data.folioToAgency !== undefined ? { folio_to_agency: data.folioToAgency } : {}),
       })
       .where('id', '=', data.contractId)
       .returningAll()

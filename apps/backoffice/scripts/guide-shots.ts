@@ -271,8 +271,18 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     async (page, m) => {
       await page.goto(`${BASE}/checkin`);
       await page.getByRole('tab', { name: m.checkin!.tabFolios }).click();
-      await page.locator('button.min-h-20').first().click();
-      await page.locator('dialog[open] li').first().waitFor();
+      await openFolio(page, m);
+      await page.waitForTimeout(600);
+    },
+  ],
+  [
+    'folio-close',
+    async (page, m) => {
+      await page.goto(`${BASE}/checkin`);
+      await page.getByRole('tab', { name: m.checkin!.tabFolios }).click();
+      await openFolio(page, m);
+      const close = page.getByRole('button', { name: m.folios!.close });
+      await close.scrollIntoViewIfNeeded();
       await page.waitForTimeout(600);
     },
   ],
@@ -395,6 +405,19 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
 ];
+
+/** Opens the first folio that still has charges and is not closed yet. */
+async function openFolio(page: Page, m: Messages) {
+  await page
+    .locator('button.min-h-20')
+    .filter({ hasText: /\d/ })
+    .filter({ hasNotText: m.folios!.paid })
+    .filter({ hasNotText: m.folios!.toPay })
+    .filter({ hasNotText: m.folios!.nothingYet })
+    .first()
+    .click();
+  await page.locator('dialog[open] li').first().waitFor();
+}
 
 const only = process.argv[2];
 const browser = await chromium.launch();

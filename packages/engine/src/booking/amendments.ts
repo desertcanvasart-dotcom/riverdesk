@@ -17,6 +17,7 @@ import {
   writeRevision,
   type QuotedCabin,
 } from './common';
+import { settleFoliosBeforeCancel } from '../backoffice/folios';
 import { loadContract } from './holds';
 import { renumberCabins } from './requests';
 import { releaseUnits, takeUnits } from './units';
@@ -457,6 +458,12 @@ async function reshapeCabins(tx: Tx, ctx: EngineContext, bookingId: string, cabi
   }
   const surplus = old.slice(cabins.length);
   if (surplus.length > 0) {
+    await settleFoliosBeforeCancel(
+      tx,
+      ctx,
+      bookingId,
+      surplus.map((c) => c.id),
+    );
     const first = old[0]!;
     await tx
       .updateTable('guest')

@@ -7,3 +7,4 @@ export * from './invoice';
 export * from './statement';
 export * from './operations';
 export * from './stationery';
+export * from './folio';

@@ -3,18 +3,38 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Minus, Plus } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog } from '../../../components/dialog';
+import { DocumentButtons } from '../../../components/documents';
 import { Alert, Badge, Button, Empty, Field, Input, Select, cx } from '../../../components/ui';
 import { useErrorText } from '../../../lib/errors';
-import { formatDateTime, formatMoney, formatNumber, parseMoney } from '../../../lib/format';
+import {
+  formatDateTime,
+  formatMoney,
+  formatNumber,
+  minorToInput,
+  parseMoney,
+} from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 
+const cairoToday = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+
 /**
- * Folios (E1): every cabin aboard the departure with what it has spent; tap one to add a charge
- * from the price list or void one. Made for a phone at the bar or the reception.
+ * Folios (E1–E2): every cabin aboard the departure with what it has spent; tap one to add a
+ * charge from the price list or void one, then close it (its invoice) and take payment at
+ * reception. Made for a phone at the bar or the reception.
  */
-export function Folios({ legId, canWrite }: { legId: string; canWrite: boolean }) {
+export function Folios({
+  legId,
+  canWrite,
+  canSettle,
+}: {
+  legId: string;
+  canWrite: boolean;
+  canSettle: boolean;
+}) {
+  const td = useTranslations('documents');
   const t = useTranslations('folios');
   const locale = useLocale();
   const trpc = useTRPC();
@@ -28,10 +48,38 @@ export function Folios({ legId, canWrite }: { legId: string; canWrite: boolean }
 
   return (
     <>
-      <p className="text-sm">
-        <span className="text-muted">{t('departureTotal')}: </span>
-        <span className="font-semibold tabular-nums">{formatMoney(total, currency, locale)}</span>
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <p className="text-sm">
+          <span className="text-muted">{t('departureTotal')}: </span>
+          <span className="font-semibold tabular-nums">{formatMoney(total, currency, locale)}</span>
+        </p>
+        {canSettle && (
+          <DocumentButtons
+            items={[
+              {
+                key: 'shift',
+                label: td('folio_shift_report'),
+                input: {
+                  kind: 'folio_shift_report',
+                  vesselId: data.data.vesselId,
+                  date: cairoToday(),
+                  format: 'pdf',
+                },
+              },
+              {
+                key: 'shift-xlsx',
+                label: `${td('folio_shift_report')} · Excel`,
+                input: {
+                  kind: 'folio_shift_report',
+                  vesselId: data.data.vesselId,
+                  date: cairoToday(),
+                  format: 'xlsx',
+                },
+              },
+            ]}
+          />
+        )}
+      </div>
       {cabins.length === 0 ? (
         <Empty>{t('nobody')}</Empty>
       ) : (
@@ -43,8 +91,17 @@ export function Folios({ legId, canWrite }: { legId: string; canWrite: boolean }
               onClick={() => setOpen(c.bookingCabinId)}
               className="min-h-20 rounded-xl border border-line bg-surface p-3 text-start hover:bg-line/30"
             >
-              <div className="text-xl font-bold tabular-nums" dir="ltr">
-                {c.cabin ?? '—'}
+              <div className="flex items-start justify-between gap-1">
+                <span className="text-xl font-bold tabular-nums" dir="ltr">
+                  {c.cabin ?? '—'}
+                </span>
+                {c.folio?.status === 'closed' ? (
+                  <Badge tone={c.folio.balance ? 'warn' : 'ok'}>
+                    {c.folio.balance ? t('toPay') : t('paid')}
+                  </Badge>
+                ) : (
+                  c.leaving && <Badge tone="info">{t('leaving')}</Badge>
+                )}
               </div>
               <div className="truncate text-xs text-muted">{c.guests.join(', ') || c.ref}</div>
               <div className="mt-1 text-sm tabular-nums">
@@ -65,6 +122,9 @@ export function Folios({ legId, canWrite }: { legId: string; canWrite: boolean }
           currency={currency}
           items={data.data.items}
           canWrite={canWrite}
+          canSettle={canSettle}
+          baseCurrency={data.data.baseCurrency}
+          lastRate={data.data.lastRate}
           onClose={() => setOpen(null)}
         />
       )}
@@ -86,6 +146,9 @@ function FolioDialog({
   currency,
   items,
   canWrite,
+  canSettle,
+  baseCurrency,
+  lastRate,
   onClose,
 }: {
   legId: string;
@@ -93,6 +156,9 @@ function FolioDialog({
   currency: string;
   items: Item[];
   canWrite: boolean;
+  canSettle: boolean;
+  baseCurrency: string;
+  lastRate: string | null;
   onClose: () => void;
 }) {
   const t = useTranslations('folios');
@@ -137,6 +203,7 @@ function FolioDialog({
   const manualAmount = parseMoney(manual.amount, currency);
   const name = (x: { nameAr: string; nameEn: string }) => (isArabic ? x.nameAr : x.nameEn);
   const error = post.error ?? voidIt.error;
+  const open = !folio.data?.folio || folio.data.folio.status === 'open';
 
   return (
     <Dialog
@@ -153,7 +220,7 @@ function FolioDialog({
         <p className="text-sm text-muted">{cabin.guests.join(', ')}</p>
         {error && <Alert tone="bad">{errorText(error)}</Alert>}
 
-        {canWrite && (
+        {canWrite && open && (
           <section className="flex flex-col gap-3 rounded-xl border border-line p-3">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {[...categories, 'manual'].map((c) => (
@@ -301,7 +368,7 @@ function FolioDialog({
                     <span className={cx('tabular-nums', c.voided && 'text-muted line-through')}>
                       {formatMoney(c.amount, currency, locale)}
                     </span>
-                    {canWrite && !c.voided && (
+                    {canWrite && open && !c.voided && (
                       <Button variant="ghost" onClick={() => setVoiding(c.id)}>
                         {t('void')}
                       </Button>
@@ -339,7 +406,233 @@ function FolioDialog({
             {formatMoney(folio.data?.total ?? 0n, currency, locale)}
           </span>
         </div>
+        {folio.data?.folio && (
+          <Settle
+            legId={legId}
+            bookingCabinId={cabin.bookingCabinId}
+            detail={folio.data}
+            canSettle={canSettle}
+            baseCurrency={baseCurrency}
+            lastRate={lastRate}
+            onDone={done}
+          />
+        )}
       </div>
     </Dialog>
+  );
+}
+
+type Detail = {
+  folio: {
+    id: string;
+    status: 'open' | 'closed' | 'void';
+    billTo: 'guest' | 'agency';
+    invoice: {
+      id: string;
+      number: string;
+      total: bigint;
+      balance: bigint;
+      party: string;
+    } | null;
+  } | null;
+  currency: string;
+  total: bigint;
+  agency: { name: string; allowed: boolean } | null;
+};
+
+/**
+ * Closing (the folio's invoice, to the guest or the agency) and payment at reception, then the
+ * guest's folio to print.
+ */
+function Settle({
+  legId,
+  bookingCabinId,
+  detail,
+  canSettle,
+  baseCurrency,
+  lastRate,
+  onDone,
+}: {
+  legId: string;
+  bookingCabinId: string;
+  detail: Detail;
+  canSettle: boolean;
+  baseCurrency: string;
+  lastRate: string | null;
+  onDone: (data: unknown) => void;
+}) {
+  const t = useTranslations('folios');
+  const td = useTranslations('documents');
+  const locale = useLocale();
+  const trpc = useTRPC();
+  const errorText = useErrorText();
+  const folio = detail.folio!;
+  const currency = detail.currency;
+  const input = { legId, bookingCabinId };
+  const [billTo, setBillTo] = useState<'guest' | 'agency'>('guest');
+  const [rate, setRate] = useState(lastRate ?? '');
+  const [pay, setPay] = useState({
+    amount: folio.invoice ? minorToInput(folio.invoice.balance, currency) : '',
+    currency,
+    method: 'cash' as 'cash' | 'card',
+    rate: lastRate ?? '',
+  });
+  const close = useMutation(trpc.folios.close.mutationOptions({ onSuccess: onDone }));
+  const take = useMutation(
+    trpc.folios.pay.mutationOptions({
+      onSuccess: (data) => {
+        onDone(data);
+        const left = (data as Detail).folio?.invoice?.balance ?? 0n;
+        setPay((p) => ({ ...p, amount: minorToInput(left, currency), currency }));
+      },
+    }),
+  );
+  // Once closed, the payment starts at what is still to pay.
+  const balance = folio.invoice?.balance;
+  useEffect(() => {
+    if (balance !== undefined)
+      setPay((p) => ({ ...p, amount: minorToInput(balance, currency), currency }));
+  }, [folio.invoice?.id]);
+  const needsRate = currency !== baseCurrency;
+  const paidAmount = parseMoney(pay.amount, pay.currency);
+  const otherCurrency = pay.currency !== currency;
+  const error = close.error ?? take.error;
+  const invoice = folio.invoice;
+
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-line p-3">
+      {error && <Alert tone="bad">{errorText(error)}</Alert>}
+      {folio.status === 'open' && canSettle && detail.total > 0n && (
+        <div className="flex flex-wrap items-end gap-3">
+          {detail.agency?.allowed && (
+            <Field label={t('billTo')}>
+              <Select
+                value={billTo}
+                onChange={(e) => setBillTo(e.target.value as 'guest' | 'agency')}
+              >
+                <option value="guest">{t('billGuest')}</option>
+                <option value="agency">{detail.agency.name}</option>
+              </Select>
+            </Field>
+          )}
+          {needsRate && (
+            <Field label={t('invoiceRate', { from: currency, to: baseCurrency })}>
+              <Input
+                inputMode="decimal"
+                dir="ltr"
+                value={rate}
+                onChange={(e) => setRate(e.target.value.trim())}
+                className="w-32"
+              />
+            </Field>
+          )}
+          <Button
+            className="min-h-11 flex-1"
+            disabled={close.isPending || (needsRate && !rate)}
+            onClick={() =>
+              close.mutate({ ...input, billTo, ...(needsRate ? { fxRate: rate } : {}) })
+            }
+          >
+            {t('close')}
+          </Button>
+        </div>
+      )}
+      {folio.status === 'void' && <p className="text-sm text-muted">{t('voidFolio')}</p>}
+      {invoice && (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <span>
+            {t('closedInto')} <span dir="ltr">{invoice.number}</span> · {invoice.party}
+          </span>
+          <Badge tone={invoice.balance > 0n ? 'warn' : 'ok'}>
+            {invoice.balance > 0n
+              ? `${t('toPay')} ${formatMoney(invoice.balance, currency, locale)}`
+              : t('paid')}
+          </Badge>
+        </p>
+      )}
+      {invoice && folio.billTo === 'guest' && invoice.balance > 0n && canSettle && (
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label={t('amount')}>
+            <Input
+              inputMode="decimal"
+              dir="ltr"
+              value={pay.amount}
+              onChange={(e) => setPay({ ...pay, amount: e.target.value })}
+              className="w-32"
+            />
+          </Field>
+          <Field label={t('currency')}>
+            <Select
+              value={pay.currency}
+              onChange={(e) => setPay({ ...pay, currency: e.target.value })}
+            >
+              {[...new Set([currency, baseCurrency])].map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </Select>
+          </Field>
+          {otherCurrency && (
+            <Field label={t('payRate', { from: currency, to: pay.currency })}>
+              <Input
+                inputMode="decimal"
+                dir="ltr"
+                value={pay.rate}
+                onChange={(e) => setPay({ ...pay, rate: e.target.value.trim() })}
+                className="w-28"
+              />
+            </Field>
+          )}
+          <Field label={t('method')}>
+            <Select
+              value={pay.method}
+              onChange={(e) => setPay({ ...pay, method: e.target.value as 'cash' | 'card' })}
+            >
+              <option value="cash">{t('cash')}</option>
+              <option value="card">{t('card')}</option>
+            </Select>
+          </Field>
+          <Button
+            className="min-h-11 flex-1"
+            disabled={take.isPending || paidAmount === null || (otherCurrency && !pay.rate)}
+            onClick={() =>
+              take.mutate({
+                ...input,
+                amount: paidAmount!,
+                currency: pay.currency,
+                method: pay.method,
+                ...(otherCurrency ? { fxRate: pay.rate } : {}),
+              })
+            }
+          >
+            {t('takePayment')}
+          </Button>
+        </div>
+      )}
+      {invoice &&
+        invoice.balance > 0n &&
+        otherCurrency &&
+        paidAmount !== null &&
+        Number(pay.rate) > 0 && (
+          <p className="text-xs text-muted">
+            {t('equals', {
+              // A preview only (the folio currencies share two decimals); the engine converts.
+              amount: formatMoney(
+                BigInt(Math.round(Number(paidAmount) / Number(pay.rate))),
+                currency,
+                locale,
+              ),
+            })}
+          </p>
+        )}
+      <DocumentButtons
+        items={[
+          {
+            key: 'folio',
+            label: td('guest_folio'),
+            input: { kind: 'guest_folio', folioId: folio.id },
+          },
+        ]}
+      />
+    </section>
   );
 }

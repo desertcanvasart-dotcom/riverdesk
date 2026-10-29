@@ -112,7 +112,8 @@
     "open": "فتح",
     "invoicesDue": "فواتير متأخرة أو مستحقة خلال 3 أيام",
     "unallocatedReceipts": "مبالغ مستلمة لم تُخصص لفاتورة",
-    "uninvoicedSailed": "أبحرت خلال آخر 7 أيام دون فاتورة"
+    "uninvoicedSailed": "أبحرت خلال آخر 7 أيام دون فاتورة",
+    "openFolios": "حسابات ما زالت مفتوحة في آخر يوم على متن الباخرة أو بعده"
   },
   "roles": {
     "owner": "المالك",
@@ -517,7 +518,10 @@
     "creditMode_block": "تجاوز حد الائتمان: يحتاج موافقة",
     "creditMode_warn": "تجاوز حد الائتمان: يُؤكد مع تنبيه",
     "creditModeToWarn": "تنبيه فقط",
-    "creditModeToBlock": "طلب موافقة"
+    "creditModeToBlock": "طلب موافقة",
+    "folioToAgency": "الوكيل يدفع الإضافات",
+    "folioToGuest": "الضيوف يدفعون الإضافات",
+    "folioAgencyPays": "يدفع الوكيل إضافات ضيوفه على متن الباخرة"
   },
   "payments": {
     "title": "المدفوعات",
@@ -636,7 +640,9 @@
     "table_plan": "توزيع الطاولات",
     "muster_list": "قائمة التجمع",
     "feedback_forms": "استبيانات الرأي",
-    "housekeeping_sheet": "الإشراف الداخلي (ذلك اليوم)"
+    "housekeeping_sheet": "الإشراف الداخلي (ذلك اليوم)",
+    "guest_folio": "حساب الضيف",
+    "folio_shift_report": "تقرير وردية الإضافات"
   },
   "guests": {
     "title": "الضيوف والكشوف",
@@ -1996,6 +2002,22 @@
     "voidReason": "السبب",
     "confirmVoid": "إلغاء الإضافة",
     "keep": "إبقاء",
-    "total": "الإجمالي"
+    "total": "الإجمالي",
+    "toPay": "للدفع",
+    "paid": "مدفوع",
+    "leaving": "يغادر",
+    "billTo": "من يدفع",
+    "billGuest": "الضيف",
+    "invoiceRate": "عدد {to} مقابل ١ {from} (للفاتورة)",
+    "close": "إغلاق الحساب وإصدار الفاتورة",
+    "voidFolio": "أُغلق دون مبلغ مستحق.",
+    "closedInto": "الفاتورة",
+    "amount": "المبلغ",
+    "method": "طريقة الدفع",
+    "cash": "نقدًا",
+    "card": "بطاقة",
+    "payRate": "عدد {to} مقابل ١ {from}",
+    "takePayment": "تحصيل المبلغ",
+    "equals": "= {amount} من الحساب"
   }
 }

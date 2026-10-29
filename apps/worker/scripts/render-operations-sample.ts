@@ -33,6 +33,13 @@ try {
       .orderBy('b.ref')
       .executeTakeFirstOrThrow(),
   );
+  const folio = await worker.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx
+      .selectFrom('folio')
+      .select(['id', 'vessel_id'])
+      .orderBy('closed_at', (ob) => ob.desc().nullsLast())
+      .executeTakeFirst(),
+  );
   mkdirSync(outDir, { recursive: true });
   const jobs = [
     ...(
@@ -58,6 +65,13 @@ try {
     { kind: 'transfer_voucher', entityId: first.booking_id, params: {} },
     { kind: 'boarding_pass', entityId: first.booking_id, params: {} },
     { kind: 'housekeeping_sheet', entityId: first.vessel_id, params: { date: first.depart } },
+    // E2: the folio most recently closed (else any), and today's shift report on its vessel.
+    ...(folio
+      ? [
+          { kind: 'guest_folio', entityId: folio.id, params: {} },
+          { kind: 'folio_shift_report', entityId: folio.vessel_id, params: { date: today } },
+        ]
+      : []),
   ];
   for (const job of jobs)
     for (const locale of ['en', 'ar'] as const) {

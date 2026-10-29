@@ -65,7 +65,7 @@ export const createInvoiceDraftInput = z
   });
 
 interface DraftLine {
-  kind: 'cabin' | 'fee' | 'penalty' | 'commission' | 'manual';
+  kind: 'cabin' | 'fee' | 'penalty' | 'commission' | 'manual' | 'extra';
   booking_id: string | null;
   booking_cabin_id: string | null;
   description_ar: string;
@@ -624,147 +624,150 @@ export async function issueInvoice(
   input: z.input<typeof issueInvoiceInput>,
 ) {
   const data = parseInput(issueInvoiceInput, input);
-  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
-    let draft = await lockDraft(tx, data.invoiceId);
-    const proformaId = draft.type === 'proforma' ? draft.id : null;
-    if (draft.type === 'credit_note')
-      throw new DomainError('INVALID_STATE', { message: 'Credit notes are issued when created' });
-    const lines = await tx
-      .selectFrom('invoice_line')
-      .selectAll()
-      .where('invoice_id', '=', draft.id)
-      .orderBy('seq')
-      .execute();
-    const bookingIds = [
-      ...new Set(lines.map((l) => l.booking_id).filter((id): id is string => !!id)),
-    ];
-    const bookings = bookingIds.length ? await lockBookings(tx, bookingIds) : [];
-    for (const b of bookings) {
-      if (!(INVOICEABLE as readonly string[]).includes(b.status))
-        throw new DomainError('INVALID_STATE', {
-          message: `Booking ${b.ref} is ${b.status}; only confirmed, completed or cancelled bookings are invoiced`,
-          details: { ref: b.ref, status: b.status },
-        });
-    }
-    const open = await bookingsOnOpenInvoices(tx, bookingIds, draft.id);
-    if (open.length)
+  return db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    issueInvoiceInTx(tx, ctx, data),
+  );
+}
+
+/** issueInvoice inside the caller's transaction (closing a folio issues its invoice this way). */
+export async function issueInvoiceInTx(
+  tx: Tx,
+  ctx: EngineContext,
+  data: z.infer<typeof issueInvoiceInput>,
+) {
+  let draft = await lockDraft(tx, data.invoiceId);
+  const proformaId = draft.type === 'proforma' ? draft.id : null;
+  if (draft.type === 'credit_note')
+    throw new DomainError('INVALID_STATE', { message: 'Credit notes are issued when created' });
+  const lines = await tx
+    .selectFrom('invoice_line')
+    .selectAll()
+    .where('invoice_id', '=', draft.id)
+    .orderBy('seq')
+    .execute();
+  const bookingIds = [
+    ...new Set(lines.map((l) => l.booking_id).filter((id): id is string => !!id)),
+  ];
+  const bookings = bookingIds.length ? await lockBookings(tx, bookingIds) : [];
+  for (const b of bookings) {
+    if (!(INVOICEABLE as readonly string[]).includes(b.status))
       throw new DomainError('INVALID_STATE', {
-        message: `Booking ${open[0]!.ref} is already on ${open[0]!.number ?? 'a draft invoice'}; credit it first`,
-        details: { refs: open.map((o) => o.ref) },
+        message: `Booking ${b.ref} is ${b.status}; only confirmed, completed or cancelled bookings are invoiced`,
+        details: { ref: b.ref, status: b.status },
       });
-    if (draft.total <= 0n)
-      throw new DomainError('VALIDATION_FAILED', {
-        message: 'An invoice total must be above zero',
-      });
-    const { settings, snapshot } = await issuerSnapshot(tx);
-    if (draft.currency !== settings.base_currency && !data.fxRate)
-      throw new DomainError('VALIDATION_FAILED', {
-        message: `An exchange rate ${draft.currency} → ${settings.base_currency} is required to issue`,
-        details: { field: 'fxRate' },
-      });
-    if (draft.currency === settings.base_currency && data.fxRate)
-      throw new DomainError('VALIDATION_FAILED', {
-        message: 'No exchange rate for an invoice in the base currency',
-      });
+  }
+  const open = await bookingsOnOpenInvoices(tx, bookingIds, draft.id);
+  if (open.length)
+    throw new DomainError('INVALID_STATE', {
+      message: `Booking ${open[0]!.ref} is already on ${open[0]!.number ?? 'a draft invoice'}; credit it first`,
+      details: { refs: open.map((o) => o.ref) },
+    });
+  if (draft.total <= 0n)
+    throw new DomainError('VALIDATION_FAILED', {
+      message: 'An invoice total must be above zero',
+    });
+  const { settings, snapshot } = await issuerSnapshot(tx);
+  if (draft.currency !== settings.base_currency && !data.fxRate)
+    throw new DomainError('VALIDATION_FAILED', {
+      message: `An exchange rate ${draft.currency} → ${settings.base_currency} is required to issue`,
+      details: { field: 'fxRate' },
+    });
+  if (draft.currency === settings.base_currency && data.fxRate)
+    throw new DomainError('VALIDATION_FAILED', {
+      message: 'No exchange rate for an invoice in the base currency',
+    });
 
-    if (proformaId) {
-      // The proforma stays as it was; a copy becomes the invoice.
-      const copy = await tx
-        .insertInto('invoice')
-        .values({
-          operator_id: ctx.operatorId,
-          type: 'invoice',
-          billing_party_id: draft.billing_party_id,
-          currency: draft.currency,
-          base_currency: settings.base_currency,
-          locale: draft.locale,
-          due_date: draft.due_date,
-          notes: draft.notes,
-          created_by: ctx.actor.type === 'staff' ? ctx.actor.id : null,
-          subtotal: draft.subtotal,
-          tax_total: draft.tax_total,
-          total: draft.total,
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
-      await tx
-        .insertInto('invoice_line')
-        .values(
-          lines.map(({ id: _id, created_at: _c, invoice_id: _i, ...line }) => ({
-            ...line,
-            invoice_id: copy.id,
-          })),
-        )
-        .execute();
-      draft = copy;
-    }
-
-    const today = await cairoToday(tx);
-    const year = Number(today.slice(0, 4));
-    const seq = await nextNumber(
-      tx,
-      ctx.operatorId,
-      'invoice',
-      year,
-      settings.first_invoice_number,
-    );
-    const number = formatNumber(settings.invoice_prefix, year, seq, settings.number_digits);
-    const terms =
-      bookings.find((b) => b.credit_terms_days !== null)?.credit_terms_days ??
-      settings.default_terms_days;
-    const dueDate =
-      draft.due_date ??
-      (await sql<{ d: string }>`select (${today}::date + ${terms}::int)::text as d`.execute(tx))
-        .rows[0]!.d;
-    const issued = await tx
-      .updateTable('invoice')
-      .set({
-        status: 'issued',
-        series: 'invoice',
-        year,
-        seq,
-        number,
+  if (proformaId) {
+    // The proforma stays as it was; a copy becomes the invoice.
+    const copy = await tx
+      .insertInto('invoice')
+      .values({
+        operator_id: ctx.operatorId,
+        type: 'invoice',
+        billing_party_id: draft.billing_party_id,
+        currency: draft.currency,
         base_currency: settings.base_currency,
-        fx_rate: data.fxRate ?? null,
-        fx_source: data.fxRate ? (data.fxSource ?? 'typed') : null,
-        fx_date: data.fxRate ? (data.fxDate ?? today) : null,
-        issue_date: today,
-        due_date: dueDate < today ? today : dueDate,
-        party_snapshot: JSON.stringify(await partySnapshot(tx, draft.billing_party_id)),
-        issuer_snapshot: JSON.stringify(snapshot),
-        issued_by: ctx.actor.type === 'staff' ? ctx.actor.id : null,
-        issued_at: sql`now()`,
+        locale: draft.locale,
+        due_date: draft.due_date,
+        notes: draft.notes,
+        created_by: ctx.actor.type === 'staff' ? ctx.actor.id : null,
+        subtotal: draft.subtotal,
+        tax_total: draft.tax_total,
+        total: draft.total,
       })
-      .where('id', '=', draft.id)
       .returningAll()
       .executeTakeFirstOrThrow();
-    // Deposits and other payments its bookings already have pay it at once.
-    let paid = 0n;
-    for (const b of bookings)
-      paid += await allocateBookingMoney(tx, ctx, b.id, 'invoice_issued', issued.id);
-    await audit(tx, ctx.operatorId, ctx.actor, {
-      action: 'invoice.issued',
-      entity: 'invoice',
-      entityId: issued.id,
-      after: {
-        number,
-        proformaId,
-        total: issued.total,
-        currency: issued.currency,
-        fx_rate: issued.fx_rate,
-        bookings: bookings.map((b) => b.ref),
-        paid,
-      },
-    });
-    return {
-      invoiceId: issued.id,
+    await tx
+      .insertInto('invoice_line')
+      .values(
+        lines.map(({ id: _id, created_at: _c, invoice_id: _i, ...line }) => ({
+          ...line,
+          invoice_id: copy.id,
+        })),
+      )
+      .execute();
+    draft = copy;
+  }
+
+  const today = await cairoToday(tx);
+  const year = Number(today.slice(0, 4));
+  const seq = await nextNumber(tx, ctx.operatorId, 'invoice', year, settings.first_invoice_number);
+  const number = formatNumber(settings.invoice_prefix, year, seq, settings.number_digits);
+  const terms =
+    bookings.find((b) => b.credit_terms_days !== null)?.credit_terms_days ??
+    settings.default_terms_days;
+  const dueDate =
+    draft.due_date ??
+    (await sql<{ d: string }>`select (${today}::date + ${terms}::int)::text as d`.execute(tx))
+      .rows[0]!.d;
+  const issued = await tx
+    .updateTable('invoice')
+    .set({
+      status: 'issued',
+      series: 'invoice',
+      year,
+      seq,
       number,
-      issueDate: today,
-      dueDate: issued.due_date!,
+      base_currency: settings.base_currency,
+      fx_rate: data.fxRate ?? null,
+      fx_source: data.fxRate ? (data.fxSource ?? 'typed') : null,
+      fx_date: data.fxRate ? (data.fxDate ?? today) : null,
+      issue_date: today,
+      due_date: dueDate < today ? today : dueDate,
+      party_snapshot: JSON.stringify(await partySnapshot(tx, draft.billing_party_id)),
+      issuer_snapshot: JSON.stringify(snapshot),
+      issued_by: ctx.actor.type === 'staff' ? ctx.actor.id : null,
+      issued_at: sql`now()`,
+    })
+    .where('id', '=', draft.id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  // Deposits and other payments its bookings already have pay it at once.
+  let paid = 0n;
+  for (const b of bookings)
+    paid += await allocateBookingMoney(tx, ctx, b.id, 'invoice_issued', issued.id);
+  await audit(tx, ctx.operatorId, ctx.actor, {
+    action: 'invoice.issued',
+    entity: 'invoice',
+    entityId: issued.id,
+    after: {
+      number,
+      proformaId,
       total: issued.total,
-      amountPaid: paid,
-    };
+      currency: issued.currency,
+      fx_rate: issued.fx_rate,
+      bookings: bookings.map((b) => b.ref),
+      paid,
+    },
   });
+  return {
+    invoiceId: issued.id,
+    number,
+    issueDate: today,
+    dueDate: issued.due_date!,
+    total: issued.total,
+    amountPaid: paid,
+  };
 }
 
 export const creditNoteInput = z.object({
