@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import type { VsDatabase } from '@vs/db';
 import { addDays, type BusinessDate } from '@vs/shared';
 import { cairoToday, type EngineContext } from './internal';
@@ -6,7 +7,7 @@ import { recordPayment } from './booking/payments';
 import { createInvoiceDraft, getInvoice, issueCreditNote, issueInvoice } from './finance/invoices';
 import { recordReceipt } from './finance/receipts';
 import { saveAccountMapping } from './finance/reports';
-import { updateFinanceSettings } from './finance/settings';
+import { updateFinanceSettings, type updateFinanceSettingsInput } from './finance/settings';
 
 /**
  * Sample invoicing for the demo operator (invoicing F1–F5), all through the engine: the company's
@@ -14,7 +15,12 @@ import { updateFinanceSettings } from './finance/settings';
  * direct guest's deposit applied to their invoice, and a few account codes. For looking around
  * locally and for the help pages' screenshots; tests do not use it.
  */
-export async function createDemoInvoicing(db: VsDatabase, ctx: EngineContext) {
+export async function createDemoInvoicing(
+  db: VsDatabase,
+  ctx: EngineContext,
+  /** A real company's own issuer details instead of the demo's made-up ones. */
+  issuer?: z.input<typeof updateFinanceSettingsInput>,
+) {
   const ids = await db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const channel = (code: string) =>
       tx.selectFrom('channel').select('id').where('code', '=', code).executeTakeFirstOrThrow();
@@ -46,16 +52,20 @@ export async function createDemoInvoicing(db: VsDatabase, ctx: EngineContext) {
   )) as BusinessDate;
   const usd = { fxRate: '50.25', fxSource: 'Central Bank of Egypt' };
 
-  await updateFinanceSettings(db, ctx, {
-    legalNameAr: 'شركة النيل التجريبية للفنادق العائمة',
-    legalNameEn: 'Demo Nile Floating Hotels S.A.E.',
-    addressAr: 'كورنيش النيل، الأقصر',
-    addressEn: 'Corniche El Nil, Luxor',
-    taxRegistrationNo: '512-345-678',
-    commercialRegistrationNo: '98765',
-    bankDetailsAr: 'البنك التجاري الدولي — حساب دولار 1000 2000 3000',
-    bankDetailsEn: 'CIB — USD account 1000 2000 3000',
-  });
+  await updateFinanceSettings(
+    db,
+    ctx,
+    issuer ?? {
+      legalNameAr: 'شركة النيل التجريبية للفنادق العائمة',
+      legalNameEn: 'Demo Nile Floating Hotels S.A.E.',
+      addressAr: 'كورنيش النيل، الأقصر',
+      addressEn: 'Corniche El Nil, Luxor',
+      taxRegistrationNo: '512-345-678',
+      commercialRegistrationNo: '98765',
+      bankDetailsAr: 'البنك التجاري الدولي — حساب دولار 1000 2000 3000',
+      bankDetailsEn: 'CIB — USD account 1000 2000 3000',
+    },
+  );
   for (const [kind, code] of [
     ['receivables', '1200'],
     ['bank', '1020'],

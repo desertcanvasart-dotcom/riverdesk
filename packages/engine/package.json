@@ -14,7 +14,8 @@
     "availability-grid": "tsx scripts/availability-grid.ts",
     "sandbox-setup": "tsx scripts/sandbox-setup.ts",
     "perf": "tsx scripts/perf.ts",
-    "import-bookings": "tsx scripts/import-bookings.ts"
+    "import-bookings": "tsx scripts/import-bookings.ts",
+    "seed-company": "tsx scripts/seed-company.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",

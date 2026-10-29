@@ -177,6 +177,8 @@ export async function createDemoVessel(
   ctx: EngineContext,
   options: {
     code?: string;
+    /** Fill this company's own vessel (it must have no cabins yet) instead of a new one. */
+    vesselId?: string;
     validFrom?: BusinessDate;
     cabinsFrom?: BusinessDate;
     cabins?: Partial<Record<DemoCategoryCode, number>>;
@@ -196,12 +198,14 @@ export async function createDemoVessel(
     if (!ports[port.code]) ports[port.code] = (await createPort(db, ctx, port)).id;
   }
 
-  const vessel = await createVessel(db, ctx, {
-    code: options.code ?? 'NILEDEMO',
-    name: 'MS Nile Demo',
-    type: 'cruise_ship',
-    maxGuests: 70,
-  });
+  const vessel = options.vesselId
+    ? { id: options.vesselId }
+    : await createVessel(db, ctx, {
+        code: options.code ?? 'NILEDEMO',
+        name: 'MS Nile Demo',
+        type: 'cruise_ship',
+        maxGuests: 70,
+      });
 
   const categories = {} as Record<DemoCategoryCode, string>;
   const cabins = {} as Record<DemoCategoryCode, string[]>;
