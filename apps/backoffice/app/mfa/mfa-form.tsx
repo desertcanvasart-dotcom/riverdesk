@@ -1,11 +1,30 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Field, Input } from '../../components/ui';
 import { supabaseBrowser } from '../../lib/supabase-browser';
 
-/** TOTP: verify an existing factor, or enrol one first (owner and finance must use MFA). */
+/**
+ * The setup code, drawn here rather than Supabase's: theirs draws each module as its own square, so
+ * at most screen sizes thin white seams cross the dark areas, and it is denser than needed. Ours
+ * is one shape, whole pixels per module, medium error correction, and only what authenticators need
+ * (SHA1, 6 digits and 30 seconds are their defaults). The account name carries the setup time, so
+ * an entry left in the app by an earlier visit can be told apart from this one.
+ */
+async function setupQr(secret: string, account: string) {
+  const uri = `otpauth://totp/Riverdesk:${encodeURIComponent(account)}?secret=${secret}&issuer=Riverdesk`;
+  const modules = QRCode.create(uri, { errorCorrectionLevel: 'M' }).modules.size + 8;
+  const svg = await QRCode.toString(uri, { type: 'svg', errorCorrectionLevel: 'M', margin: 4 });
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    size: modules * 5,
+    uri,
+  };
+}
+
+/** TOTP: verify an existing factor, or enrol one first (owner, manager and finance must use MFA). */
 export function MfaForm({
   url,
   publishableKey,
@@ -17,7 +36,10 @@ export function MfaForm({
 }) {
   const t = useTranslations('mfa');
   const supabase = useMemo(() => supabaseBrowser(url, publishableKey), [url, publishableKey]);
-  const [factor, setFactor] = useState<{ id: string; qr?: string; secret?: string } | null>(null);
+  const [factor, setFactor] = useState<{
+    id: string;
+    setup?: { secret: string; label: string; qr: { src: string; size: number; uri: string } };
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -39,15 +61,24 @@ export function MfaForm({
         await supabase.auth.mfa.unenroll({ factorId: stale.id });
       const enrolled = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        // What the authenticator app shows next to the code.
+        // Supabase's own link is not shown: the QR below is drawn from the secret (setupQr).
         issuer: 'Riverdesk',
         friendlyName: `Riverdesk ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
       });
       if (enrolled.error) return setError(t('setupFailed'));
+      const { data: user } = await supabase.auth.getUser();
+      // Plain digits whatever the page language: it is stored in the authenticator app.
+      const when = new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date());
+      const label = `${user.user?.email ?? 'Riverdesk'} (${when})`;
+      const secret = enrolled.data.totp.secret;
       setFactor({
         id: enrolled.data.id,
-        qr: enrolled.data.totp.qr_code,
-        secret: enrolled.data.totp.secret,
+        setup: { secret, label, qr: await setupQr(secret, label) },
       });
     })();
   }, [supabase, t]);
@@ -69,7 +100,9 @@ export function MfaForm({
         if (error) {
           submitting.current = false;
           setBusy(false);
-          return setError(t('failed'));
+          return setError(
+            factor.setup ? t('failedSetup', { label: factor.setup.label }) : t('failed'),
+          );
         }
         // Stay busy and load the next page in full: the first dashboard load can take seconds,
         // and a soft navigation left the form looking as if nothing had happened.
@@ -77,25 +110,38 @@ export function MfaForm({
         window.location.assign(next);
       }}
     >
-      {factor?.qr ? (
+      {factor?.setup ? (
         <>
           <h2 className="font-semibold">{t('enrollTitle')}</h2>
           <p className="text-sm text-muted">{t('enrollHelp')}</p>
-          {/* The code is dense (version 12): bigger is easier for a phone camera. */}
-          <img src={factor.qr} alt="" className="mx-auto h-64 w-64 rounded-lg bg-white p-2" />
+          {/* Exact size, whole pixels per module, white margin included: what cameras read best. */}
+          <img
+            src={factor.setup.qr.src}
+            alt=""
+            width={factor.setup.qr.size}
+            height={factor.setup.qr.size}
+            className="mx-auto max-w-full bg-white"
+            style={{ imageRendering: 'pixelated' }}
+          />
+          {/* On a phone the code cannot be scanned from its own screen: open the app instead. */}
+          <a href={factor.setup.qr.uri} className="mx-auto text-sm text-brand underline sm:hidden">
+            {t('openApp')}
+          </a>
+          <p className="text-center text-sm">
+            <span className="block text-muted">{t('entryName')}</span>
+            <strong dir="ltr">Riverdesk · {factor.setup.label}</strong>
+          </p>
           <p className="text-xs text-muted">{t('rescanHelp')}</p>
-          {factor.secret && (
-            <p className="text-center text-sm">
-              <span className="block text-muted">{t('setupKey')}</span>
-              {/* Grouped in fours so it can be typed into the app without scanning. */}
-              <code
-                className="mt-1 inline-block rounded bg-line/40 px-2 py-1 font-mono tracking-wider"
-                dir="ltr"
-              >
-                {factor.secret.match(/.{1,4}/g)?.join(' ')}
-              </code>
-            </p>
-          )}
+          <p className="text-center text-sm">
+            <span className="block text-muted">{t('setupKey')}</span>
+            {/* Grouped in fours so it can be typed into the app without scanning. */}
+            <code
+              className="mt-1 inline-block rounded bg-line/40 px-2 py-1 font-mono tracking-wider"
+              dir="ltr"
+            >
+              {factor.setup.secret.match(/.{1,4}/g)?.join(' ')}
+            </code>
+          </p>
         </>
       ) : (
         <p className="text-sm text-muted">{t('verifyHelp')}</p>

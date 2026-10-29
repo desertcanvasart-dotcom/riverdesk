@@ -91,11 +91,14 @@
     "verifyHelp": "Enter the 6-digit code from your authenticator app.",
     "code": "6-digit code",
     "submit": "Verify",
-    "failed": "That code did not work. Try the next one.",
+    "failed": "That code did not work. Use the newest Riverdesk entry in your app, check that your phone sets its time automatically, and try the next code.",
     "setupKey": "Can't scan? In the app choose \"Enter a setup key\", type this key and choose \"Time based\":",
     "setupFailed": "Two-step setup could not start. Reload the page; if it happens again, ask your owner.",
-    "rescanHelp": "Scanned a code here before? Delete that Riverdesk entry in your app first: only the code on this page works.",
-    "opening": "Verified. Opening Riverdesk…"
+    "rescanHelp": "Older Riverdesk entries in your app no longer work. Delete them, so you always read the code from this one.",
+    "opening": "Verified. Opening Riverdesk…",
+    "entryName": "In your app it will be named:",
+    "openApp": "On this phone? Add it to your authenticator app",
+    "failedSetup": "That code did not match. Read it from the entry named “Riverdesk · {label}”, not an older Riverdesk entry, and check that your phone sets its time automatically."
   },
   "home": {
     "title": "Today",
