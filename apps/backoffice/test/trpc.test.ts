@@ -5,7 +5,9 @@ vi.mock('server-only', () => ({}));
 const { appRouter } = await import('../server/router');
 const { can, MFA_REQUIRED, PERMISSIONS } = await import('../server/permissions');
 
-const staff = (role: 'owner' | 'reservations' | 'finance' | 'read_only' | 'onboard') => ({
+const staff = (
+  role: 'owner' | 'manager' | 'reservations' | 'finance' | 'read_only' | 'onboard',
+) => ({
   staffUserId: crypto.randomUUID(),
   operatorId: crypto.randomUUID(),
   role,
@@ -34,8 +36,19 @@ describe('back-office authorization (server side)', () => {
     });
   });
 
-  it('owner and finance need MFA; reservations and read-only do not', () => {
-    expect([...MFA_REQUIRED].sort()).toEqual(['finance', 'owner']);
+  it('owner, manager and finance need MFA; reservations and read-only do not', () => {
+    expect([...MFA_REQUIRED].sort()).toEqual(['finance', 'manager', 'owner']);
+  });
+
+  it('manager does what reservations does, plus the setup, and nothing of money or the company', () => {
+    const setup = ['fleet.write', 'schedule.write', 'rates.write', 'channels.write'];
+    for (const permission of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) {
+      expect(can('manager', permission)).toBe(
+        can('reservations', permission) || setup.includes(permission),
+      );
+    }
+    for (const permission of ['settings.write', 'guests.privacy', 'pilot.view', 'finance'] as const)
+      expect(can('manager', permission)).toBe(false);
   });
 
   it('read-only may read and do nothing else', () => {

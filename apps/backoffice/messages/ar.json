@@ -117,6 +117,7 @@
   },
   "roles": {
     "owner": "المالك",
+    "manager": "مدير",
     "reservations": "الحجوزات",
     "finance": "المالية",
     "read_only": "قراءة فقط",

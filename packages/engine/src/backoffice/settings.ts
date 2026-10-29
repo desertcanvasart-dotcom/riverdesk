@@ -10,7 +10,7 @@ import { parseInput, type EngineContext, type Tx } from '../internal';
  * person is invited by email and claims it at first sign-in), operator details and defaults.
  */
 
-const role = z.enum(['owner', 'reservations', 'finance', 'read_only', 'onboard']);
+const role = z.enum(['owner', 'manager', 'reservations', 'finance', 'read_only', 'onboard']);
 
 /** An on-board login belongs to exactly one vessel; no other role has one. */
 function vesselFor(role: string, vesselId: string | null | undefined): string | null {

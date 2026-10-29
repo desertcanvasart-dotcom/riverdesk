@@ -22,7 +22,7 @@ import { BrandingCard } from './branding-card';
 import { MarketsCard } from './markets-card';
 import { OperationsCard } from './operations-card';
 
-const ROLES = ['owner', 'reservations', 'finance', 'read_only', 'onboard'] as const;
+const ROLES = ['owner', 'manager', 'reservations', 'finance', 'read_only', 'onboard'] as const;
 const NUMBERS = [
   'checkoutHoldMinutes',
   'optionHoldHours',

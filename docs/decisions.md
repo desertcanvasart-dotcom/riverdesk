@@ -931,3 +931,7 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 **2026-10-29 · Reports and journal.** Extras lines carry no booking, so the revenue report and the journal find their booking through the folio closed into the invoice (or into the invoice a credit note credits); they then count under that booking's vessel, sailing and channel. The revenue report has an `extras` column. The journal posts extras to a new account kind `revenue_extras` (migration 0027): the vessel's extras code, else the company's, else the vessel's revenue code, else the default revenue code; Finance settings → Account codes lists it per vessel.
 
 **2026-10-29 · Booking page and demo.** The Booking page shows the booking's folios (owner, reservations, finance): cabin, charges, total, invoice and balance, with the guest folio to print. The demo seed now assigns cabins on the next departure, posts charges and closes the first cabin's folio, paid part by card and the rest in Egyptian pounds; the other two stay open.
+
+## Manager role
+
+**2026-10-29 · Manager.** A sixth staff role, `manager` (migration 0028), for people who run the company day to day without being its owner: everything reservations may do, plus `fleet.write`, `schedule.write`, `rates.write` and `channels.write`. Not company settings or staff (`settings.write`), guest privacy, the pilot dashboard, nor money (`finance`, `analytics.money`, folio charges and settling). Channels hold API secrets and rates move revenue, so a manager signs in with a second factor like owner and finance.

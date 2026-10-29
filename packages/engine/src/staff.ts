@@ -3,7 +3,7 @@ import type { VsDatabase } from '@vs/db';
 import { audit } from './audit';
 
 /** `onboard`: the vessel's reception and purser, limited to one vessel's departures. */
-export type StaffRole = 'owner' | 'reservations' | 'finance' | 'read_only' | 'onboard';
+export type StaffRole = 'owner' | 'manager' | 'reservations' | 'finance' | 'read_only' | 'onboard';
 
 export interface StaffContext {
   staffUserId: string;

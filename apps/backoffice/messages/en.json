@@ -117,6 +117,7 @@
   },
   "roles": {
     "owner": "Owner",
+    "manager": "Manager",
     "reservations": "Reservations",
     "finance": "Finance",
     "read_only": "Read only",
