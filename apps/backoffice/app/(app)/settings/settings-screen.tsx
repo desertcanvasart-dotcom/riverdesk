@@ -114,7 +114,8 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
                 <span dir="ltr">{s.email}</span>
               </Td>
               <Td>
-                {canWrite ? (
+                {/* One's own role is changed by another owner, never from one's own row. */}
+                {canWrite && s.id !== selfId ? (
                   <div className="flex flex-wrap gap-2">
                     <Select
                       value={s.role}

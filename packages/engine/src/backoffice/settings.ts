@@ -160,6 +160,12 @@ export async function updateStaff(
       .forUpdate()
       .executeTakeFirst();
     if (!before) throw new DomainError('NOT_FOUND', { message: 'Staff member not found' });
+    // One click on one's own row could take away the right to undo it; another owner does it.
+    if (ctx.actor.type === 'staff' && ctx.actor.id === before.id) {
+      throw new DomainError('INVALID_STATE', {
+        message: 'Your own role and access are changed by another owner',
+      });
+    }
     const nextRole = data.role ?? before.role;
     const after = {
       role: nextRole,

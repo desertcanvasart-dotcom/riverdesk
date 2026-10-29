@@ -65,6 +65,24 @@ describe('settings, channels and payments ledger', () => {
     );
   });
 
+  it('refuses a change to one’s own role, even with another owner left', async () => {
+    const { rows } = await owner().query<{ id: string }>(
+      `insert into vs.staff_user (operator_id, auth_user_id, email, display_name, role)
+       values ($1, gen_random_uuid(), $2, 'Second owner', 'owner') returning id`,
+      [w.ctx.operatorId, `owner2-${w.ctx.operatorId.slice(-8)}@example.test`],
+    );
+    const self = { ...w.ctx, actor: { type: 'staff' as const, id: ownerId } };
+    expect(await codeOf(updateStaff(w.db, self, { staffUserId: ownerId, role: 'manager' }))).toBe(
+      'INVALID_STATE',
+    );
+    // The other owner may still do it.
+    const other = { ...w.ctx, actor: { type: 'staff' as const, id: rows[0]!.id } };
+    expect(await updateStaff(w.db, other, { staffUserId: ownerId, role: 'manager' })).toMatchObject(
+      { role: 'manager' },
+    );
+    await updateStaff(w.db, other, { staffUserId: ownerId, role: 'owner' });
+  });
+
   it('updates operator defaults and audits only what changed', async () => {
     const before = await getOperatorSettings(w.db, w.ctx);
     const result = await updateOperatorSettings(w.db, w.ctx, {
