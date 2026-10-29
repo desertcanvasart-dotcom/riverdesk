@@ -863,3 +863,10 @@ Four new pages in Arabic and English on the website: Staff guide → Invoices an
 
 **2026-10-29 · Revenue is gross of commission.**
 Seen on the real screen: the revenue report counted agency invoices net of the commission line. Revenue is now the cabins, fees and penalties invoiced, before tax and before commission, with the commission deducted in its own column, as the journal posts it.
+
+## Analytics A2.1 — cash
+
+**2026-10-29 · A2 split in three.** A2.1 cash; A2.2 revenue by sailing and booking month, leakage, currency exposure and the base-currency view; A2.3 receivables by agency (aging, days to pay, credit used), Excel and help pages. Each stops for review.
+
+**2026-10-29 · The Cash tab.**
+Owners and finance only (`analytics.money`, checked on the query and on its Excel export). Per currency, never added across currencies. Cash in: receipts by day received, less refunds and reversals, by day, week or month, against what fell due in the period (issued invoices by due date less credit notes; the balance of guest-paid bookings not on an issued invoice, by balance due date). Still to be paid, from today: open invoices by due date, and for guest-paid bookings not invoiced the missing deposit (due now) and the rest (by balance due date), in buckets overdue / 4 / 8 / 12 weeks / later; agency bookings not invoiced have no due date and are their own column. Held for coming sailings: amount paid on held and confirmed bookings whose sailing has not embarked, by sailing month, and party money not yet on an invoice. A vessel filter keeps only that vessel's bookings and their own receipts (party money belongs to no vessel). No base-currency totals yet (A2.2).

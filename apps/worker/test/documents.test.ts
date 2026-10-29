@@ -203,4 +203,26 @@ describe('documents (requested by staff, rendered by the worker)', () => {
     expect(plain.workbook.worksheets[0]!.getRow(5).getCell(1).value).toBe('nilecrz');
     expect(headers((await render(true)).workbook)).toContain('Guest value');
   });
+
+  it('exports the Cash tab: cash in, still to be paid, by method, held', async () => {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    const file = await renderDocument(worker, ctx, {
+      id: 'cash',
+      kind: 'analytics_export',
+      format: 'xlsx',
+      locale: 'en',
+      variant: 'full',
+      entityId: ctx.operatorId,
+      params: { report: 'cash', filter: { from: today, to: today, grain: 'day' }, withMoney: true },
+    });
+    expect(file.filename).toMatch(/^analytics-cash-.*-en\.xlsx$/);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.content as unknown as ArrayBuffer);
+    expect(workbook.worksheets.map((ws) => ws.name)).toEqual([
+      'Cash in',
+      'By method',
+      'Still to be paid, by when it fa',
+      'Held for future sailings',
+    ]);
+  });
 });

@@ -3,6 +3,8 @@ import {
   analyticsFilterInput,
   analyticsOverview,
   behaviourReport,
+  cashReport,
+  cashReportInput,
   channelsReport,
   requestAnalyticsExport,
   analyticsOverviewInput,
@@ -13,6 +15,7 @@ import {
 } from '@vs/engine';
 import { backofficeDb } from '../db';
 import { can } from '../permissions';
+import { TRPCError } from '@trpc/server';
 import { procedure, router } from '../trpc';
 
 /** Analytics A1.2: read-only. Money figures only for roles that see money (owner, finance). */
@@ -48,12 +51,18 @@ export const analyticsRouter = router({
         withMoney: can(ctx.staff.role, 'analytics.money'),
       }),
     ),
+  /** A2.1: cash in, forecast and money held — money only. */
+  cash: procedure('analytics.money')
+    .input(cashReportInput)
+    .query(({ ctx, input }) => cashReport(backofficeDb(), ctx.engine, input)),
   /** An Excel file of one tab; money columns follow the person's role, decided here. */
   export: procedure('analytics.view')
     .input(analyticsExportInput)
-    .mutation(({ ctx, input }) =>
-      requestAnalyticsExport(backofficeDb(), ctx.engine, input, {
-        withMoney: can(ctx.staff.role, 'analytics.money'),
-      }),
-    ),
+    .mutation(({ ctx, input }) => {
+      const withMoney = can(ctx.staff.role, 'analytics.money');
+      // The money tabs are money from end to end.
+      if (input.report === 'cash' && !withMoney)
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Needs analytics.money' });
+      return requestAnalyticsExport(backofficeDb(), ctx.engine, input, { withMoney });
+    }),
 });

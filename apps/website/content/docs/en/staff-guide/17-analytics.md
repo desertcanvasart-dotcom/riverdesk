@@ -1,6 +1,6 @@
 ---
 title: Analytics
-summary: Occupancy, booking pace, channels, markets and booking behaviour — how the company is doing, how each figure is counted, and Excel exports.
+summary: Occupancy, booking pace, channels, markets, booking behaviour and cash — how the company is doing, how each figure is counted, and Excel exports.
 ---
 
 # Analytics
@@ -50,6 +50,19 @@ These two tabs share a filter row: the period **by booking date** (when bookings
 - **Holds**: placed in the period by kind, the share that became bookings, how many expired or are still active, and how long they lasted on average.
 - **When cancellations happen**: how many days before embarkation, and for owners and finance the penalties kept.
 - **Amendments**: how many, on how many bookings, what changed (date, cabin category, guests, cabins), and for owners and finance the fees charged.
+
+## Cash (owners and finance)
+
+![Cash](/screens/{locale}/guide-analytics-cash.jpg)
+
+Money only, per currency. Choose the period and whether to see it by day, week or month.
+
+- **Cash in**: money received by the day it arrived, less refunds and reversals, against what **fell due** in the same period — issued invoices by due date (less credit notes) and the balance of bookings the guest pays the ship for that are not invoiced yet.
+- **Still to be paid**: what is owed, by when it falls due — overdue, the next 4 weeks, weeks 5–8, weeks 9–12, later. It counts open invoices by due date and, for guest-paid bookings not invoiced, the missing deposit (due now) and the balance (by its due date). Agency bookings not invoiced yet have no due date until they are, so they have their own column.
+- **By method**: receipts and net per payment method.
+- **Held for coming sailings**: what has been paid on bookings whose sailing has not embarked yet, by sailing month, with what is still to be paid on them; and money received from agencies that is not on an invoice yet.
+
+Choosing a vessel leaves out money received from agencies and platforms as a whole, which belongs to no vessel.
 
 ## Excel
 

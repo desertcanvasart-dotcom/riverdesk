@@ -4,6 +4,7 @@ import type { VsDatabase } from '@vs/db';
 import { audit } from '../audit';
 import { parseInput, type EngineContext } from '../internal';
 import { analyticsFilterInput } from './breakdowns';
+import { cashReportInput } from './money';
 import { analyticsOverviewInput, occupancyReportInput } from './reports';
 
 /**
@@ -32,11 +33,17 @@ export const analyticsExportInput = z.discriminatedUnion('report', [
     locale: z.enum(['ar', 'en', 'both']),
     filter: analyticsFilterInput,
   }),
+  /** A2.1: money only; the router refuses it to roles without analytics.money. */
+  z.object({
+    report: z.literal('cash'),
+    locale: z.enum(['ar', 'en', 'both']),
+    filter: cashReportInput,
+  }),
 ]);
 export type AnalyticsExportInput = z.input<typeof analyticsExportInput>;
 
 export interface AnalyticsExportParams {
-  report: 'overview' | 'occupancy' | 'channels' | 'behaviour';
+  report: 'overview' | 'occupancy' | 'channels' | 'behaviour' | 'cash';
   filter: Record<string, unknown>;
   withMoney: boolean;
 }

@@ -3,7 +3,9 @@ import { locText, textTranslator, type DocLocale } from '@vs/documents';
 import {
   analyticsOverview,
   behaviourReport,
+  cashReport,
   channelsReport,
+  FORECAST_BUCKETS,
   occupancyReport,
   type AnalyticsExportParams,
   type DocumentBrand,
@@ -57,6 +59,102 @@ export async function analyticsXlsx(
       : 'from' in filter
         ? `${t('an_period')}: ${filter.from} + ${filter.days}`
         : '';
+
+  if (params.report === 'cash') {
+    // Money only: the request was refused upstream to anyone without analytics.money.
+    const d = await cashReport(db, ctx, filter as never);
+    const span = `${t('an_period')}: ${d.from} – ${d.to}`;
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_cashIn'),
+      span,
+      [
+        { header: t('an_periodStart'), width: 13 },
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_received'), width: 15 },
+        { header: t('an_refunded'), width: 15 },
+        { header: t('an_reversed'), width: 15 },
+        { header: t('an_net'), width: 15 },
+        { header: t('an_due'), width: 15 },
+      ],
+      d.cashIn.map((r) => [
+        r.period,
+        r.currency,
+        amount(r.received, r.currency),
+        amount(r.refunded, r.currency),
+        amount(r.reversed, r.currency),
+        amount(r.net, r.currency),
+        amount(r.due, r.currency),
+      ]),
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_byMethod'),
+      span,
+      [
+        { header: t('an_method'), width: 20 },
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_receipts'), width: 10 },
+        { header: t('an_net'), width: 15 },
+      ],
+      d.byMethod.map((m) => [m.method, m.currency, m.receipts, amount(m.net, m.currency)]),
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_forecast'),
+      d.today,
+      [
+        { header: t('an_currency'), width: 10 },
+        ...(['an_overdue', 'an_w1_4', 'an_w5_8', 'an_w9_12', 'an_later'] as const).map((k) => ({
+          header: t(k),
+          width: 15,
+        })),
+        { header: t('an_uninvoicedCredit'), width: 18 },
+      ],
+      d.forecast.map((f) => [
+        f.currency,
+        ...FORECAST_BUCKETS.map((b) => amount(f.buckets[b], f.currency)),
+        amount(f.uninvoicedCredit, f.currency),
+      ]),
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_heldFuture'),
+      d.today,
+      [
+        { header: t('an_month'), width: 12 },
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_bookings'), width: 10 },
+        { header: t('an_paid'), width: 15 },
+        { header: t('an_outstanding'), width: 15 },
+      ],
+      [
+        ...d.held.map((h) => [
+          h.month,
+          h.currency,
+          h.bookings,
+          amount(h.paid, h.currency),
+          amount(h.outstanding, h.currency),
+        ]),
+        ...d.unapplied.map((u) => [
+          t('an_unapplied'),
+          u.currency,
+          null,
+          amount(u.amount, u.currency),
+          null,
+        ]),
+      ],
+    );
+    return { content: await finish(workbook), base: `analytics-cash-${d.from}` };
+  }
 
   if (params.report === 'overview') {
     const d = await analyticsOverview(db, ctx, filter, { withMoney });

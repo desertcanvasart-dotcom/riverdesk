@@ -232,6 +232,15 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
   [
+    'analytics-cash',
+    async (page, m) => {
+      await page.goto(`${BASE}/analytics`);
+      await page.getByRole('tab', { name: m.analytics!.tab_cash }).click();
+      await page.locator('table').first().waitFor();
+      await page.waitForTimeout(800);
+    },
+  ],
+  [
     'checkin',
     async (page) => {
       await page.goto(`${BASE}/checkin`);

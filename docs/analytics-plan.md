@@ -13,7 +13,7 @@ plus the order in which this and the other open plans are built.
 | 3   | **A1** | Reservations analytics (this plan, § 4)  | Done (A1.1–A1.3)                  |
 | 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, done (F1–F3) |
 | 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`, done (F4–F6) |
-| 6   | **A2** | Money analytics (this plan, § 5)         | Next                              |
+| 6   | **A2** | Money analytics (this plan, § 5)         | A2.1 done                         |
 | 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`               |
 
 The nightly snapshot (§ 3) is the first piece of A1 and ships on its own (A1.1) straight after
@@ -165,12 +165,14 @@ Built on the invoices, receipts and allocations of F1–F3, and the exchange rat
 
 ## 7. Batches
 
-| Batch | Scope                                                                               |
-| ----- | ----------------------------------------------------------------------------------- |
-| A1.1  | Snapshot tables, nightly job, backfill, tests                                       |
-| A1.2  | Overview and Occupancy and pace                                                     |
-| A1.3  | Channels and markets, Booking behaviour, Excel exports, AR/EN docs with screenshots |
-| A2    | Money analytics, after invoicing F1–F3 (split when we get there)                    |
+| Batch | Scope                                                                                |
+| ----- | ------------------------------------------------------------------------------------ |
+| A1.1  | Snapshot tables, nightly job, backfill, tests                                        |
+| A1.2  | Overview and Occupancy and pace                                                      |
+| A1.3  | Channels and markets, Booking behaviour, Excel exports, AR/EN docs with screenshots  |
+| A2.1  | Cash: cash in against due, 12-week forecast, money held for coming sailings; Excel   |
+| A2.2  | Revenue by sailing and booking month, leakage, currency exposure, base-currency view |
+| A2.3  | Receivables by agency (aging, days to pay, credit used), Excel, AR/EN docs           |
 
 Each stops for review, like the other batches. A1.1 is small and could ship on its own straight
 after D2, so the snapshot starts recording as early as possible.
