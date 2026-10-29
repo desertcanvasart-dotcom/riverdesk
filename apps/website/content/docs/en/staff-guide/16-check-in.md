@@ -78,6 +78,10 @@ A folio with nothing left on it (everything voided) closes with nothing to pay. 
 
 A booking, or a cabin removed from it, cannot be cancelled while its folio has charges: close the folio first. **Today** lists folios still open on or after the cabin's last day aboard.
 
+The office sees each booking's folios on the **Booking** page, under **Extras on board**: the cabin, what was charged, the invoice and what is still to pay, with the guest folio to print.
+
+![A booking's folios](/screens/{locale}/guide-booking-folios.jpg 'Extras on board on the Booking page.')
+
 ## Where the details come from
 
 Guests' check-in details are entered on the booking (**Guests → Edit guests → Check-in details**) or sent by connected platforms through the Channel API. All of them are optional. Visa numbers and medical notes are kept encrypted, like passport numbers, and every personal detail is erased with the passport after the cruise (see **Settings → Passport retention**).

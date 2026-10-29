@@ -9,6 +9,7 @@ import { serverCaller } from '../../../../server/caller';
 import { AmendPanel } from './amend-panel';
 import { CancelPanel } from './cancel-panel';
 import { GuestsEditor } from './guests-editor';
+import { FoliosCard } from './folios-card';
 import { InvoicesCard } from './invoices-card';
 import { PaymentActions } from './payment-actions';
 
@@ -229,6 +230,15 @@ export default async function BookingPage({
               status={booking.status}
               canDraft={canWrite}
               canFinance={canPay}
+            />
+          </div>
+        )}
+        {profile.permissions.includes('folio.view') && (
+          <div className="lg:col-span-2">
+            <FoliosCard
+              bookingId={booking.id}
+              canInvoices={profile.permissions.includes('read')}
+              canDocuments={canDocuments}
             />
           </div>
         )}

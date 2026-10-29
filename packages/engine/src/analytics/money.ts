@@ -1,7 +1,7 @@
 import { sql } from 'kysely';
 import { z } from 'zod';
 import type { VsDatabase } from '@vs/db';
-import { addDays, convert, money, type BusinessDate } from '@vs/shared';
+import { addDays, convert, money, mulDivHalfUp, type BusinessDate } from '@vs/shared';
 import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
 import { creditExposure, getAgingInTx, type AgingBucket } from '../finance/receivables';
 import { loadFinanceSettings } from '../finance/settings';
@@ -123,7 +123,12 @@ async function cashFor(
       select ${truncate(grain, sql`i.due_date`)} as period, i.currency, i.total - i.amount_credited as amount
       from vs.invoice i
       where i.type = 'invoice' and i.status <> 'draft' and i.due_date between ${from}::date and ${to}::date
-        ${vessel ? sql`and exists (select from vs.invoice_line l join vs.booking b on b.id = l.booking_id where l.invoice_id = i.id and b.vessel_id = ${vessel})` : sql``}
+        ${
+          vessel
+            ? sql`and (exists (select from vs.invoice_line l join vs.booking b on b.id = l.booking_id where l.invoice_id = i.id and b.vessel_id = ${vessel})
+                            or exists (select from vs.folio f where f.invoice_id = i.id and f.vessel_id = ${vessel}))`
+            : sql``
+        }
       union all
       select ${truncate(grain, sql`b.balance_due_date`)}, b.currency, b.total + b.fees
       from vs.booking b join vs.channel_contract cc on cc.id = b.contract_id
@@ -356,10 +361,30 @@ export interface BaseView {
   missing: string[];
 }
 
+/**
+ * Extras on board (E3), counted with their booking (its sailing or booking month and group):
+ * what was charged (voids deducted), what of it is invoiced, and the spend per guest-night of
+ * every booking in the group, with or without extras.
+ */
+export interface ExtrasRow {
+  month: string;
+  group: string;
+  currency: string;
+  charged: bigint;
+  invoiced: bigint;
+  guestNights: number;
+  /** charged ÷ guest-nights, in minor units (rounded). */
+  perGuestNight: bigint;
+}
+
 export interface RevenueReport {
   filter: z.infer<typeof revenueReportInput>;
   today: string;
   rows: RevenueRow[];
+  extras: {
+    rows: ExtrasRow[];
+    byCategory: { currency: string; category: string; amount: bigint }[];
+  };
   leakage: LeakageRow[];
   exposure: ExposureRow[];
   base: BaseView;
@@ -415,6 +440,49 @@ async function revenueFor(
            coalesce(sum(inv.amount), 0)::text as invoiced
     from bset x left join inv on inv.booking_id = x.id
     group by 1, 2, 3 order by 1, 2, 3`.execute(tx);
+
+  const extrasSet = sql`
+    select x.id, x.day, x.grp, f.id as folio_id, f.currency, f.invoice_id
+    from bset x join vs.folio f on f.booking_id = x.id`;
+  const { rows: extras } = await sql<{
+    month: string;
+    grp: string;
+    currency: string;
+    charged: string;
+    invoiced: string;
+    guest_nights: number;
+  }>`
+    with bset as (${set}), fx as (${extrasSet}),
+    charged as (
+      select to_char(fx.day, 'YYYY-MM') as month, fx.grp, fx.currency, sum(c.amount) as amount
+      from fx join vs.folio_charge c on c.folio_id = fx.folio_id group by 1, 2, 3),
+    invoiced as (
+      select to_char(fx.day, 'YYYY-MM') as month, fx.grp, fx.currency,
+             sum(case when i.type = 'invoice' then l.amount else -l.amount end) as amount
+      from fx join vs.invoice i on i.id = fx.invoice_id or i.credits_invoice_id = fx.invoice_id
+      join vs.invoice_line l on l.invoice_id = i.id and l.kind = 'extra'
+      where i.status <> 'draft' group by 1, 2, 3),
+    nights as (
+      select to_char(x.day, 'YYYY-MM') as month, x.grp,
+             sum((bc.adults + coalesce(array_length(bc.child_ages, 1), 0)) * s.nights)::int as guest_nights
+      from bset x join vs.booking b on b.id = x.id join vs.sailing s on s.id = b.sailing_id
+      join vs.booking_cabin bc on bc.booking_id = b.id and bc.status = 'active'
+      where x.status <> 'cancelled' group by 1, 2)
+    select c.month, c.grp, c.currency, c.amount::text as charged,
+           coalesce(i.amount, 0)::text as invoiced, coalesce(n.guest_nights, 0) as guest_nights
+    from charged c
+    left join invoiced i on i.month = c.month and i.grp = c.grp and i.currency = c.currency
+    left join nights n on n.month = c.month and n.grp = c.grp
+    order by 1, 2, 3`.execute(tx);
+  const { rows: extrasByCategory } = await sql<{
+    currency: string;
+    category: string;
+    amount: string;
+  }>`
+    with bset as (${set}), fx as (${extrasSet})
+    select fx.currency, c.category, sum(c.amount)::text as amount
+    from fx join vs.folio_charge c on c.folio_id = fx.folio_id
+    group by 1, 2 having sum(c.amount) <> 0 order by 1, 3 desc`.execute(tx);
 
   const { rows: leak } = await sql<{
     currency: string;
@@ -548,6 +616,25 @@ async function revenueFor(
     filter: f,
     today,
     rows: result,
+    extras: {
+      rows: extras.map((x) => {
+        const charged = BigInt(x.charged);
+        return {
+          month: x.month,
+          group: x.grp,
+          currency: x.currency,
+          charged,
+          invoiced: BigInt(x.invoiced),
+          guestNights: x.guest_nights,
+          perGuestNight: x.guest_nights ? mulDivHalfUp(charged, 1n, BigInt(x.guest_nights)) : 0n,
+        };
+      }),
+      byCategory: extrasByCategory.map((x) => ({
+        currency: x.currency,
+        category: x.category,
+        amount: BigInt(x.amount),
+      })),
+    },
     leakage: leak.map((l) => ({
       currency: l.currency,
       commission: BigInt(l.commission),

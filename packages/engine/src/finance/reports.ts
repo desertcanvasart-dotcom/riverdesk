@@ -70,10 +70,14 @@ async function revenue(tx: Tx, p: FinanceReportParams): Promise<FinanceTable> {
                  case when i.type = 'invoice' then ${NET} else -(${NET}) end else 0 end)::bigint as net,
            -sum(case when l.kind = 'commission' then
                  case when i.type = 'invoice' then ${NET} else -(${NET}) end else 0 end)::bigint as commission,
-           sum(case when i.type = 'invoice' then l.tax_amount else -l.tax_amount end)::bigint as tax
+           sum(case when i.type = 'invoice' then l.tax_amount else -l.tax_amount end)::bigint as tax,
+           sum(case when l.kind <> 'extra' then 0 when i.type = 'invoice' then ${NET} else -(${NET}) end)::bigint as extras
     from vs.invoice_line l
     join vs.invoice i on i.id = l.invoice_id
-    left join vs.booking b on b.id = l.booking_id
+    -- Extras lines carry no booking: they belong to the booking of the folio closed into the
+    -- invoice (or into the invoice a credit note credits).
+    left join vs.folio f on f.invoice_id = coalesce(i.credits_invoice_id, i.id)
+    left join vs.booking b on b.id = coalesce(l.booking_id, f.booking_id)
     left join vs.vessel v on v.id = b.vessel_id
     left join vs.sailing s on s.id = b.sailing_id
     left join vs.channel ch on ch.id = b.channel_id
@@ -99,6 +103,7 @@ async function revenue(tx: Tx, p: FinanceReportParams): Promise<FinanceTable> {
       col('net', 'money'),
       col('commission', 'money'),
       col('tax', 'money'),
+      col('extras', 'money'),
     ],
     rows,
   };
@@ -256,9 +261,15 @@ export const ACCOUNT_KINDS = [
   'tax_payable',
   'revenue_vessel',
   'revenue_channel',
+  'revenue_extras',
 ] as const;
 export type AccountKind = (typeof ACCOUNT_KINDS)[number];
-const TAKES_REF: readonly AccountKind[] = ['revenue_vessel', 'revenue_channel', 'tax_payable'];
+const TAKES_REF: readonly AccountKind[] = [
+  'revenue_vessel',
+  'revenue_channel',
+  'revenue_extras',
+  'tax_payable',
+];
 
 /** The codes set, and what can have one: the company's vessels, agency channels and taxes. */
 export async function listAccountMappings(db: VsDatabase, ctx: EngineContext) {
@@ -308,7 +319,7 @@ export async function saveAccountMapping(
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     if (data.refId) {
       const table =
-        data.kind === 'revenue_vessel'
+        data.kind === 'revenue_vessel' || data.kind === 'revenue_extras'
           ? 'vessel'
           : data.kind === 'revenue_channel'
             ? 'channel'
@@ -569,7 +580,9 @@ async function journalExport(tx: Tx, p: AccountantExportParams): Promise<Finance
       select l.kind, (${NET})::text as net, l.tax_amount::text as tax, l.tax_rate_id, l.tax_name_en as tax_name,
              b.vessel_id, v.name as vessel, b.channel_id, ch.name as channel
       from vs.invoice_line l
-      left join vs.booking b on b.id = l.booking_id
+      join vs.invoice i on i.id = l.invoice_id
+      left join vs.folio f on f.invoice_id = coalesce(i.credits_invoice_id, i.id)
+      left join vs.booking b on b.id = coalesce(l.booking_id, f.booking_id)
       left join vs.vessel v on v.id = b.vessel_id
       left join vs.channel ch on ch.id = b.channel_id
       where l.invoice_id = ${inv.id} order by l.seq`.execute(tx);
@@ -593,6 +606,26 @@ async function journalExport(tx: Tx, p: AccountantExportParams): Promise<Finance
             account: 'commission',
             ref: null,
             description: inv.party,
+            debit: 0n,
+            credit: 0n,
+          }),
+          net,
+        );
+      else if (l.kind === 'extra')
+        // Extras: their own account (per vessel, else the company's), else the vessel's revenue.
+        add(
+          `extra|${l.vessel_id}`,
+          () => ({
+            ...common,
+            account: 'revenue_extras',
+            ref: l.vessel ?? null,
+            refId: l.vessel_id,
+            fallbacks: [
+              ['revenue_extras', null],
+              ['revenue_vessel', l.vessel_id],
+              ['revenue_vessel', null],
+            ],
+            description: [l.vessel, 'extras on board'].filter(Boolean).join(' · '),
             debit: 0n,
             credit: 0n,
           }),

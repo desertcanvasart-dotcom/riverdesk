@@ -1421,3 +1421,49 @@ export async function folioShiftReportData(
     };
   });
 }
+
+export interface BookingFolio {
+  folioId: string;
+  cabin: string | null;
+  status: FolioSummary['status'];
+  billTo: 'guest' | 'agency';
+  currency: string;
+  total: bigint;
+  charges: number;
+  invoice: { id: string; number: string; balance: bigint } | null;
+}
+
+/** A booking's folios (E3), for its page: cabin, what was charged, the invoice and balance. */
+export async function bookingFolios(
+  db: VsDatabase,
+  ctx: EngineContext,
+  bookingId: string,
+): Promise<BookingFolio[]> {
+  const id = parseInput(z.uuid(), bookingId);
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    const { rows } = await sql<
+      Omit<BookingFolio, 'invoice'> & {
+        invoiceId: string | null;
+        number: string | null;
+        balance: bigint | null;
+      }
+    >`
+      select f.id as "folioId", f.status, f.bill_to as "billTo", f.currency,
+             (select cab.number from vs.booking_line bl join vs.cabin cab on cab.id = bl.assigned_cabin_id
+              where bl.booking_cabin_id = f.booking_cabin_id order by bl.created_at desc limit 1) as cabin,
+             coalesce((select sum(c.amount) from vs.folio_charge c where c.folio_id = f.id), 0)::bigint as total,
+             (select count(*) from vs.folio_charge c where c.folio_id = f.id and c.voids_charge_id is null
+                and not exists (select from vs.folio_charge v where v.voids_charge_id = c.id))::int as charges,
+             i.id as "invoiceId", i.number, (i.total - i.amount_credited - i.amount_paid)::bigint as balance
+      from vs.folio f
+      join vs.booking_cabin bc on bc.id = f.booking_cabin_id
+      left join vs.invoice i on i.id = f.invoice_id
+      where f.booking_id = ${id}
+      order by bc.seq`.execute(tx);
+    return rows.map(({ invoiceId, number, balance, ...r }) => ({
+      ...r,
+      total: BigInt(r.total),
+      invoice: invoiceId ? { id: invoiceId, number: number!, balance: BigInt(balance!) } : null,
+    }));
+  });
+}

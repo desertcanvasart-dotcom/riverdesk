@@ -2,13 +2,17 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner } from '@vs/db/testing';
 import { isDomainError, type ErrorCode } from '@vs/contracts';
 import {
+  bookingFolios,
   cancelBooking,
   closeFolio,
   departureFolios,
+  getAccountantExport,
+  getFinanceReport,
   getExtrasSettings,
   getFolio,
   payFolio,
   postCharge,
+  revenueReport,
   saveExtraItem,
   staffBook,
   updateContract,
@@ -350,6 +354,60 @@ describe('extras E1: price list and folios', () => {
         ),
       ),
     ).toBe('INVALID_STATE');
+  });
+
+  it("lists a booking's folios with their invoices and balances", async () => {
+    const folios = await bookingFolios(w.db, w.ctx, bookingId);
+    expect(folios.map((f) => [f.status, f.billTo, f.total, f.invoice?.balance])).toEqual([
+      ['closed', 'guest', 600n, 0n],
+      ['closed', 'agency', 1050n, 1050n],
+    ]);
+  });
+
+  it('counts extras in revenue analytics, the revenue report and the journal', async () => {
+    const { rows } = await owner().query<{ depart: string; today: string }>(
+      `select depart_date::text as depart, (now() at time zone 'Africa/Cairo')::date::text as today
+       from vs.leg where id = $1`,
+      [legId],
+    );
+    const { depart, today } = rows[0]!;
+    const analytics = await revenueReport(w.db, w.ctx, {
+      basis: 'sailing',
+      from: depart,
+      to: depart,
+      groupBy: 'vessel',
+      vesselId: w.demo.vesselId,
+    });
+    expect(analytics.extras.rows).toEqual([
+      expect.objectContaining({ currency: 'USD', charged: 1650n, invoiced: 1650n }),
+    ]);
+    const extras = analytics.extras.rows[0]!;
+    expect(extras.guestNights).toBeGreaterThan(0);
+    expect(extras.perGuestNight).toBe(
+      (1650n + BigInt(extras.guestNights) / 2n) / BigInt(extras.guestNights),
+    );
+    expect(analytics.extras.byCategory.map((c) => [c.category, c.amount])).toEqual([
+      ['bar', 1650n],
+    ]);
+
+    const report = await getFinanceReport(w.db, w.ctx, {
+      report: 'revenue',
+      from: today,
+      to: today,
+      vesselId: w.demo.vesselId,
+      currency: 'USD',
+    });
+    const total = report.rows.reduce((sum, r) => sum + BigInt(r.extras as bigint), 0n);
+    expect(total).toBe(1650n);
+
+    const journal = await getAccountantExport(w.db, w.ctx, {
+      content: 'journal',
+      from: today,
+      to: today,
+    });
+    const extraLines = journal.rows.filter((r) => r.account === 'revenue_extras');
+    expect(extraLines.map((r) => r.credit)).toEqual([600n, 1050n]);
+    expect(journal.unmapped).toContainEqual(expect.objectContaining({ kind: 'revenue_extras' }));
   });
 
   it('lets the booking be cancelled once its folios are closed', async () => {

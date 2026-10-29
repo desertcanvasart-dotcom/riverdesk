@@ -278,6 +278,7 @@ export function CashTab({ vesselId }: { vesselId: string | null }) {
  */
 export function RevenueTab({ vesselId }: { vesselId: string | null }) {
   const t = useTranslations('analytics');
+  const tf = useTranslations('folios');
   const locale = useLocale();
   const trpc = useTRPC();
   const today = cairoToday();
@@ -419,6 +420,44 @@ export function RevenueTab({ vesselId }: { vesselId: string | null }) {
               </Table>
             )}
           </Card>
+
+          {d.extras.rows.length > 0 && (
+            <Card title={t('rev_extras')}>
+              <p className="mb-3 text-sm text-muted">{t('rev_extrasHelp')}</p>
+              <Table
+                head={[
+                  t('rev_month'),
+                  t(`rev_by_${groupBy}`),
+                  t('cash_currency'),
+                  t('rev_extrasCharged'),
+                  t('rev_invoiced'),
+                  t('rev_guestNights'),
+                  t('rev_perGuestNight'),
+                ]}
+              >
+                {d.extras.rows.map((r) => (
+                  <tr key={`${r.month}-${r.group}-${r.currency}`}>
+                    <Td className="whitespace-nowrap">{monthName(r.month)}</Td>
+                    <Td>{r.group}</Td>
+                    <Td>{r.currency}</Td>
+                    <Td className="whitespace-nowrap font-medium tabular-nums">
+                      {m(r.charged, r.currency)}
+                    </Td>
+                    <Td className="whitespace-nowrap tabular-nums">{m(r.invoiced, r.currency)}</Td>
+                    <Td className="tabular-nums">{r.guestNights}</Td>
+                    <Td className="whitespace-nowrap tabular-nums">
+                      {m(r.perGuestNight, r.currency)}
+                    </Td>
+                  </tr>
+                ))}
+              </Table>
+              <p className="mt-3 text-sm text-muted">
+                {d.extras.byCategory
+                  .map((c) => `${tf(`cat_${c.category as 'bar'}`)} ${m(c.amount, c.currency)}`)
+                  .join(' · ')}
+              </p>
+            </Card>
+          )}
 
           <Card title={t('rev_base', { currency: d.base.currency })}>
             <p className="mb-3 text-sm text-muted">{t('rev_baseHelp')}</p>

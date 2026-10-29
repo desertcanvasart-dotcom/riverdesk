@@ -1577,7 +1577,12 @@
     "recv_onTime": "المسدد في موعده",
     "recv_credit": "الائتمان المستخدم",
     "recv_creditHelp": "كل وكالة لها حد ائتمان: الحجوزات المؤكدة غير المفوترة مع الفواتير المفتوحة، مخصومًا منها ما دُفع ولم يُخصص لفاتورة، مقابل حدها.",
-    "recv_creditLine": "{exposure} من {limit} · {used}"
+    "recv_creditLine": "{exposure} من {limit} · {used}",
+    "rev_extras": "الإضافات على متن الباخرة",
+    "rev_extrasHelp": "ما أنفقه الضيوف على متن الباخرة (إضافات الحسابات بعد خصم ما أُلغي)، محسوبًا مع حجزهم. ولكل ليلة ضيف: المبلغ مقسومًا على ليالي الضيوف في كل حجوزات السطر، بإضافات أو دونها.",
+    "rev_extrasCharged": "المسجَّل",
+    "rev_guestNights": "ليالي الضيوف",
+    "rev_perGuestNight": "لكل ليلة ضيف"
   },
   "invoices": {
     "title": "الفواتير",
@@ -1919,7 +1924,9 @@
     "col_credit": "دائن",
     "col_base_debit": "مدين (أساسية)",
     "col_base_credit": "دائن (أساسية)",
-    "col_commission": "العمولة المخصومة"
+    "col_commission": "العمولة المخصومة",
+    "col_extras": "الإضافات على متن الباخرة",
+    "account_revenue_extras": "الإضافات على متن الباخرة"
   },
   "operations": {
     "title": "على متن الباخرة وقبل الإبحار",
@@ -2018,6 +2025,14 @@
     "card": "بطاقة",
     "payRate": "عدد {to} مقابل ١ {from}",
     "takePayment": "تحصيل المبلغ",
-    "equals": "= {amount} من الحساب"
+    "equals": "= {amount} من الحساب",
+    "bookingTitle": "الإضافات على متن الباخرة",
+    "cabin": "الكابينة",
+    "charges": "البنود",
+    "invoice": "الفاتورة",
+    "agencyPays": "الوكيل",
+    "statusOpen": "مفتوح",
+    "statusVoid": "لا شيء مستحق",
+    "print": "حساب الضيف"
   }
 }

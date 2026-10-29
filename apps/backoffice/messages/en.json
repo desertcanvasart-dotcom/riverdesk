@@ -1577,7 +1577,12 @@
     "recv_onTime": "Paid by due date",
     "recv_credit": "Credit used",
     "recv_creditHelp": "Each agency with a credit limit: confirmed bookings not invoiced plus open invoices, less money paid not yet on an invoice, against its limit.",
-    "recv_creditLine": "{exposure} of {limit} · {used}"
+    "recv_creditLine": "{exposure} of {limit} · {used}",
+    "rev_extras": "Extras on board",
+    "rev_extrasHelp": "What guests spent on board (folio charges, voids deducted), counted with their booking. Per guest-night divides it by the guest-nights of every booking in the row, with or without extras.",
+    "rev_extrasCharged": "Charged",
+    "rev_guestNights": "Guest-nights",
+    "rev_perGuestNight": "Per guest-night"
   },
   "invoices": {
     "title": "Invoices",
@@ -1919,7 +1924,9 @@
     "col_credit": "Credit",
     "col_base_debit": "Debit (base)",
     "col_base_credit": "Credit (base)",
-    "col_commission": "Commission deducted"
+    "col_commission": "Commission deducted",
+    "col_extras": "Extras on board",
+    "account_revenue_extras": "Extras on board"
   },
   "operations": {
     "title": "On board and before sailing",
@@ -2018,6 +2025,14 @@
     "card": "Card",
     "payRate": "1 {from} = ? {to}",
     "takePayment": "Take payment",
-    "equals": "= {amount} on the folio"
+    "equals": "= {amount} on the folio",
+    "bookingTitle": "Extras on board",
+    "cabin": "Cabin",
+    "charges": "Charges",
+    "invoice": "Invoice",
+    "agencyPays": "Agency",
+    "statusOpen": "Open",
+    "statusVoid": "Nothing to pay",
+    "print": "Guest folio"
   }
 }

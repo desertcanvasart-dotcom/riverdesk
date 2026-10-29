@@ -74,6 +74,9 @@ Choose the period **by embarkation date** or **by booking date**, and group by v
 - **In EGP**: one figure for all currencies. Invoiced amounts use each invoice's own rate; the rest uses the latest rate typed on an invoice in that currency, with its date. The rates used are listed under the figure; a currency with no rate yet is named and left out.
 - **What is not kept as revenue**: agency commission, refunds paid out, penalties and amendment fees kept, and discounts (credit notes on bookings that were not cancelled).
 - **Currency exposure**: as of today, per currency — bookings still to sail with what is paid and still due, open invoices, and money received that is not on an invoice yet.
+- **Extras on board** (when folios are used): what guests spent on board, counted with their booking — charged (voids deducted), invoiced, the guest-nights of every booking in the row and the spend per guest-night, then the totals by category. Extras are not in the revenue figures above, which are about cabins.
+
+![Extras on board](/screens/{locale}/guide-analytics-extras.jpg 'Extras on board on the Revenue tab.')
 
 ## Receivables (owners and finance)
 

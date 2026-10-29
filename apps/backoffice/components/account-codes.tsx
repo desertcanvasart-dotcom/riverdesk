@@ -14,7 +14,8 @@ type Kind =
   | 'commission'
   | 'tax_payable'
   | 'revenue_vessel'
-  | 'revenue_channel';
+  | 'revenue_channel'
+  | 'revenue_extras';
 
 /**
  * Invoicing F5: the codes of the company's chart of accounts the journal export uses. One per
@@ -80,6 +81,10 @@ export function AccountCodesCard() {
           {row('revenue_vessel', null, `${t('account_revenue_vessel')} · ${t('default')}`)}
           {vessels.map((v) =>
             row('revenue_vessel', v.id, `${t('account_revenue_vessel')} · ${v.name}`),
+          )}
+          {row('revenue_extras', null, `${t('account_revenue_extras')} · ${t('default')}`)}
+          {vessels.map((v) =>
+            row('revenue_extras', v.id, `${t('account_revenue_extras')} · ${v.name}`),
           )}
           {channels
             .filter((c) => c.type !== 'back_office')

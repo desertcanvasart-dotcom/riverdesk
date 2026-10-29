@@ -250,6 +250,26 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
   [
+    'analytics-extras',
+    async (page, m) => {
+      await page.goto(`${BASE}/analytics`);
+      await page.getByRole('tab', { name: m.analytics!.tab_revenue }).click();
+      const title = page.locator(`h2:text-is("${m.analytics!.rev_extras}")`);
+      await title.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 72));
+      await page.waitForTimeout(800);
+    },
+  ],
+  [
+    'booking-folios',
+    async (page, m) => {
+      // The demo's first booking has its folio closed and paid (seed-demo).
+      await page.goto(`${BASE}/bookings/VS-26-00001`);
+      const title = page.locator(`h2:text-is("${m.folios!.bookingTitle}")`);
+      await title.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 72));
+      await page.waitForTimeout(800);
+    },
+  ],
+  [
     'analytics-receivables',
     async (page, m) => {
       await page.goto(`${BASE}/analytics`);
@@ -410,7 +430,6 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
 async function openFolio(page: Page, m: Messages) {
   await page
     .locator('button.min-h-20')
-    .filter({ hasText: /\d/ })
     .filter({ hasNotText: m.folios!.paid })
     .filter({ hasNotText: m.folios!.toPay })
     .filter({ hasNotText: m.folios!.nothingYet })

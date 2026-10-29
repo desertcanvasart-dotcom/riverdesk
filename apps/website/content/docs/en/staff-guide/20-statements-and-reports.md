@@ -36,7 +36,7 @@ Today also lists invoices overdue or due within 3 days, money received but not y
 
 ![Finance reports](/screens/{locale}/guide-finance-reports.jpg)
 
-- **Revenue**: invoiced before tax and before agency commission, by invoice month, vessel, sailing and channel, less credit notes; commission and tax in their own columns.
+- **Revenue**: invoiced before tax and before agency commission, by invoice month, vessel, sailing and channel, less credit notes; commission and tax in their own columns. Extras on board (closed folios) count with their booking's vessel, sailing and channel, and the **Extras on board** column shows how much of the revenue they are.
 - **Production**: bookings by embarkation date — booked value, invoiced, not yet invoiced.
 - **Collections**: money received and paid back by month and method.
 - **Outstanding**: open and overdue balances and unapplied money per party.
@@ -49,4 +49,4 @@ Under the reports (owners and finance): **invoices and credit notes**, **payment
 
 ![Account codes](/screens/{locale}/guide-account-codes.jpg)
 
-Revenue takes the vessel's code, else the agency's, else the default.
+Revenue takes the vessel's code, else the agency's, else the default. Extras on board take the **Extras on board** code of their vessel, else the company's extras code, else the vessel's revenue code, else the default revenue code.

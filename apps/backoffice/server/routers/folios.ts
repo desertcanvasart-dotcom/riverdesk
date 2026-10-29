@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  bookingFolios,
   closeFolio,
   closeFolioInput,
   departureFolios,
@@ -41,6 +42,13 @@ export const foliosRouter = router({
     .query(({ ctx, input }) =>
       departureFolios(backofficeDb(), ctx.engine, input.legId, scopeOf(ctx.staff)),
     ),
+  /** E3: a booking's folios, for its page (office staff). */
+  ofBooking: procedure('folio.view')
+    .input(z.object({ bookingId: z.uuid() }))
+    .query(({ ctx, input }) => {
+      if (ctx.staff.role === 'onboard') return [];
+      return bookingFolios(backofficeDb(), ctx.engine, input.bookingId);
+    }),
   get: procedure('folio.view')
     .input(folioInput)
     .query(({ ctx, input }) => getFolio(backofficeDb(), ctx.engine, input, scopeOf(ctx.staff))),

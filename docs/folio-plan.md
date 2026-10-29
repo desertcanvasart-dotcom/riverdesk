@@ -1,6 +1,6 @@
 # Extras on board and the guest folio — plan
 
-Status: **approved 2026-10-29 with the recommended answers (§ 8); E1 and E2 done 2026-10-29.** Answers taken:
+Status: **approved 2026-10-29 with the recommended answers (§ 8); E1, E2 and E3 done 2026-10-29 — the plan is complete.** Answers taken:
 
 1. Connection: online only; a paper chit when the signal drops. No offline queue for now.
 2. The on-board login may take payment for folios (cash and card), with the shift report (E2).
@@ -18,7 +18,11 @@ E1 notes: the price list sits in **Invoices → Settings** (with the taxes it us
 
 E2 notes: a folio is open, closed or void; paid or not is read from its invoice (so an agency's
 folio counts as paid when the agency's invoice is). The reception types rates as "1 USD = 48.50
-EGP". Folios appear on the Booking page in E3 at the earliest.
+EGP".
+
+E3 notes: extras sit in Analytics → Revenue as their own table (counted with their booking), in
+the revenue report as their own column, and in the journal on a new `revenue_extras` account
+code. A booking's folios are on its page. The offline queue (question 1) was not needed.
 
 ## 1. The idea in one paragraph
 
