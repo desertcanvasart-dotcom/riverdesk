@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Field, Input } from '../../components/ui';
 import { supabaseBrowser } from '../../lib/supabase-browser';
 
@@ -23,25 +23,34 @@ export function MfaForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Enrolling twice would leave two secrets and show only one (React runs effects twice in dev).
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     void (async () => {
-      const { data } = await supabase.auth.mfa.listFactors();
-      const verified = data?.totp.find((f) => f.status === 'verified');
+      const { data, error: listError } = await supabase.auth.mfa.listFactors();
+      if (listError) return setError(t('setupFailed'));
+      const verified = data.totp.find((f) => f.status === 'verified');
       if (verified) return setFactor({ id: verified.id });
+      // A factor left unverified by an earlier visit cannot show its QR again, and its name would
+      // clash with a new one: remove it, so the code on screen is always the one that works.
+      for (const stale of data.all.filter((f) => f.status === 'unverified'))
+        await supabase.auth.mfa.unenroll({ factorId: stale.id });
       const enrolled = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         // What the authenticator app shows next to the code.
         issuer: 'Riverdesk',
-        friendlyName: `Riverdesk ${new Date().toISOString().slice(0, 10)}`,
+        friendlyName: `Riverdesk ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
       });
-      if (enrolled.data)
-        setFactor({
-          id: enrolled.data.id,
-          qr: enrolled.data.totp.qr_code,
-          secret: enrolled.data.totp.secret,
-        });
+      if (enrolled.error) return setError(t('setupFailed'));
+      setFactor({
+        id: enrolled.data.id,
+        qr: enrolled.data.totp.qr_code,
+        secret: enrolled.data.totp.secret,
+      });
     })();
-  }, [supabase]);
+  }, [supabase, t]);
 
   return (
     <form
@@ -62,7 +71,9 @@ export function MfaForm({
         <>
           <h2 className="font-semibold">{t('enrollTitle')}</h2>
           <p className="text-sm text-muted">{t('enrollHelp')}</p>
-          <img src={factor.qr} alt="" className="mx-auto h-48 w-48 rounded-lg bg-white p-2" />
+          {/* The code is dense (version 12): bigger is easier for a phone camera. */}
+          <img src={factor.qr} alt="" className="mx-auto h-64 w-64 rounded-lg bg-white p-2" />
+          <p className="text-xs text-muted">{t('rescanHelp')}</p>
           {factor.secret && (
             <p className="text-center text-sm">
               <span className="block text-muted">{t('setupKey')}</span>
@@ -88,6 +99,11 @@ export function MfaForm({
           maxLength={6}
           required
           dir="ltr"
+          // Six digits typed or pasted: verify without a click.
+          onChange={(e) => {
+            if (/^[0-9]{6}$/.test(e.currentTarget.value.trim()) && !busy)
+              e.currentTarget.form?.requestSubmit();
+          }}
         />
       </Field>
       {error && <Alert tone="bad">{error}</Alert>}

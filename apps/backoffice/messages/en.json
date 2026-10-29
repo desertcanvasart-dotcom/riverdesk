@@ -92,7 +92,9 @@
     "code": "6-digit code",
     "submit": "Verify",
     "failed": "That code did not work. Try the next one.",
-    "setupKey": "Can't scan? In the app choose \"Enter a setup key\", type this key and choose \"Time based\":"
+    "setupKey": "Can't scan? In the app choose \"Enter a setup key\", type this key and choose \"Time based\":",
+    "setupFailed": "Two-step setup could not start. Reload the page; if it happens again, ask your owner.",
+    "rescanHelp": "Scanned a code here before? Delete that Riverdesk entry in your app first: only the code on this page works."
   },
   "home": {
     "title": "Today",
