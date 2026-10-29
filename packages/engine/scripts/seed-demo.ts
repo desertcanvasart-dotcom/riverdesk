@@ -3,6 +3,7 @@ import { loadConfig, required, systemActor } from '@vs/shared';
 import {
   createDemoActivity,
   createDemoInvoicing,
+  createDemoOperations,
   createDemoPricing,
   createDemoVessel,
   DEMO_OPERATOR_ID,
@@ -79,6 +80,14 @@ try {
     const logo = readFileSync(new URL('./demo-logo.png', import.meta.url)).toString('base64');
     await setLogo(db, ctx, { base64: logo });
     console.log('demo branding: logo and contact details');
+  }
+  // On board (D3): the vessel's day and the port guide, once.
+  const day = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx.selectFrom('vessel').select('boarding_time').where('id', '=', vesselId).executeTakeFirst(),
+  );
+  if (!day?.boarding_time) {
+    await createDemoOperations(db, ctx, vesselId);
+    console.log('demo operations: boarding and meal times, berths and visits');
   }
   // Invoicing: issuer details, invoices, receipts, a credit note and account codes, once.
   const receipts = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>

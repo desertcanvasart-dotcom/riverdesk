@@ -622,7 +622,13 @@
     "bothLanguages": "Both (عربي + English)",
     "embarkation_sheet": "Embarkation sheet",
     "checkin_file": "Guest details (check-in)",
-    "registration_cards": "Registration cards"
+    "registration_cards": "Registration cards",
+    "predeparture": "Before you sail",
+    "diet_list": "Diets and allergies",
+    "occasion_list": "Special occasions",
+    "door_cards": "Door cards",
+    "disembarkation_list": "Disembarkation and transfers",
+    "daily_programme": "Daily programme (7 days)"
   },
   "guests": {
     "title": "Guests & manifests",
@@ -1324,7 +1330,10 @@
     "section": "Check-in details",
     "sectionHelp": "Optional. Used by the vessel's reception, the police list and the kitchen; erased with the passport after the cruise.",
     "onFile": "On file (type a new one to replace it)",
-    "none": "—"
+    "none": "—",
+    "departureDate": "Leaves Egypt on",
+    "departureFlight": "Flight home",
+    "departureTime": "Flight time"
   },
   "analytics": {
     "title": "Analytics",
@@ -1883,5 +1892,34 @@
     "col_base_debit": "Debit (base)",
     "col_base_credit": "Credit (base)",
     "col_commission": "Commission deducted"
+  },
+  "operations": {
+    "title": "On board and before sailing",
+    "subtitle": "What the daily programme, the disembarkation list and the guest’s pre-departure sheet print. Anything left empty is left out (or uses standard wording).",
+    "vesselDay": "The vessel’s day",
+    "vessel": "Vessel",
+    "boardingTime": "Boarding from",
+    "breakfastTime": "Breakfast",
+    "lunchTime": "Lunch",
+    "teaTime": "Afternoon tea",
+    "dinnerTime": "Dinner",
+    "luggageTime": "Luggage out (last morning)",
+    "checkoutTime": "Check-out",
+    "programmeNoteAr": "Note on every day of the programme (Arabic)",
+    "programmeNoteEn": "Note on every day of the programme (English)",
+    "portGuide": "Ports: berth and visits",
+    "port": "Port",
+    "berthAr": "Where the vessel berths (Arabic)",
+    "berthEn": "Where the vessel berths (English)",
+    "visitsAr": "What guests visit (Arabic)",
+    "visitsEn": "What guests visit (English)",
+    "guestInfo": "The guest’s pre-departure sheet",
+    "guestInfoHint": "Your own wording; empty fields use Riverdesk’s standard text. One item per line for the list.",
+    "whatToBringAr": "What to bring (Arabic)",
+    "whatToBringEn": "What to bring (English)",
+    "dressCodeAr": "Dress code (Arabic)",
+    "dressCodeEn": "Dress code (English)",
+    "documentsAr": "Passport and visa (Arabic)",
+    "documentsEn": "Passport and visa (English)"
   }
 }

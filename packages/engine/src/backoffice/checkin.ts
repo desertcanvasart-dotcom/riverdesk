@@ -37,6 +37,9 @@ export interface CheckinGuest {
   arrivalDate: string | null;
   arrivalFlight: string | null;
   arrivalPort: string | null;
+  departureDate: string | null;
+  departureFlight: string | null;
+  departureTime: string | null;
   phone: string | null;
   emergencyName: string | null;
   emergencyPhone: string | null;
@@ -80,10 +83,15 @@ export interface DepartureCheckin {
     vessel: string;
     departDate: string;
     departTime: string | null;
+    arriveDate: string;
+    arriveTime: string | null;
     from: { code: string; nameEn: string; nameAr: string };
     to: { code: string; nameEn: string; nameAr: string };
   };
-  /** Cabins boarding at this departure (not those already aboard from an earlier one). */
+  /**
+   * Cabins boarding at this departure (not those already aboard from an earlier one); with mode
+   * `aboard` everyone on board during it, with `leaving` those leaving where it ends.
+   */
   parties: CheckinParty[];
   totals: {
     cabins: number;
@@ -120,7 +128,11 @@ export async function departureCheckin(
   db: VsDatabase,
   ctx: EngineContext,
   legId: string,
-  options: CheckinScope & { withSensitive?: boolean; withMoney?: boolean },
+  options: CheckinScope & {
+    withSensitive?: boolean;
+    withMoney?: boolean;
+    mode?: 'boarding' | 'aboard' | 'leaving';
+  },
 ): Promise<DepartureCheckin> {
   const id = parseInput(legIdInput, legId);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
@@ -128,13 +140,17 @@ export async function departureCheckin(
     const leg = await sql<DepartureCheckin['leg']>`
       select l.id, l.vessel_id as "vesselId", v.name as vessel, l.depart_date::text as "departDate",
              to_char(st.depart_time, 'HH24:MI') as "departTime",
+             l.arrive_date::text as "arriveDate", to_char(ast.arrive_time, 'HH24:MI') as "arriveTime",
              jsonb_build_object('code', fp.code, 'nameEn', fp.name_en, 'nameAr', fp.name_ar) as from,
              jsonb_build_object('code', tp.code, 'nameEn', tp.name_en, 'nameAr', tp.name_ar) as to
       from vs.leg l join vs.vessel v on v.id = l.vessel_id
       join vs.port fp on fp.id = l.from_port_id join vs.port tp on tp.id = l.to_port_id
       left join vs.schedule_template_stop st on st.template_id = l.template_id and st.seq = l.from_stop_seq
+      left join vs.schedule_template_stop ast on ast.template_id = l.template_id and ast.seq = l.to_stop_seq
       where l.id = ${id}`.execute(tx);
-    // Boarding here: the booking's sailing starts on this departure (date and port).
+    const mode = options.mode ?? 'boarding';
+    // Boarding here: the booking's sailing starts on this departure (date and port); leaving:
+    // it ends where this departure arrives; aboard: any booking on it.
     const parties = await sql<
       Omit<CheckinParty, 'guests' | 'checkin' | 'balance'> & {
         bookingId: string;
@@ -161,7 +177,9 @@ export async function departureCheckin(
       join vs.leg l on l.id = bl.leg_id
       join vs.booking b on b.id = bl.booking_id and b.status = 'confirmed'
       join vs.sailing s on s.id = b.sailing_id
-        and s.embark_date = l.depart_date and s.embark_port_id = l.from_port_id
+        and (${mode === 'aboard'}
+             or (${mode === 'boarding'} and s.embark_date = l.depart_date and s.embark_port_id = l.from_port_id)
+             or (${mode === 'leaving'} and s.disembark_date = l.arrive_date and s.disembark_port_id = l.to_port_id))
       join vs.booking_cabin bc on bc.id = bl.booking_cabin_id
       join vs.cabin_category c on c.id = bc.category_id
       join vs.channel ch on ch.id = b.channel_id
@@ -196,6 +214,9 @@ export async function departureCheckin(
               arrival_date: string | null;
               arrival_flight: string | null;
               arrival_port: string | null;
+              departure_date: string | null;
+              departure_flight: string | null;
+              departure_time: string | null;
               phone: string | null;
               emergency_name: string | null;
               emergency_phone: string | null;
@@ -210,7 +231,9 @@ export async function departureCheckin(
                      g.nationality, g.date_of_birth::text, g.place_of_birth, g.passport_country,
                      g.passport_issued_on::text, g.passport_expires_on::text, g.passport_ciphertext,
                      g.passport_key_id, g.visa_type, g.visa_ciphertext, g.visa_key_id,
-                     g.arrival_date::text, g.arrival_flight, g.arrival_port, g.phone, g.emergency_name,
+                     g.arrival_date::text, g.arrival_flight, g.arrival_port, g.departure_date::text,
+                     g.departure_flight, to_char(g.departure_time, 'HH24:MI') as departure_time,
+                     g.phone, g.emergency_name,
                      g.emergency_phone, g.dietary, g.allergies, g.medical_ciphertext, g.medical_key_id,
                      g.occasion, g.occasion_date::text
               from vs.guest g
@@ -262,6 +285,9 @@ export async function departureCheckin(
             arrivalDate: g.arrival_date,
             arrivalFlight: g.arrival_flight,
             arrivalPort: g.arrival_port,
+            departureDate: g.departure_date,
+            departureFlight: g.departure_flight,
+            departureTime: g.departure_time,
             phone: g.phone,
             emergencyName: g.emergency_name,
             emergencyPhone: g.emergency_phone,

@@ -522,6 +522,9 @@ export interface Guest {
   booking_id: string;
   created_at: Generated<Timestamp>;
   date_of_birth: string | null;
+  departure_date: string | null;
+  departure_flight: string | null;
+  departure_time: string | null;
   dietary: Generated<string[]>;
   emergency_name: string | null;
   emergency_phone: string | null;
@@ -548,6 +551,18 @@ export interface Guest {
   visa_ciphertext: Buffer | null;
   visa_key_id: string | null;
   visa_type: string | null;
+}
+
+export interface GuestInfoSetting {
+  created_at: Generated<Timestamp>;
+  documents_ar: string | null;
+  documents_en: string | null;
+  dress_code_ar: string | null;
+  dress_code_en: string | null;
+  operator_id: string;
+  updated_at: Generated<Timestamp>;
+  what_to_bring_ar: string | null;
+  what_to_bring_en: string | null;
 }
 
 export interface Hold {
@@ -819,6 +834,8 @@ export interface PaymentPolicy {
 
 export interface Port {
   active: Generated<boolean>;
+  berth_ar: string | null;
+  berth_en: string | null;
   code: string;
   created_at: Generated<Timestamp>;
   id: Generated<string>;
@@ -826,6 +843,8 @@ export interface Port {
   name_en: string;
   operator_id: string;
   updated_at: Generated<Timestamp>;
+  visits_ar: string | null;
+  visits_en: string | null;
 }
 
 export interface Quote {
@@ -1077,16 +1096,25 @@ export interface TaxRate {
 
 export interface Vessel {
   active: Generated<boolean>;
+  boarding_time: string | null;
+  breakfast_time: string | null;
   checkin_pack_hours: number | null;
+  checkout_time: string | null;
   code: string;
   created_at: Generated<Timestamp>;
+  dinner_time: string | null;
   id: Generated<string>;
+  luggage_time: string | null;
+  lunch_time: string | null;
   max_guests: number;
   name: string;
   onboard_email: string | null;
   operator_id: string;
+  programme_note_ar: string | null;
+  programme_note_en: string | null;
   sells_cabins: Generated<boolean>;
   sells_charter: Generated<boolean>;
+  tea_time: string | null;
   type: string;
   updated_at: Generated<Timestamp>;
 }
@@ -1171,6 +1199,7 @@ export interface DB {
   exception: Exception;
   finance_setting: FinanceSetting;
   guest: Guest;
+  guest_info_setting: GuestInfoSetting;
   hold: Hold;
   hold_line: HoldLine;
   idempotency_key: IdempotencyKey;

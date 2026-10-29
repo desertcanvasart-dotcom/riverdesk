@@ -23,6 +23,13 @@ import {
   updateOperatorSettingsInput,
   updateStaff,
   updateStaffInput,
+  getOperationsSettings,
+  updateGuestInfo,
+  updateGuestInfoInput,
+  updatePortGuide,
+  updatePortGuideInput,
+  updateVesselDay,
+  updateVesselDayInput,
 } from '@vs/engine';
 import { backofficeDb } from '../db';
 import { procedure, router } from '../trpc';
@@ -31,6 +38,19 @@ import { procedure, router } from '../trpc';
 const previewInput = updateBrandingInput.extend({ locale: z.enum(['ar', 'en', 'both']) });
 
 export const settingsRouter = router({
+  /** D3: each vessel's day, each port's berth and visits, the pre-departure texts. */
+  operations: procedure('read').query(({ ctx }) =>
+    getOperationsSettings(backofficeDb(), ctx.engine),
+  ),
+  updateVesselDay: procedure('settings.write')
+    .input(updateVesselDayInput)
+    .mutation(({ ctx, input }) => updateVesselDay(backofficeDb(), ctx.engine, input)),
+  updatePortGuide: procedure('settings.write')
+    .input(updatePortGuideInput)
+    .mutation(({ ctx, input }) => updatePortGuide(backofficeDb(), ctx.engine, input)),
+  updateGuestInfo: procedure('settings.write')
+    .input(updateGuestInfoInput)
+    .mutation(({ ctx, input }) => updateGuestInfo(backofficeDb(), ctx.engine, input)),
   branding: procedure('read').query(({ ctx }) => getBranding(backofficeDb(), ctx.engine)),
   updateBranding: procedure('settings.write')
     .input(updateBrandingInput)

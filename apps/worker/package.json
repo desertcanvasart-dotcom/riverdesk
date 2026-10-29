@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "render-sample": "tsx scripts/render-sample.ts",
-    "render-invoice-sample": "tsx scripts/render-invoice-sample.ts"
+    "render-invoice-sample": "tsx scripts/render-invoice-sample.ts",
+    "render-operations-sample": "tsx scripts/render-operations-sample.ts"
   },
   "dependencies": {
     "@vs/contracts": "workspace:*",

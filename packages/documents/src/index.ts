@@ -5,3 +5,4 @@ export * from './sample';
 export * from './checkin';
 export * from './invoice';
 export * from './statement';
+export * from './operations';

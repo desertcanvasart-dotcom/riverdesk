@@ -264,6 +264,7 @@ export async function erasePassports(db: VsDatabase, ctx: EngineContext) {
           or passport_country is not null or passport_expires_on is not null or visa_type is not null
           or visa_ciphertext is not null or medical_ciphertext is not null or phone is not null
           or emergency_name is not null or arrival_date is not null or allergies is not null
+          or departure_date is not null or departure_flight is not null
           or cardinality(dietary) > 0 or occasion is not null or place_of_birth is not null)`,
       )
       .executeTakeFirst();

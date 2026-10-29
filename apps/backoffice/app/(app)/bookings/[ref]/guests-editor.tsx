@@ -23,6 +23,9 @@ const DETAIL_FIELDS = [
   'arrivalDate',
   'arrivalFlight',
   'arrivalPort',
+  'departureDate',
+  'departureFlight',
+  'departureTime',
   'phone',
   'emergencyName',
   'emergencyPhone',
@@ -345,11 +348,15 @@ function CheckinDetails({
   onChange: (patch: Partial<Draft>) => void;
 }) {
   const tg = useTranslations('guestDetails');
-  const text = (field: DetailField, type: 'text' | 'date' | 'tel' = 'text') => (
+  const text = (field: DetailField, type: 'text' | 'date' | 'tel' | 'time' = 'text') => (
     <Field label={tg(field)}>
       <Input
         type={type}
-        dir={type === 'tel' || field === 'arrivalFlight' ? 'ltr' : undefined}
+        dir={
+          type === 'tel' || field === 'arrivalFlight' || field === 'departureFlight'
+            ? 'ltr'
+            : undefined
+        }
         value={d[field]}
         onChange={(e) => onChange({ [field]: e.target.value })}
       />
@@ -400,6 +407,9 @@ function CheckinDetails({
         {text('arrivalDate', 'date')}
         {text('arrivalFlight')}
         {text('arrivalPort')}
+        {text('departureDate', 'date')}
+        {text('departureFlight')}
+        {text('departureTime', 'time')}
         {text('phone', 'tel')}
         {text('emergencyName')}
         {text('emergencyPhone', 'tel')}

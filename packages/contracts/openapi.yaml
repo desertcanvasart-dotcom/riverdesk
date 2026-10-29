@@ -981,6 +981,15 @@ components:
           { type: string, minLength: 1, maxLength: 20, description: Arriving flight, e.g. MS 777. }
         arrival_port:
           { type: string, minLength: 1, maxLength: 100, description: Port of entry into Egypt. }
+        departure_date: { type: string, format: date, description: Day the guest leaves Egypt. }
+        departure_flight:
+          { type: string, minLength: 1, maxLength: 20, description: Flight home, e.g. MS 778. }
+        departure_time:
+          {
+            type: string,
+            pattern: '^([01]\d|2[0-3]):[0-5]\d$',
+            description: 'Flight time, HH:MM, Cairo time.',
+          }
         phone: { type: string, minLength: 3, maxLength: 30 }
         emergency_name: { type: string, minLength: 1, maxLength: 100 }
         emergency_phone: { type: string, minLength: 3, maxLength: 30 }

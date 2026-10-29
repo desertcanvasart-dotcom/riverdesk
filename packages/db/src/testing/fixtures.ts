@@ -118,6 +118,7 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   receipt: invoiceFixture,
   allocation: invoiceFixture,
   account_mapping: invoiceFixture,
+  guest_info_setting: invoiceFixture,
   api_client: apiFixture,
   api_client_secret: apiFixture,
   rate_limit_counter: apiFixture,
@@ -526,6 +527,10 @@ function invoiceWorld(db: pg.Pool, operatorId: string): Promise<void> {
       `insert into vs.allocation (operator_id, receipt_id, invoice_id, booking_id, amount, invoice_amount, reason)
        values ($1, $2, $3, $4, 100, 100, 'allocated')`,
       [o, receipt, invoice, booking.id],
+    );
+    await db.query(
+      `insert into vs.guest_info_setting (operator_id, dress_code_en) values ($1, 'Smart casual')`,
+      [o],
     );
     await db.query(
       `insert into vs.account_mapping (operator_id, kind, code) values ($1, 'receivables', '1200')`,

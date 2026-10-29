@@ -1,6 +1,6 @@
 ---
 title: Documents
-summary: Vouchers, itineraries, payment schedules and cancellation terms, in Arabic, English or both.
+summary: Vouchers, itineraries, payment schedules, cancellation terms and the guest's pre-departure letter, in Arabic, English or both; and the on-board sheets for each departure.
 ---
 
 # Documents
@@ -14,9 +14,28 @@ From the **Documents** card on a booking, choose the language (**العربية*
 | **Itinerary**            | Day by day: the date and the ports of call                                                                                                                                                                                                                                                          |
 | **Payment schedule**     | Total, paid and balance; deposit and balance due dates; payments received                                                                                                                                                                                                                           |
 | **Cancellation terms**   | The share kept by days before embarkation, from the policy the booking was sold under                                                                                                                                                                                                               |
+| **Before you sail**      | A letter to the guest: where the vessel berths and when boarding opens and it sails, when the cruise ends and check-out, passport and visa (with the date passports must be valid until), what to bring, and the dress code                                                                         |
 
 **Both** prints every heading and label in Arabic with the English beneath it, and dates and numbers in Latin digits, for staff and guests who read either language.
 
 Every document carries your logo, colours and contact details from **Settings → Branding**. The emergency phone and voucher note also come from **Settings**. Fill them in before printing your first voucher.
 
 Documents are kept for a week, then deleted. You can make them again at any time.
+
+## On board, per departure
+
+From **Check-in**, choose the departure, then:
+
+| Document                         | Who it is for                                  | What it shows                                                                                                                      |
+| -------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Diets and allergies**          | Kitchen and restaurant (PDF or Excel)          | Everyone aboard during the departure with a diet or an allergy, by cabin, allergies in red; the count of each diet                 |
+| **Special occasions**            | Restaurant and guest relations                 | Birthdays, honeymoons and anniversaries aboard, the date stressed when it falls during the cruise                                  |
+| **Door cards**                   | Housekeeping                                   | One card per cabin boarding — welcome, the vessel, the guests' names, the cabin number and the dates — two to an A4 sheet          |
+| **Disembarkation and transfers** | Reception and the transfer desk (PDF or Excel) | Who leaves where the departure ends, earliest flight first, with the flight home and its time, and luggage-out and check-out times |
+| **Daily programme (7 days)**     | Guests: one page per day, to slide under doors | Arrivals and departures with their times from the schedule, what guests visit at each port, meal times and your note               |
+
+None of them carries passport numbers or prices, so the on-board login can print them too.
+
+![On board and before sailing](/screens/{locale}/guide-operations-settings.jpg)
+
+The times, berths, visits and the guest letter's wording are set in **Settings → On board and before sailing**: each vessel's boarding, meal, luggage-out and check-out times; for each port, where the vessel berths and what guests visit; and your own text for what to bring, the dress code and passport and visa (Riverdesk's standard wording is used where you leave it empty). The guest's flight home (date, flight and time) is entered with the other guest details on the booking.

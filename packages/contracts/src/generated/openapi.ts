@@ -664,6 +664,15 @@ export interface components {
             arrival_flight?: string;
             /** @description Port of entry into Egypt. */
             arrival_port?: string;
+            /**
+             * Format: date
+             * @description Day the guest leaves Egypt.
+             */
+            departure_date?: string;
+            /** @description Flight home */
+            departure_flight?: string;
+            /** @description Flight time, HH:MM, Cairo time. */
+            departure_time?: string;
             phone?: string;
             emergency_name?: string;
             emergency_phone?: string;

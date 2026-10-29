@@ -86,6 +86,12 @@ const guest = z
     arrival_date: date.optional(),
     arrival_flight: z.string().min(1).max(20).optional(),
     arrival_port: z.string().min(1).max(100).optional(),
+    departure_date: date.optional(),
+    departure_flight: z.string().min(1).max(20).optional(),
+    departure_time: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .optional(),
     phone: z.string().min(3).max(30).optional(),
     emergency_name: z.string().min(1).max(100).optional(),
     emergency_phone: z.string().min(3).max(30).optional(),
@@ -175,6 +181,9 @@ const toGuests = (guests: z.infer<typeof guest>[]): GuestInput[] =>
     arrivalDate: g.arrival_date as GuestInput['arrivalDate'],
     arrivalFlight: g.arrival_flight,
     arrivalPort: g.arrival_port,
+    departureDate: g.departure_date as GuestInput['departureDate'],
+    departureFlight: g.departure_flight,
+    departureTime: g.departure_time,
     phone: g.phone,
     emergencyName: g.emergency_name,
     emergencyPhone: g.emergency_phone,

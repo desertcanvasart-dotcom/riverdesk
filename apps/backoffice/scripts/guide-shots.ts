@@ -267,6 +267,15 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
   [
+    'operations-settings',
+    async (page, m) => {
+      await page.goto(`${BASE}/settings`);
+      const title = page.locator(`h2:text-is("${m.operations!.title}")`);
+      await title.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 72));
+      await page.waitForTimeout(600);
+    },
+  ],
+  [
     'branding',
     async (page, m) => {
       await page.goto(`${BASE}/settings`);

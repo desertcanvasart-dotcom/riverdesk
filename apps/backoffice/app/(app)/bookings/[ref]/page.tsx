@@ -261,6 +261,11 @@ export default async function BookingPage({
                   label: td('cancellation_terms'),
                   input: { kind: 'cancellation_terms', bookingId: booking.id },
                 },
+                {
+                  key: 'predeparture',
+                  label: td('predeparture'),
+                  input: { kind: 'predeparture', bookingId: booking.id },
+                },
               ]}
             />
           </Card>

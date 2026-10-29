@@ -202,6 +202,47 @@ function Departure({
                     },
                   ] as const)
                 : []),
+              // On-board operations (D3): kitchen, restaurant, housekeeping, transfer desk.
+              {
+                key: 'diets',
+                label: td('diet_list'),
+                input: { kind: 'diet_list', legId, format: 'pdf' },
+              },
+              {
+                key: 'diets-xlsx',
+                label: `${td('diet_list')} · Excel`,
+                input: { kind: 'diet_list', legId, format: 'xlsx' },
+              },
+              {
+                key: 'occasions',
+                label: td('occasion_list'),
+                input: { kind: 'occasion_list', legId, format: 'pdf' },
+              },
+              {
+                key: 'doors',
+                label: td('door_cards'),
+                input: { kind: 'door_cards', legId, format: 'pdf' },
+              },
+              {
+                key: 'leaving',
+                label: td('disembarkation_list'),
+                input: { kind: 'disembarkation_list', legId, format: 'pdf' },
+              },
+              {
+                key: 'leaving-xlsx',
+                label: `${td('disembarkation_list')} · Excel`,
+                input: { kind: 'disembarkation_list', legId, format: 'xlsx' },
+              },
+              {
+                key: 'programme',
+                label: td('daily_programme'),
+                input: {
+                  kind: 'daily_programme',
+                  vesselId: leg.vesselId,
+                  from: leg.departDate,
+                  days: 7,
+                },
+              },
             ]}
           />
         </div>

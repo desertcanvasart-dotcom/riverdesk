@@ -17,6 +17,8 @@ export const BOOKING_DOCUMENTS = [
   'itinerary',
   'payment_schedule',
   'cancellation_terms',
+  // Batch D3: where and when to board, what to bring.
+  'predeparture',
 ] as const;
 export const LEG_DOCUMENTS = ['manifest', 'rooming_list'] as const;
 /**
@@ -28,6 +30,23 @@ export const CHECKIN_DOCUMENTS = [
   'checkin_file',
   'registration_cards',
 ] as const;
+/**
+ * On-board operations (Batch D3), per departure: the kitchen's diets and allergies and the
+ * occasions (everyone aboard), cabin door cards (those boarding), and the disembarkation and
+ * transfer list (those leaving where the departure ends). No passport numbers, no money.
+ */
+export const OPERATIONS_DOCUMENTS = [
+  'diet_list',
+  'occasion_list',
+  'door_cards',
+  'disembarkation_list',
+] as const;
+/** What an on-board login may print, for its own vessel. */
+export const ONBOARD_DOCUMENTS: readonly string[] = [
+  ...CHECKIN_DOCUMENTS,
+  ...OPERATIONS_DOCUMENTS,
+  'daily_programme',
+];
 /** Documents carrying passport numbers. */
 export const PASSPORT_DOCUMENTS: readonly string[] = [
   'manifest',
@@ -59,6 +78,20 @@ export const requestDocumentInput = z.union([
     /** `agent`: without balances (an on-board login sees no money). */
     variant: z.enum(['full', 'agent']).default('full'),
   }),
+  z.object({
+    kind: z.enum(OPERATIONS_DOCUMENTS),
+    legId: z.uuid(),
+    locale,
+    format: z.enum(['pdf', 'xlsx']).default('pdf'),
+  }),
+  /** One page per day for a vessel, to print and slide under doors. */
+  z.object({
+    kind: z.literal('daily_programme'),
+    vesselId: z.uuid(),
+    from: dateSchema,
+    days: z.number().int().min(1).max(14).default(7),
+    locale,
+  }),
   z.object({ kind: z.literal('outage_pack'), vesselId: z.uuid(), locale }),
   z.object({
     kind: z.literal('vacancy_sheet'),
@@ -80,9 +113,11 @@ export async function requestDocument(
   scope: { vesselId: string | null } = { vesselId: null },
 ) {
   const data = parseInput(requestDocumentInput, input);
-  // Only the check-in file comes as a spreadsheet among the check-in documents.
+  // Only the check-in file and the operations lists come as spreadsheets; sheets and cards are PDFs.
   if (
-    (data.kind === 'embarkation_sheet' || data.kind === 'registration_cards') &&
+    (data.kind === 'embarkation_sheet' ||
+      data.kind === 'registration_cards' ||
+      data.kind === 'door_cards') &&
     data.format !== 'pdf'
   )
     throw new DomainError('VALIDATION_FAILED', { message: `${data.kind} is a PDF` });
@@ -111,7 +146,13 @@ export async function requestDocument(
       insert into vs.document (operator_id, kind, format, locale, variant, entity, entity_id, params, requested_by, expires_at)
       values (${ctx.operatorId}, ${data.kind}, ${target.format}, ${data.locale}, ${'variant' in data ? data.variant : 'full'},
               ${target.entity}, ${target.entityId},
-              ${JSON.stringify('from' in data ? { from: data.from, weeks: data.weeks } : {})}::jsonb,
+              ${JSON.stringify(
+                data.kind === 'vacancy_sheet'
+                  ? { from: data.from, weeks: data.weeks }
+                  : data.kind === 'daily_programme'
+                    ? { from: data.from, days: data.days }
+                    : {},
+              )}::jsonb,
               ${ctx.actor.type === 'staff' ? ctx.actor.id : null},
               -- Documents with passport numbers live a day, others a week.
               now() + case when ${PASSPORT_DOCUMENTS.includes(data.kind)} then interval '1 day' else interval '7 days' end)

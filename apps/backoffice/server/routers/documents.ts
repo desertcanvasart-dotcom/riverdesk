@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
-  CHECKIN_DOCUMENTS,
+  ONBOARD_DOCUMENTS,
   PASSPORT_DOCUMENTS,
   getDocumentStatus,
   listDocuments,
@@ -22,14 +22,14 @@ export const documentsRouter = router({
       if (PASSPORT_DOCUMENTS.includes(input.kind) && !can(ctx.staff.role, 'manifests'))
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Needs manifests' });
       if (ctx.staff.role !== 'onboard') return requestDocument(backofficeDb(), ctx.engine, input);
-      // On board: only this vessel's departure documents, and the sheet without balances.
-      if (!(CHECKIN_DOCUMENTS as readonly string[]).includes(input.kind) || !('legId' in input))
+      // On board: only this vessel's departure and programme documents, and the sheet without
+      // balances.
+      if (!ONBOARD_DOCUMENTS.includes(input.kind))
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Needs read' });
       return requestDocument(
         backofficeDb(),
         ctx.engine,
-        // Checked above: one of the check-in documents, which all take a variant.
-        { ...input, variant: 'agent' } as RequestDocumentInput,
+        ('variant' in input ? { ...input, variant: 'agent' } : input) as RequestDocumentInput,
         { vesselId: ctx.staff.vesselId },
       );
     }),

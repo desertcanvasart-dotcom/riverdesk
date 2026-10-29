@@ -17,6 +17,9 @@ import {
   type StatementParams,
   type AgingParams,
   financeDocumentData,
+  dailyProgrammeData,
+  getOperationsSettings,
+  predepartureData,
   type FinanceDocumentParams,
   loadPendingDocument,
   outagePackData,
@@ -38,6 +41,12 @@ import {
   invoiceFileBase,
   invoiceHtml,
   statementFileBase,
+  dailyProgrammeHtml,
+  dietListHtml,
+  disembarkationListHtml,
+  doorCardsHtml,
+  occasionListHtml,
+  predepartureHtml,
   statementHtml,
   manifestHtml,
   outagePackHtml,
@@ -49,6 +58,7 @@ import { analyticsXlsx } from '../documents/analytics-xlsx';
 import { invoiceRegisterXlsx } from '../documents/invoice-xlsx';
 import { agingXlsx, statementXlsx } from '../documents/receivables-xlsx';
 import { financeTableBase, financeTableCsv, financeTableXlsx } from '../documents/finance-table';
+import { operationsXlsx } from '../documents/operations-xlsx';
 import { htmlToPdf, htmlToPng } from '../documents/render';
 import { checkinXlsx, manifestXlsx, vacancyXlsx } from '../documents/xlsx';
 import { forEachOperator } from './booking-jobs';
@@ -178,6 +188,58 @@ export async function renderDocument(db: VsDatabase, ctx: EngineContext, doc: Pe
       const params = doc.params as unknown as AgingParams;
       content = await agingXlsx(await agingDocumentData(db, ctx, params), brand, locale);
       base = `receivables-aging-${params.asOf}`;
+      break;
+    }
+    case 'predeparture': {
+      const data = await predepartureData(db, ctx, doc.entityId);
+      content = await htmlToPdf(predepartureHtml(data, brand, locale));
+      base = `${data.ref}-predeparture`;
+      break;
+    }
+    case 'diet_list':
+    case 'occasion_list':
+    case 'door_cards':
+    case 'disembarkation_list': {
+      // Kitchen lists cover everyone aboard; door cards those boarding; the transfer list those
+      // leaving where the departure ends. No sensitive numbers, no money.
+      const data = await departureCheckin(db, ctx, doc.entityId, {
+        vesselId: null,
+        mode:
+          doc.kind === 'door_cards'
+            ? 'boarding'
+            : doc.kind === 'disembarkation_list'
+              ? 'leaving'
+              : 'aboard',
+      });
+      base = `${doc.kind}-${doc.kind === 'disembarkation_list' ? data.leg.arriveDate : data.leg.departDate}-${data.leg.from.code}`;
+      if (doc.format === 'xlsx' && doc.kind !== 'door_cards') {
+        content = await operationsXlsx(doc.kind, data, brand, locale);
+        break;
+      }
+      const vessel = (await getOperationsSettings(db, ctx)).vessels.find(
+        (v) => v.id === data.leg.vesselId,
+      );
+      content = await htmlToPdf(
+        doc.kind === 'diet_list'
+          ? dietListHtml(data, brand, locale)
+          : doc.kind === 'occasion_list'
+            ? occasionListHtml(data, brand, locale)
+            : doc.kind === 'door_cards'
+              ? doorCardsHtml(data, brand, locale)
+              : disembarkationListHtml(data, brand, locale, {
+                  luggageTime: vessel?.luggageTime ?? null,
+                  checkoutTime: vessel?.checkoutTime ?? null,
+                }),
+      );
+      break;
+    }
+    case 'daily_programme': {
+      const data = await dailyProgrammeData(db, ctx, doc.entityId, {
+        from: doc.params.from!,
+        days: (doc.params as { days?: number }).days ?? 7,
+      });
+      content = await htmlToPdf(dailyProgrammeHtml(data, brand, locale));
+      base = `daily-programme-${data.days[0]?.date ?? ''}`;
       break;
     }
     case 'finance_report':

@@ -385,6 +385,9 @@ export const ERASED_CHECKIN_DETAILS = {
   arrival_date: null,
   arrival_flight: null,
   arrival_port: null,
+  departure_date: null,
+  departure_flight: null,
+  departure_time: null,
   phone: null,
   emergency_name: null,
   emergency_phone: null,
@@ -428,6 +431,13 @@ export const guestSchema = z.object({
   arrivalDate: dateSchema.optional(),
   arrivalFlight: z.string().trim().min(1).max(20).optional(),
   arrivalPort: z.string().trim().min(1).max(100).optional(),
+  // Leaving Egypt (Batch D3), for the disembarkation and transfer list.
+  departureDate: dateSchema.optional(),
+  departureFlight: z.string().trim().min(1).max(20).optional(),
+  departureTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM')
+    .optional(),
   phone: z.string().trim().min(3).max(30).optional(),
   emergencyName: z.string().trim().min(1).max(100).optional(),
   emergencyPhone: z.string().trim().min(3).max(30).optional(),
@@ -543,6 +553,9 @@ export async function replaceGuests(
           arrival_date: g.arrivalDate ?? null,
           arrival_flight: g.arrivalFlight ?? null,
           arrival_port: g.arrivalPort ?? null,
+          departure_date: g.departureDate ?? null,
+          departure_flight: g.departureFlight ?? null,
+          departure_time: g.departureTime ?? null,
           phone: g.phone ?? null,
           emergency_name: g.emergencyName ?? null,
           emergency_phone: g.emergencyPhone ?? null,

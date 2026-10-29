@@ -147,6 +147,9 @@ export interface BookingDetail extends BookingView {
     arrivalDate: string | null;
     arrivalFlight: string | null;
     arrivalPort: string | null;
+    departureDate: string | null;
+    departureFlight: string | null;
+    departureTime: string | null;
     phone: string | null;
     emergencyName: string | null;
     emergencyPhone: string | null;
@@ -214,7 +217,9 @@ export async function getBookingDetail(
              g.passport_issued_on::text as "passportIssuedOn", g.passport_expires_on::text as "passportExpiresOn",
              g.place_of_birth as "placeOfBirth", g.visa_type as "visaType",
              g.visa_ciphertext is not null as "hasVisaNumber", g.arrival_date::text as "arrivalDate",
-             g.arrival_flight as "arrivalFlight", g.arrival_port as "arrivalPort", g.phone,
+             g.arrival_flight as "arrivalFlight", g.arrival_port as "arrivalPort",
+             g.departure_date::text as "departureDate", g.departure_flight as "departureFlight",
+             to_char(g.departure_time, 'HH24:MI') as "departureTime", g.phone,
              g.emergency_name as "emergencyName", g.emergency_phone as "emergencyPhone", g.dietary,
              g.allergies, g.medical_ciphertext is not null as "hasMedicalNotes", g.occasion,
              g.occasion_date::text as "occasionDate"

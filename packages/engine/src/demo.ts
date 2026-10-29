@@ -92,16 +92,23 @@ export type DemoCategoryCode = (typeof DEMO_CATEGORIES)[number]['code'];
  * Aswan, so there are two legs: A Luxor→Aswan (Mon, 4 nights) and B Aswan→Luxor (Fri, 3 nights).
  * Esna, Edfu and Kom Ombo are calls; making Esna a boarding stop is a data change.
  */
-const DEMO_STOPS: { port: string; day: number; boarding: boolean }[] = [
-  { port: 'LXR', day: 0, boarding: true },
-  { port: 'ESN', day: 0, boarding: false },
-  { port: 'EDF', day: 1, boarding: false },
-  { port: 'KOM', day: 2, boarding: false },
-  { port: 'ASW', day: 4, boarding: true },
-  { port: 'KOM', day: 5, boarding: false },
-  { port: 'EDF', day: 5, boarding: false },
-  { port: 'ESN', day: 6, boarding: false },
-  { port: 'LXR', day: 7, boarding: true },
+/** Times are Cairo local; they print on the daily programme and the guest's pre-departure sheet. */
+const DEMO_STOPS: {
+  port: string;
+  day: number;
+  boarding: boolean;
+  arrive?: string;
+  depart?: string;
+}[] = [
+  { port: 'LXR', day: 0, boarding: true, arrive: '08:00', depart: '15:00' },
+  { port: 'ESN', day: 0, boarding: false, arrive: '19:00', depart: '22:00' },
+  { port: 'EDF', day: 1, boarding: false, arrive: '07:00', depart: '11:00' },
+  { port: 'KOM', day: 2, boarding: false, arrive: '08:00', depart: '10:30' },
+  { port: 'ASW', day: 4, boarding: true, arrive: '08:00', depart: '13:00' },
+  { port: 'KOM', day: 5, boarding: false, arrive: '08:00', depart: '10:00' },
+  { port: 'EDF', day: 5, boarding: false, arrive: '15:00', depart: '17:00' },
+  { port: 'ESN', day: 6, boarding: false, arrive: '08:00', depart: '11:00' },
+  { port: 'LXR', day: 7, boarding: true, arrive: '08:00' },
 ];
 
 /** 4 and 7 nights from Luxor; 3 and 7 nights from Aswan (docs/decisions.md, pilot cruises). */
@@ -236,6 +243,8 @@ export async function createDemoVessel(
     stops: DEMO_STOPS.map((stop) => ({
       portId: ports[stop.port]!,
       dayOffset: stop.day,
+      arriveTime: stop.arrive,
+      departTime: stop.depart,
       embarkAllowed: stop.boarding,
       disembarkAllowed: stop.boarding,
     })),
@@ -589,8 +598,18 @@ export async function createDemoActivity(
           : addDays(monday, 2_000 + seq * 30)) as GuestInput['passportExpiresOn'],
         visaType: 'e_visa',
         dietary: DIETS[seq % DIETS.length],
-        ...(i === 0 ? { arrivalFlight: `MS ${700 + seq}`, phone: `+44 7700 900${100 + seq}` } : {}),
+        ...(i === 0
+          ? {
+              arrivalFlight: `MS ${700 + seq}`,
+              phone: `+44 7700 900${100 + seq}`,
+              // Flying home (Batch D3): the disembarkation and transfer list.
+              departureFlight: `MS ${800 + seq}`,
+              departureTime: `${String(12 + (seq % 9)).padStart(2, '0')}:${seq % 2 ? '30' : '05'}`,
+            }
+          : {}),
         ...(seq === 3 ? { occasion: 'honeymoon' as const } : {}),
+        ...(seq === 2 ? { occasion: 'birthday' as const, occasionDate: addDays(monday, 23) } : {}),
+        ...(seq === 4 ? { allergies: 'Shellfish' } : {}),
       };
     });
   const book = async (
