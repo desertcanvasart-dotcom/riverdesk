@@ -1,6 +1,6 @@
 ---
 title: Analytics
-summary: Occupancy, booking pace, channels, markets, booking behaviour, cash and revenue — how the company is doing, how each figure is counted, and Excel exports.
+summary: Occupancy, booking pace, channels, markets, booking behaviour, cash, revenue and receivables — how the company is doing, how each figure is counted, and Excel exports.
 ---
 
 # Analytics
@@ -74,6 +74,13 @@ Choose the period **by embarkation date** or **by booking date**, and group by v
 - **In EGP**: one figure for all currencies. Invoiced amounts use each invoice's own rate; the rest uses the latest rate typed on an invoice in that currency, with its date. The rates used are listed under the figure; a currency with no rate yet is named and left out.
 - **What is not kept as revenue**: agency commission, refunds paid out, penalties and amendment fees kept, and discounts (credit notes on bookings that were not cancelled).
 - **Currency exposure**: as of today, per currency — bookings still to sail with what is paid and still due, open invoices, and money received that is not on an invoice yet.
+
+## Receivables (owners and finance)
+
+![Receivables](/screens/{locale}/guide-analytics-receivables.jpg)
+
+- **What each party owes, and how fast it pays**: open invoices by how late they are as of today (the same figures as **Invoices → Receivables**), money received not yet on an invoice, and over the period you choose (a year by default) the **days to pay** — from the invoice date to the day the money arrived, averaged by amount (a deposit paid before the invoice counts as 0) — and the share of that money **paid by the due date**. Money taken back off an invoice does not count. Choose a party to open its statement.
+- **Credit used**: each agency with a credit limit — confirmed bookings not invoiced plus open invoices, less money paid not yet on an invoice — against its limit. The bar turns amber above 80% and red over the limit.
 
 ## Excel
 

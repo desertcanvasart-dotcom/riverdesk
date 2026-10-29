@@ -13,8 +13,8 @@ plus the order in which this and the other open plans are built.
 | 3   | **A1** | Reservations analytics (this plan, § 4)  | Done (A1.1–A1.3)                  |
 | 4   | F1–F3  | Invoices, numbering, receipts            | `invoicing-plan.md`, done (F1–F3) |
 | 5   | F4–F6  | Statements, aging, reports, export, docs | `invoicing-plan.md`, done (F4–F6) |
-| 6   | **A2** | Money analytics (this plan, § 5)         | A2.1–A2.2 done                    |
-| 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`               |
+| 6   | **A2** | Money analytics (this plan, § 5)         | Done (A2.1–A2.3)                  |
+| 7   | D3–D4  | Remaining cruise stationery              | `documents-plan.md`, next         |
 
 The nightly snapshot (§ 3) is the first piece of A1 and ships on its own (A1.1) straight after
 D2, because history it does not record cannot be recovered later.

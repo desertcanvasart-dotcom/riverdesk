@@ -1527,7 +1527,20 @@
     "rev_toSail": "Still to sail",
     "rev_paid": "Paid",
     "rev_due": "Still due",
-    "rev_openInvoices": "Open invoices"
+    "rev_openInvoices": "Open invoices",
+    "tab_receivables": "Receivables",
+    "recv_window": "Days to pay over",
+    "recv_days": "Last {n} days",
+    "recv_title": "What each party owes, and how fast it pays",
+    "recv_help": "Open invoices by days past their due date, as of today, with money received not yet on an invoice. Days to pay: from the invoice date to the day the money arrived, averaged by amount; paid by due date is the share of that money that arrived on time.",
+    "recv_party": "Party",
+    "recv_unapplied": "Not yet on an invoice",
+    "recv_avgDays": "Days to pay",
+    "recv_daysValue": "{n} days",
+    "recv_onTime": "Paid by due date",
+    "recv_credit": "Credit used",
+    "recv_creditHelp": "Each agency with a credit limit: confirmed bookings not invoiced plus open invoices, less money paid not yet on an invoice, against its limit.",
+    "recv_creditLine": "{exposure} of {limit} · {used}"
   },
   "invoices": {
     "title": "Invoices",

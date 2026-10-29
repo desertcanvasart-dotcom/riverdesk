@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { VsDatabase } from '@vs/db';
 import { addDays, convert, money, type BusinessDate } from '@vs/shared';
 import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
+import { creditExposure, getAgingInTx, type AgingBucket } from '../finance/receivables';
 import { loadFinanceSettings } from '../finance/settings';
 import { dateSchema } from '../schedule/setup';
 
@@ -583,5 +584,182 @@ export async function revenueReport(
   const data = parseInput(revenueReportInput, input);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) =>
     revenueFor(tx, data, await cairoToday(tx)),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// A2.3: receivables by party — aging, how fast they pay, credit used
+// ---------------------------------------------------------------------------
+
+/**
+ * - Aging: open invoice balances by days past due, as of today (the same as Invoices →
+ *   Receivables), with money received not yet on an invoice.
+ * - Days to pay, over the last 12 months: for money put on an invoice, the days from the
+ *   invoice's issue date to the day the money was received (0 when it came first, as a deposit),
+ *   averaged by amount; and the share of that money received by the due date.
+ * - Credit: each agency with a credit limit — what it owes on credit against the limit.
+ */
+export const receivablesReportInput = z.object({
+  /** Days back for days-to-pay (default a year). */
+  days: z.number().int().min(30).max(1095).default(365),
+});
+export type ReceivablesReportFilter = z.input<typeof receivablesReportInput>;
+
+export interface ReceivablesRow {
+  partyId: string;
+  party: string;
+  kind: string;
+  currency: string;
+  buckets: Record<AgingBucket, bigint>;
+  open: bigint;
+  overdue: bigint;
+  unapplied: bigint;
+  /** Amount-weighted days from issue to payment; null with no payments in the window. */
+  averageDaysToPay: number | null;
+  /** Share of the money paid in the window that arrived by the due date. */
+  paidOnTimeShare: number | null;
+  paidInWindow: bigint;
+}
+
+export interface CreditRow {
+  channelId: string;
+  channel: string;
+  currency: string | null;
+  limit: bigint | null;
+  uninvoiced: bigint;
+  openInvoices: bigint;
+  unappliedCredit: bigint;
+  exposure: bigint;
+  remaining: bigint | null;
+  /** exposure ÷ limit. */
+  usedShare: number | null;
+}
+
+export interface ReceivablesReport {
+  today: string;
+  since: string;
+  rows: ReceivablesRow[];
+  credit: CreditRow[];
+}
+
+async function receivablesFor(
+  tx: Tx,
+  data: z.infer<typeof receivablesReportInput>,
+  today: BusinessDate,
+): Promise<ReceivablesReport> {
+  const since = addDays(today, -data.days);
+  const aging = await getAgingInTx(tx, today);
+  const { rows: speed } = await sql<{
+    party_id: string;
+    party: string;
+    kind: string;
+    currency: string;
+    weighted: string;
+    amount: string;
+    on_time: string;
+  }>`
+    select p.id as party_id, p.name as party, p.kind, i.currency,
+           sum(a.invoice_amount * greatest(r.received_on - i.issue_date, 0))::text as weighted,
+           sum(a.invoice_amount)::text as amount,
+           coalesce(sum(a.invoice_amount) filter (where r.received_on <= i.due_date), 0)::text as on_time
+    from vs.allocation a
+    join vs.invoice i on i.id = a.invoice_id
+    join vs.receipt r on r.id = a.receipt_id
+    join vs.billing_party p on p.id = i.billing_party_id
+    where a.invoice_amount > 0 and r.kind = 'receipt' and r.received_on >= ${since}::date
+      and not exists (select from vs.receipt x where x.reverses_receipt_id = r.id)
+      -- Money later taken back off this invoice does not count as paying it.
+      and not exists (select from vs.allocation u
+                      where u.receipt_id = a.receipt_id and u.invoice_id = a.invoice_id
+                        and u.booking_id is not distinct from a.booking_id and u.invoice_amount < 0)
+    group by 1, 2, 3, 4`.execute(tx);
+
+  const rows = new Map<string, ReceivablesRow>();
+  const row = (partyId: string, party: string, kind: string, currency: string) => {
+    const key = `${partyId}|${currency}`;
+    let x = rows.get(key);
+    if (!x) {
+      x = {
+        partyId,
+        party,
+        kind,
+        currency,
+        buckets: { current: 0n, d1_30: 0n, d31_60: 0n, d61_90: 0n, d90_plus: 0n },
+        open: 0n,
+        overdue: 0n,
+        unapplied: 0n,
+        averageDaysToPay: null,
+        paidOnTimeShare: null,
+        paidInWindow: 0n,
+      };
+      rows.set(key, x);
+    }
+    return x;
+  };
+  for (const a of aging.rows) {
+    const x = row(a.partyId, a.partyName, a.partyKind, a.currency);
+    x.buckets = { ...a.buckets };
+    x.open = a.total;
+    x.overdue = a.total - a.buckets.current;
+    x.unapplied = a.unappliedCredit;
+  }
+  for (const s of speed) {
+    const amount = BigInt(s.amount);
+    if (amount <= 0n) continue;
+    const x = row(s.party_id, s.party, s.kind, s.currency);
+    x.paidInWindow = amount;
+    // Days: an average to one decimal; the share to three. Money stays integer above.
+    x.averageDaysToPay = Number((BigInt(s.weighted) * 10n) / amount) / 10;
+    x.paidOnTimeShare = Number((BigInt(s.on_time) * 1000n) / amount) / 1000;
+  }
+
+  const channels = await tx
+    .selectFrom('channel')
+    .select(['id', 'name'])
+    .where('credit_allowed', '=', true)
+    .where('credit_limit', 'is not', null)
+    .orderBy('name')
+    .execute();
+  const credit: CreditRow[] = [];
+  for (const ch of channels) {
+    const e = await creditExposure(tx, ch.id);
+    credit.push({
+      channelId: ch.id,
+      channel: ch.name,
+      currency: e.currency,
+      limit: e.limit,
+      uninvoiced: e.uninvoiced,
+      openInvoices: e.openInvoices,
+      unappliedCredit: e.unappliedCredit,
+      exposure: e.exposure,
+      remaining: e.remaining,
+      usedShare: e.limit && e.limit > 0n ? Number((e.exposure * 1000n) / e.limit) / 1000 : null,
+    });
+  }
+  credit.sort((a, b) => (b.usedShare ?? -1) - (a.usedShare ?? -1));
+
+  return {
+    today,
+    since,
+    rows: [...rows.values()].sort(
+      (a, b) =>
+        a.currency.localeCompare(b.currency) ||
+        (b.overdue > a.overdue ? 1 : b.overdue < a.overdue ? -1 : 0) ||
+        (b.open > a.open ? 1 : b.open < a.open ? -1 : 0) ||
+        a.party.localeCompare(b.party),
+    ),
+    credit,
+  };
+}
+
+/** The Receivables tab (money only: the caller checks analytics.money). */
+export async function receivablesReport(
+  db: VsDatabase,
+  ctx: EngineContext,
+  input: ReceivablesReportFilter = {},
+): Promise<ReceivablesReport> {
+  const data = parseInput(receivablesReportInput, input);
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) =>
+    receivablesFor(tx, data, await cairoToday(tx)),
   );
 }

@@ -5,6 +5,8 @@ import {
   behaviourReport,
   cashReport,
   revenueReport,
+  receivablesReport,
+  AGING_BUCKETS,
   channelsReport,
   FORECAST_BUCKETS,
   occupancyReport,
@@ -264,6 +266,70 @@ export async function analyticsXlsx(
       ],
     );
     return { content: await finish(workbook), base: `analytics-revenue-${d.filter.from}` };
+  }
+
+  if (params.report === 'receivables') {
+    // Money only: refused upstream to anyone without analytics.money.
+    const d = await receivablesReport(db, ctx, filter as never);
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_receivables'),
+      `${d.today} · ${t('an_avgDays')}: ${d.since} – ${d.today}`,
+      [
+        { header: t('an_party'), width: 28 },
+        { header: t('an_currency'), width: 10 },
+        ...(['agCurrent', 'ag1_30', 'ag31_60', 'ag61_90', 'ag90'] as const).map((k) => ({
+          header: t(k),
+          width: 14,
+        })),
+        { header: t('an_openTotal'), width: 14 },
+        { header: t('an_overdueTotal'), width: 14 },
+        { header: t('an_unapplied'), width: 16 },
+        { header: t('an_avgDays'), width: 12 },
+        { header: t('an_onTime'), width: 12 },
+        { header: t('an_paidWindow'), width: 15 },
+      ],
+      d.rows.map((r) => [
+        r.party,
+        r.currency,
+        ...AGING_BUCKETS.map((b) => amount(r.buckets[b], r.currency)),
+        amount(r.open, r.currency),
+        amount(r.overdue, r.currency),
+        amount(r.unapplied, r.currency),
+        r.averageDaysToPay,
+        r.paidOnTimeShare,
+        amount(r.paidInWindow, r.currency),
+      ]),
+      // Paid by due date (a share).
+      [11],
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_credit'),
+      d.today,
+      [
+        { header: t('an_agency'), width: 28 },
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_limit'), width: 15 },
+        { header: t('an_exposure2'), width: 15 },
+        { header: t('an_remaining'), width: 15 },
+        { header: t('an_used'), width: 10 },
+      ],
+      d.credit.map((c) => [
+        c.channel,
+        c.currency,
+        c.limit !== null && c.currency ? amount(c.limit, c.currency) : null,
+        c.currency ? amount(c.exposure, c.currency) : null,
+        c.remaining !== null && c.currency ? amount(c.remaining, c.currency) : null,
+        c.usedShare,
+      ]),
+      [5],
+    );
+    return { content: await finish(workbook), base: `analytics-receivables-${d.today}` };
   }
 
   if (params.report === 'overview') {

@@ -878,3 +878,8 @@ Owners and finance only, like Cash (query and Excel). One set of bookings for ev
 
 **2026-10-29 · The base-currency view.**
 The only place currencies are added: invoiced amounts at each invoice's own rate, the rest at the latest rate typed on an issued invoice in that currency (shown with its date). The rates used are listed under the figure; a currency with no rate yet is named and left out. No rate is fetched from outside.
+
+## Analytics A2.3 — receivables by party
+
+**2026-10-29 · The Receivables tab.**
+Owners and finance only, like Cash and Revenue (query and Excel). Per party and currency, as of today: the aging of open invoices (the same figures as Invoices → Receivables) and money received not yet on an invoice; over a chosen window (365 days by default, 90 to 730), the average days to pay — for money put on an invoice, the days from the invoice's issue date to the day the money was received (0 when it came first), weighted by amount — and the share of it received by the due date. An allocation later taken back off the invoice, and a reversed receipt, do not count. Credit used: every agency with a credit limit, its exposure (F4's definition) against the limit, sorted by share used; the bar is amber above 80% and red over 100%. This completes A2.

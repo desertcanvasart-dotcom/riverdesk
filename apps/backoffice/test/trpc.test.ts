@@ -125,6 +125,7 @@ describe('back-office authorization (server side)', () => {
       () => caller.financeReports.accountCodes(),
       () => caller.analytics.cash({ from: '2026-01-01', to: '2026-01-31' }),
       () => caller.analytics.revenue({ from: '2026-01-01', to: '2026-01-31' }),
+      () => caller.analytics.receivables({}),
       () =>
         caller.analytics.export({
           report: 'cash',

@@ -251,4 +251,23 @@ describe('documents (requested by staff, rendered by the worker)', () => {
       'In the base currency',
     ]);
   });
+
+  it('exports the Receivables tab: by party and credit used', async () => {
+    const file = await renderDocument(worker, ctx, {
+      id: 'receivables',
+      kind: 'analytics_export',
+      format: 'xlsx',
+      locale: 'en',
+      variant: 'full',
+      entityId: ctx.operatorId,
+      params: { report: 'receivables', filter: {}, withMoney: true },
+    });
+    expect(file.filename).toMatch(/^analytics-receivables-.*-en\.xlsx$/);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.content as unknown as ArrayBuffer);
+    expect(workbook.worksheets.map((ws) => ws.name)).toEqual([
+      'Receivables by party',
+      'Credit used',
+    ]);
+  });
 });

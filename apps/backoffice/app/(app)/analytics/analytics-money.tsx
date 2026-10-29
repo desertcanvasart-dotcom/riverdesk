@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Card, Empty, Input, Select, Table, Td, cx } from '../../../components/ui';
-import { formatDate, formatMoney } from '../../../lib/format';
+import { formatDate, formatMoney, formatNumber } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
 import { ExportButton, FilterField } from './analytics-breakdowns';
 
@@ -529,6 +529,152 @@ export function RevenueTab({ vesselId }: { vesselId: string | null }) {
               )}
             </Card>
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const AGING = ['current', 'd1_30', 'd31_60', 'd61_90', 'd90_plus'] as const;
+
+/**
+ * Analytics A2.3: what each agency and guest owes by how late it is, how fast each pays, and
+ * credit used against each agency's limit. Owners and finance only.
+ */
+export function ReceivablesTab() {
+  const t = useTranslations('analytics');
+  const tr = useTranslations('receivables');
+  const locale = useLocale();
+  const trpc = useTRPC();
+  const [days, setDays] = useState(365);
+  const report = useQuery(trpc.analytics.receivables.queryOptions({ days }));
+  const m = (amount: bigint, currency: string) =>
+    amount === 0n ? '—' : formatMoney(amount, currency, locale);
+  const pct = (share: number | null) =>
+    share === null
+      ? '—'
+      : new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(share);
+  const d = report.data;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <FilterField label={t('recv_window')}>
+          <Select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+            {[90, 180, 365, 730].map((n) => (
+              <option key={n} value={n}>
+                {t('recv_days', { n: formatNumber(n, locale) })}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+        <div className="ms-auto">
+          <ExportButton
+            input={{
+              report: 'receivables',
+              locale: locale.startsWith('ar') ? 'ar' : 'en',
+              filter: { days },
+            }}
+          />
+        </div>
+      </div>
+      {!d ? (
+        <Empty>{t('loading')}</Empty>
+      ) : (
+        <>
+          <Card title={t('recv_title')}>
+            <p className="mb-3 text-sm text-muted">{t('recv_help')}</p>
+            {d.rows.length === 0 ? (
+              <Empty>{t('nothing')}</Empty>
+            ) : (
+              <Table
+                head={[
+                  t('recv_party'),
+                  t('cash_currency'),
+                  ...AGING.map((b) => tr(`bucket_${b}`)),
+                  t('recv_unapplied'),
+                  t('recv_avgDays'),
+                  t('recv_onTime'),
+                ]}
+              >
+                {d.rows.map((r) => (
+                  <tr key={`${r.partyId}-${r.currency}`}>
+                    <Td>
+                      <a href={`/invoices/statements?party=${r.partyId}`} className="text-brand">
+                        {r.party}
+                      </a>
+                    </Td>
+                    <Td>{r.currency}</Td>
+                    {AGING.map((b) => (
+                      <Td
+                        key={b}
+                        className={cx(
+                          'whitespace-nowrap tabular-nums',
+                          b !== 'current' && r.buckets[b] > 0n && 'text-bad',
+                        )}
+                      >
+                        {m(r.buckets[b], r.currency)}
+                      </Td>
+                    ))}
+                    <Td className="whitespace-nowrap tabular-nums">{m(r.unapplied, r.currency)}</Td>
+                    <Td className="tabular-nums">
+                      {r.averageDaysToPay === null
+                        ? '—'
+                        : t('recv_daysValue', { n: formatNumber(r.averageDaysToPay, locale) })}
+                    </Td>
+                    <Td className="tabular-nums">{pct(r.paidOnTimeShare)}</Td>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </Card>
+          <Card title={t('recv_credit')}>
+            <p className="mb-3 text-sm text-muted">{t('recv_creditHelp')}</p>
+            {d.credit.length === 0 ? (
+              <Empty>{t('nothing')}</Empty>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {d.credit.map((c) => {
+                  const used = c.usedShare ?? 0;
+                  return (
+                    <li
+                      key={c.channelId}
+                      className="grid grid-cols-[minmax(8rem,14rem)_1fr] items-center gap-3 text-sm"
+                    >
+                      <span className="truncate" title={c.channel}>
+                        {c.channel}
+                      </span>
+                      <span className="flex flex-col gap-1">
+                        <span className="h-3 rounded-full bg-line/50">
+                          <span
+                            className="block h-3 rounded-full"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, used * 100))}%`,
+                              background:
+                                used > 1
+                                  ? 'var(--color-bad)'
+                                  : used > 0.8
+                                    ? 'var(--color-warn)'
+                                    : 'var(--color-chart-1)',
+                            }}
+                          />
+                        </span>
+                        {c.currency && c.limit !== null && (
+                          <span className="text-xs text-muted">
+                            {t('recv_creditLine', {
+                              exposure: formatMoney(c.exposure, c.currency, locale),
+                              limit: formatMoney(c.limit, c.currency, locale),
+                              used: pct(c.usedShare),
+                            })}
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Card>
         </>
       )}
     </div>
