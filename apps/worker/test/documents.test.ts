@@ -225,4 +225,30 @@ describe('documents (requested by staff, rendered by the worker)', () => {
       'Held for future sailings',
     ]);
   });
+
+  it('exports the Revenue tab: revenue, leakage, exposure, base currency', async () => {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    const file = await renderDocument(worker, ctx, {
+      id: 'revenue',
+      kind: 'analytics_export',
+      format: 'xlsx',
+      locale: 'en',
+      variant: 'full',
+      entityId: ctx.operatorId,
+      params: {
+        report: 'revenue',
+        filter: { basis: 'sailing', from: today, to: today, groupBy: 'channel' },
+        withMoney: true,
+      },
+    });
+    expect(file.filename).toMatch(/^analytics-revenue-.*-en\.xlsx$/);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.content as unknown as ArrayBuffer);
+    expect(workbook.worksheets.map((ws) => ws.name)).toEqual([
+      'Revenue',
+      'Leakage',
+      'Currency exposure',
+      'In the base currency',
+    ]);
+  });
 });

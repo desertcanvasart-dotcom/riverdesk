@@ -4,6 +4,7 @@ import {
   analyticsOverview,
   behaviourReport,
   cashReport,
+  revenueReport,
   channelsReport,
   FORECAST_BUCKETS,
   occupancyReport,
@@ -154,6 +155,115 @@ export async function analyticsXlsx(
       ],
     );
     return { content: await finish(workbook), base: `analytics-cash-${d.from}` };
+  }
+
+  if (params.report === 'revenue') {
+    // Money only: refused upstream to anyone without analytics.money.
+    const d = await revenueReport(db, ctx, filter as never);
+    const span = `${t('an_period')}: ${d.filter.from} – ${d.filter.to} (${t(d.filter.basis === 'sailing' ? 'an_basis_sailing' : 'an_basis_booked')})`;
+    const money = (x: bigint, currency: string) => amount(x, currency);
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_revenue'),
+      span,
+      [
+        { header: t('an_month'), width: 10 },
+        { header: t('an_group'), width: 26 },
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_bookings'), width: 10 },
+        { header: t('an_booked'), width: 15 },
+        { header: t('an_commission'), width: 15 },
+        { header: t('an_net'), width: 15 },
+        { header: t('an_invoiced'), width: 15 },
+        { header: t('an_uninvoiced'), width: 15 },
+      ],
+      d.rows.map((r) => [
+        r.month,
+        r.group,
+        r.currency,
+        r.bookings,
+        money(r.booked, r.currency),
+        money(r.commission, r.currency),
+        money(r.net, r.currency),
+        money(r.invoiced, r.currency),
+        money(r.uninvoiced, r.currency),
+      ]),
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_leakage'),
+      span,
+      [
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_commission'), width: 15 },
+        { header: t('an_refunds'), width: 15 },
+        { header: t('an_penaltiesKept'), width: 15 },
+        { header: t('an_amendmentFees'), width: 15 },
+        { header: t('an_discounts'), width: 15 },
+      ],
+      d.leakage.map((l) => [
+        l.currency,
+        money(l.commission, l.currency),
+        money(l.refunds, l.currency),
+        money(l.penaltiesKept, l.currency),
+        money(l.amendmentFees, l.currency),
+        money(l.discounts, l.currency),
+      ]),
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_exposure'),
+      d.today,
+      [
+        { header: t('an_currency'), width: 10 },
+        { header: t('an_bookings'), width: 10 },
+        { header: t('an_futureBooked'), width: 16 },
+        { header: t('an_futurePaid'), width: 16 },
+        { header: t('an_futureDue'), width: 16 },
+        { header: t('an_openInvoices'), width: 16 },
+        { header: t('an_unapplied'), width: 16 },
+      ],
+      d.exposure.map((e) => [
+        e.currency,
+        e.futureBookings,
+        money(e.futureBooked, e.currency),
+        money(e.futurePaid, e.currency),
+        money(e.futureDue, e.currency),
+        money(e.openInvoices, e.currency),
+        money(e.unapplied, e.currency),
+      ]),
+    );
+    table(
+      workbook,
+      brand,
+      locale,
+      t('an_baseView'),
+      d.base.currency,
+      [
+        { header: t('an_currency'), width: 12 },
+        { header: t('an_rate'), width: 16 },
+        { header: t('an_rateSource'), width: 30 },
+        { header: d.base.currency, width: 16 },
+      ],
+      [
+        [t('an_booked'), '', '', money(d.base.booked, d.base.currency)],
+        [t('an_invoiced'), '', '', money(d.base.invoiced, d.base.currency)],
+        ...d.base.rates.map((r) => [
+          r.currency,
+          r.rate,
+          `${t(`an_rate_${r.source}`)}${r.date ? ` (${r.date})` : ''}`,
+          null,
+        ]),
+        ...d.base.missing.map((c) => [c, '', t('an_noRate'), null]),
+      ],
+    );
+    return { content: await finish(workbook), base: `analytics-revenue-${d.filter.from}` };
   }
 
   if (params.report === 'overview') {

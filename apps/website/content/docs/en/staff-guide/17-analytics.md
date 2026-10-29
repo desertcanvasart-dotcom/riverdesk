@@ -1,6 +1,6 @@
 ---
 title: Analytics
-summary: Occupancy, booking pace, channels, markets, booking behaviour and cash — how the company is doing, how each figure is counted, and Excel exports.
+summary: Occupancy, booking pace, channels, markets, booking behaviour, cash and revenue — how the company is doing, how each figure is counted, and Excel exports.
 ---
 
 # Analytics
@@ -63,6 +63,17 @@ Money only, per currency. Choose the period and whether to see it by day, week o
 - **Held for coming sailings**: what has been paid on bookings whose sailing has not embarked yet, by sailing month, with what is still to be paid on them; and money received from agencies that is not on an invoice yet.
 
 Choosing a vessel leaves out money received from agencies and platforms as a whole, which belongs to no vessel.
+
+## Revenue (owners and finance)
+
+![Revenue](/screens/{locale}/guide-analytics-revenue.jpg)
+
+Choose the period **by embarkation date** or **by booking date**, and group by vessel, channel or market. Every table on this tab is about the same bookings: confirmed and completed ones at their total and fees, cancelled ones at the penalty and fees kept.
+
+- **Revenue**: by month and group, per currency — booked, the agency commission in it, net, invoiced (on issued invoices less credit notes, before tax) and not yet invoiced.
+- **In EGP**: one figure for all currencies. Invoiced amounts use each invoice's own rate; the rest uses the latest rate typed on an invoice in that currency, with its date. The rates used are listed under the figure; a currency with no rate yet is named and left out.
+- **What is not kept as revenue**: agency commission, refunds paid out, penalties and amendment fees kept, and discounts (credit notes on bookings that were not cancelled).
+- **Currency exposure**: as of today, per currency — bookings still to sail with what is paid and still due, open invoices, and money received that is not on an invoice yet.
 
 ## Excel
 

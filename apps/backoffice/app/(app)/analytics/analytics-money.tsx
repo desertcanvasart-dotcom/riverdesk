@@ -271,3 +271,266 @@ export function CashTab({ vesselId }: { vesselId: string | null }) {
     </div>
   );
 }
+
+/**
+ * Analytics A2.2: revenue by sailing or booking month, what leaks, currency exposure and the
+ * base-currency view. Owners and finance only; per currency, the base view names its rates.
+ */
+export function RevenueTab({ vesselId }: { vesselId: string | null }) {
+  const t = useTranslations('analytics');
+  const locale = useLocale();
+  const trpc = useTRPC();
+  const today = cairoToday();
+  const [basis, setBasis] = useState<'sailing' | 'booked'>('sailing');
+  const [period, setPeriod] = useState({ from: today, to: addDays(today, 89) });
+  const [groupBy, setGroupBy] = useState<'vessel' | 'channel' | 'market'>('channel');
+  const filter = { basis, ...period, groupBy, vesselId };
+  const report = useQuery(trpc.analytics.revenue.queryOptions(filter));
+  const m = (amount: bigint, currency: string) =>
+    amount === 0n ? '—' : formatMoney(amount, currency, locale);
+  const monthName = (month: string) =>
+    new Intl.DateTimeFormat(locale.startsWith('ar') ? 'ar-EG' : 'en-GB', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${month}-01T00:00:00Z`));
+  const presets =
+    basis === 'booked'
+      ? [
+          { key: 'last30', from: addDays(today, -29), to: today },
+          { key: 'last90', from: addDays(today, -89), to: today },
+          { key: 'last365', from: addDays(today, -364), to: today },
+        ]
+      : [
+          { key: 'next30', from: today, to: addDays(today, 29) },
+          { key: 'next90', from: today, to: addDays(today, 89) },
+          { key: 'last90', from: addDays(today, -89), to: today },
+        ];
+  const d = report.data;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <FilterField label={t('basis')}>
+          <Select
+            value={basis}
+            onChange={(e) => {
+              const next = e.target.value as 'sailing' | 'booked';
+              setBasis(next);
+              setPeriod(
+                next === 'sailing'
+                  ? { from: today, to: addDays(today, 89) }
+                  : { from: addDays(today, -89), to: today },
+              );
+            }}
+          >
+            <option value="sailing">{t('basis_sailing')}</option>
+            <option value="booked">{t('basis_booked')}</option>
+          </Select>
+        </FilterField>
+        <FilterField label={t('from')}>
+          <Input
+            type="date"
+            value={period.from}
+            onChange={(e) => e.target.value && setPeriod({ ...period, from: e.target.value })}
+          />
+        </FilterField>
+        <FilterField label={t('to')}>
+          <Input
+            type="date"
+            value={period.to}
+            onChange={(e) => e.target.value && setPeriod({ ...period, to: e.target.value })}
+          />
+        </FilterField>
+        <div className="flex gap-1 pb-1">
+          {presets.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setPeriod({ from: p.from, to: p.to })}
+              className={cx(
+                'rounded-full px-3 py-1 text-sm',
+                period.from === p.from && period.to === p.to
+                  ? 'bg-brand text-brand-ink'
+                  : 'border border-line',
+              )}
+            >
+              {t(`preset_${p.key}`)}
+            </button>
+          ))}
+        </div>
+        <FilterField label={t('rev_groupBy')}>
+          <Select value={groupBy} onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}>
+            {(['vessel', 'channel', 'market'] as const).map((g) => (
+              <option key={g} value={g}>
+                {t(`rev_by_${g}`)}
+              </option>
+            ))}
+          </Select>
+        </FilterField>
+        <div className="ms-auto">
+          <ExportButton
+            input={{ report: 'revenue', locale: locale.startsWith('ar') ? 'ar' : 'en', filter }}
+          />
+        </div>
+      </div>
+
+      {!d ? (
+        <Empty>{t('loading')}</Empty>
+      ) : (
+        <>
+          <Card title={t('rev_title')}>
+            <p className="mb-3 text-sm text-muted">{t('rev_help')}</p>
+            {d.rows.length === 0 ? (
+              <Empty>{t('nothing')}</Empty>
+            ) : (
+              <Table
+                head={[
+                  t('rev_month'),
+                  t(`rev_by_${groupBy}`),
+                  t('cash_currency'),
+                  t('cash_bookings'),
+                  t('rev_booked'),
+                  t('rev_commission'),
+                  t('rev_net'),
+                  t('rev_invoiced'),
+                  t('rev_uninvoiced'),
+                ]}
+              >
+                {d.rows.map((r) => (
+                  <tr key={`${r.month}-${r.group}-${r.currency}`}>
+                    <Td className="whitespace-nowrap">{monthName(r.month)}</Td>
+                    <Td>{r.group}</Td>
+                    <Td>{r.currency}</Td>
+                    <Td className="tabular-nums">{r.bookings}</Td>
+                    <Td className="whitespace-nowrap tabular-nums">{m(r.booked, r.currency)}</Td>
+                    <Td className="whitespace-nowrap tabular-nums">
+                      {m(r.commission, r.currency)}
+                    </Td>
+                    <Td className="whitespace-nowrap font-medium tabular-nums">
+                      {m(r.net, r.currency)}
+                    </Td>
+                    <Td className="whitespace-nowrap tabular-nums">{m(r.invoiced, r.currency)}</Td>
+                    <Td className="whitespace-nowrap tabular-nums">
+                      {m(r.uninvoiced, r.currency)}
+                    </Td>
+                  </tr>
+                ))}
+              </Table>
+            )}
+          </Card>
+
+          <Card title={t('rev_base', { currency: d.base.currency })}>
+            <p className="mb-3 text-sm text-muted">{t('rev_baseHelp')}</p>
+            <div className="mb-3 flex flex-wrap gap-6">
+              <div>
+                <div className="text-xs text-muted">{t('rev_booked')}</div>
+                <div className="text-xl font-semibold tabular-nums">
+                  {formatMoney(d.base.booked, d.base.currency, locale)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted">{t('rev_invoiced')}</div>
+                <div className="text-xl font-semibold tabular-nums">
+                  {formatMoney(d.base.invoiced, d.base.currency, locale)}
+                </div>
+              </div>
+            </div>
+            <ul className="text-sm text-muted">
+              {d.base.rates.map((r) => (
+                <li key={`${r.source}-${r.currency}`} dir="auto">
+                  1 {r.currency} = <span dir="ltr">{r.rate}</span> {d.base.currency} ·{' '}
+                  {t(`rev_rate_${r.source}`)}
+                  {r.date && ` (${formatDate(r.date, locale)})`}
+                </li>
+              ))}
+              {d.base.missing.map((c) => (
+                <li key={`missing-${c}`} className="text-bad">
+                  {t('rev_noRate', { currency: c })}
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card title={t('rev_leakage')}>
+              <p className="mb-3 text-sm text-muted">{t('rev_leakageHelp')}</p>
+              {d.leakage.length === 0 ? (
+                <Empty>{t('nothing')}</Empty>
+              ) : (
+                <Table
+                  head={[
+                    t('cash_currency'),
+                    t('rev_commission'),
+                    t('rev_refunds'),
+                    t('rev_penalties'),
+                    t('rev_fees'),
+                    t('rev_discounts'),
+                  ]}
+                >
+                  {d.leakage.map((l) => (
+                    <tr key={l.currency}>
+                      <Td>{l.currency}</Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(l.commission, l.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap tabular-nums">{m(l.refunds, l.currency)}</Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(l.penaltiesKept, l.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(l.amendmentFees, l.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(l.discounts, l.currency)}
+                      </Td>
+                    </tr>
+                  ))}
+                </Table>
+              )}
+            </Card>
+
+            <Card title={t('rev_exposure')}>
+              <p className="mb-3 text-sm text-muted">{t('rev_exposureHelp')}</p>
+              {d.exposure.length === 0 ? (
+                <Empty>{t('nothing')}</Empty>
+              ) : (
+                <Table
+                  head={[
+                    t('cash_currency'),
+                    t('rev_toSail'),
+                    t('rev_paid'),
+                    t('rev_due'),
+                    t('rev_openInvoices'),
+                    t('cash_unapplied'),
+                  ]}
+                >
+                  {d.exposure.map((e) => (
+                    <tr key={e.currency}>
+                      <Td>{e.currency}</Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(e.futureBooked, e.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(e.futurePaid, e.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap font-medium tabular-nums">
+                        {m(e.futureDue, e.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(e.openInvoices, e.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap tabular-nums">
+                        {m(e.unapplied, e.currency)}
+                      </Td>
+                    </tr>
+                  ))}
+                </Table>
+              )}
+            </Card>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

@@ -4,7 +4,7 @@ import type { VsDatabase } from '@vs/db';
 import { audit } from '../audit';
 import { parseInput, type EngineContext } from '../internal';
 import { analyticsFilterInput } from './breakdowns';
-import { cashReportInput } from './money';
+import { cashReportInput, revenueReportInput } from './money';
 import { analyticsOverviewInput, occupancyReportInput } from './reports';
 
 /**
@@ -39,11 +39,17 @@ export const analyticsExportInput = z.discriminatedUnion('report', [
     locale: z.enum(['ar', 'en', 'both']),
     filter: cashReportInput,
   }),
+  /** A2.2: money only, like cash. */
+  z.object({
+    report: z.literal('revenue'),
+    locale: z.enum(['ar', 'en', 'both']),
+    filter: revenueReportInput,
+  }),
 ]);
 export type AnalyticsExportInput = z.input<typeof analyticsExportInput>;
 
 export interface AnalyticsExportParams {
-  report: 'overview' | 'occupancy' | 'channels' | 'behaviour' | 'cash';
+  report: 'overview' | 'occupancy' | 'channels' | 'behaviour' | 'cash' | 'revenue';
   filter: Record<string, unknown>;
   withMoney: boolean;
 }

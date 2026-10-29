@@ -15,10 +15,10 @@ import {
   type BreakdownFilter,
 } from './analytics-breakdowns';
 import { formatDate, formatMoney, formatNumber } from '../../../lib/format';
-import { CashTab } from './analytics-money';
+import { CashTab, RevenueTab } from './analytics-money';
 import { useTRPC } from '../../../lib/trpc';
 
-type Tab = 'overview' | 'occupancy' | 'channels' | 'behaviour' | 'cash';
+type Tab = 'overview' | 'occupancy' | 'channels' | 'behaviour' | 'cash' | 'revenue';
 type Money = { currency: string; total: bigint; net: bigint }[];
 
 const share = (booked: number, sale: number) => (sale > 0 ? booked / sale : null);
@@ -96,7 +96,7 @@ export function AnalyticsScreen({
             'channels',
             'behaviour',
             // A2: money tabs, owners and finance only.
-            ...(canMoney ? (['cash'] as const) : []),
+            ...(canMoney ? (['cash', 'revenue'] as const) : []),
           ] as const
         ).map((k) => (
           <button
@@ -211,7 +211,7 @@ export function AnalyticsScreen({
             </FilterField>
           </>
         )}
-        {tab !== 'occupancy' && tab !== 'cash' && (
+        {tab !== 'occupancy' && tab !== 'cash' && tab !== 'revenue' && (
           <div className="ms-auto">
             <ExportButton
               input={
@@ -236,6 +236,8 @@ export function AnalyticsScreen({
         <ChannelsTab filter={filter} canMoney={canMoney} />
       ) : tab === 'cash' ? (
         <CashTab vesselId={vesselId || null} />
+      ) : tab === 'revenue' ? (
+        <RevenueTab vesselId={vesselId || null} />
       ) : (
         <BehaviourTab filter={filter} canMoney={canMoney} />
       )}

@@ -5,6 +5,8 @@ import {
   behaviourReport,
   cashReport,
   cashReportInput,
+  revenueReport,
+  revenueReportInput,
   channelsReport,
   requestAnalyticsExport,
   analyticsOverviewInput,
@@ -55,13 +57,17 @@ export const analyticsRouter = router({
   cash: procedure('analytics.money')
     .input(cashReportInput)
     .query(({ ctx, input }) => cashReport(backofficeDb(), ctx.engine, input)),
+  /** A2.2: revenue, leakage, currency exposure and the base-currency view — money only. */
+  revenue: procedure('analytics.money')
+    .input(revenueReportInput)
+    .query(({ ctx, input }) => revenueReport(backofficeDb(), ctx.engine, input)),
   /** An Excel file of one tab; money columns follow the person's role, decided here. */
   export: procedure('analytics.view')
     .input(analyticsExportInput)
     .mutation(({ ctx, input }) => {
       const withMoney = can(ctx.staff.role, 'analytics.money');
       // The money tabs are money from end to end.
-      if (input.report === 'cash' && !withMoney)
+      if ((input.report === 'cash' || input.report === 'revenue') && !withMoney)
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Needs analytics.money' });
       return requestAnalyticsExport(backofficeDb(), ctx.engine, input, { withMoney });
     }),
