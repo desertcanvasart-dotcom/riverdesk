@@ -18,6 +18,7 @@ import {
 } from '../../../../components/ui';
 import { useErrorText } from '../../../../lib/errors';
 import { useTRPC } from '../../../../lib/trpc';
+import { ExtrasCard } from './extras-card';
 
 type Form = {
   legalNameAr: string;
@@ -205,6 +206,7 @@ export function FinanceSettingsScreen() {
       </div>
 
       <TaxesCard />
+      <ExtrasCard />
       <AccountCodesCard />
     </div>
   );

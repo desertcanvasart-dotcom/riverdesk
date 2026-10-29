@@ -19,6 +19,9 @@ export const PERMISSIONS = {
   /** The Check-in screen: departures boarding, guests' details, the reception's marks. */
   'checkin.view': ['owner', 'reservations', 'finance', 'read_only', 'onboard'],
   'checkin.write': ['owner', 'reservations', 'onboard'],
+  /** Extras on board (E1): see each cabin's folio, and post or void its charges. */
+  'folio.view': ['owner', 'reservations', 'finance', 'onboard'],
+  'folio.write': ['owner', 'finance', 'onboard'],
   /** Analytics: occupancy, pace, channels. Money figures need analytics.money as well. */
   'analytics.view': ['owner', 'reservations', 'finance', 'read_only'],
   'analytics.money': ['owner', 'finance'],

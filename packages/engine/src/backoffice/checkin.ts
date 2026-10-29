@@ -107,7 +107,7 @@ export interface DepartureCheckin {
 
 const legIdInput = z.uuid();
 
-async function assertInScope(tx: Tx, legId: string, scope: CheckinScope) {
+export async function assertInScope(tx: Tx, legId: string, scope: CheckinScope) {
   const leg = await tx
     .selectFrom('leg')
     .select('vessel_id')

@@ -144,12 +144,20 @@ describe('back-office authorization (server side)', () => {
     expect(can('reservations', 'bookings.write')).toBe(true);
   });
 
-  it('on-board staff get Check-in and their own profile, nothing else', async () => {
+  it('on-board staff get Check-in, folios and their own profile, nothing else', async () => {
     const allowed = (Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]).filter((p) =>
       can('onboard', p),
     );
     expect(allowed.sort()).toEqual(
-      ['checkin.view', 'checkin.write', 'documents.create', 'manifests', 'self'].sort(),
+      [
+        'checkin.view',
+        'checkin.write',
+        'documents.create',
+        'folio.view',
+        'folio.write',
+        'manifests',
+        'self',
+      ].sort(),
     );
     expect(MFA_REQUIRED).not.toContain('onboard');
     const session = {
@@ -167,6 +175,7 @@ describe('back-office authorization (server side)', () => {
       () => caller.payments.ledger({}),
       () => caller.receivables.aging({}),
       () => caller.checkin.vessels(),
+      () => caller.folios.settings(),
     ]) {
       await expect(call()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     }

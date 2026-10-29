@@ -1,8 +1,20 @@
 # Extras on board and the guest folio — plan
 
-Status: **proposed 2026-10-29, waiting for the owner's answers to § 8.** Nothing is built until
-then; each batch in § 7 stops for review. This is the last item of the document library
-(`documents-plan.md` § 5, "Guest folio of extras"), which needs a way to record extras first.
+Status: **approved 2026-10-29 with the recommended answers (§ 8); E1 done 2026-10-29.** Answers taken:
+
+1. Connection: online only; a paper chit when the signal drops. No offline queue for now.
+2. The on-board login may take payment for folios (cash and card), with the shift report (E2).
+3. One folio per cabin.
+4. Invoice lines: one per category and day.
+5. Split bills: later.
+6. Prepaid packages: left out. Tips: free amounts from the price list (a "per night" item the staff post).
+7. Agencies: a folio may be billed to the agency where the contract allows it (E2).
+8. One folio currency per vessel, USD by default; other currencies at a typed rate when paying.
+9. Tax: the company's own tax lines, none by default; no e-receipt link.
+10. Batches E1–E3 as listed, each stopping for review.
+
+E1 notes: the price list sits in **Invoices → Settings** (with the taxes it uses), not in Settings.
+`folio.write` is owner, finance and on-board; reservations may view folios.
 
 ## 1. The idea in one paragraph
 

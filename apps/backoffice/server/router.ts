@@ -8,6 +8,7 @@ import { checkinRouter } from './routers/checkin';
 import { documentsRouter } from './routers/documents';
 import { financeRouter, invoicesRouter } from './routers/finance';
 import { fleetRouter } from './routers/fleet';
+import { foliosRouter } from './routers/folios';
 import { guestsRouter } from './routers/guests';
 import { homeRouter } from './routers/home';
 import { inventoryRouter } from './routers/inventory';
@@ -47,6 +48,7 @@ export const appRouter = router({
   documents: documentsRouter,
   guests: guestsRouter,
   checkin: checkinRouter,
+  folios: foliosRouter,
   analytics: analyticsRouter,
   pilot: pilotRouter,
 });

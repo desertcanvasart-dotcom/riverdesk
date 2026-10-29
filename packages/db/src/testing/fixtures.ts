@@ -119,6 +119,9 @@ export const TENANT_FIXTURES: Record<string, Fixture> = {
   allocation: invoiceFixture,
   account_mapping: invoiceFixture,
   guest_info_setting: invoiceFixture,
+  extra_item: invoiceFixture,
+  folio: invoiceFixture,
+  folio_charge: invoiceFixture,
   api_client: apiFixture,
   api_client_secret: apiFixture,
   rate_limit_counter: apiFixture,
@@ -480,7 +483,7 @@ async function bookingFixture(db: pg.Pool, operatorId: string): Promise<void> {
 
 const invoiceWorlds = new Map<string, Promise<void>>();
 
-/** One row in every invoicing table (F1–F3), on top of bookingWorld. The invoice stays a draft. */
+/** One row in every invoicing (F1–F3) and folio (E1) table, on top of bookingWorld. The invoice stays a draft. */
 function invoiceWorld(db: pg.Pool, operatorId: string): Promise<void> {
   const existing = invoiceWorlds.get(operatorId);
   if (existing) return existing;
@@ -535,6 +538,30 @@ function invoiceWorld(db: pg.Pool, operatorId: string): Promise<void> {
     await db.query(
       `insert into vs.account_mapping (operator_id, kind, code) values ($1, 'receivables', '1200')`,
       [o],
+    );
+    const cabin = (
+      await db.query<{ id: string; vessel_id: string }>(
+        `select bc.id, l.vessel_id from vs.booking_cabin bc
+         join vs.booking_line bl on bl.booking_cabin_id = bc.id join vs.leg l on l.id = bl.leg_id
+         where bc.booking_id = $1 limit 1`,
+        [booking.id],
+      )
+    ).rows[0]!;
+    const item = await one(
+      `insert into vs.extra_item (operator_id, category, name_ar, name_en, price, currency, tax_rate_id)
+       values ($1, 'bar', 'مياه', 'Water', 300, 'USD', $2) returning id`,
+      [o, tax],
+    );
+    const folio = await one(
+      `insert into vs.folio (operator_id, booking_id, booking_cabin_id, vessel_id, currency)
+       values ($1, $2, $3, $4, 'USD') returning id`,
+      [o, booking.id, cabin.id, cabin.vessel_id],
+    );
+    await db.query(
+      `insert into vs.folio_charge (operator_id, folio_id, extra_item_id, category, description_ar, description_en,
+                                    quantity, unit_amount, amount, currency, tax_rate_id, tax_bps, tax_inclusive, charged_on)
+       values ($1, $2, $3, 'bar', 'مياه', 'Water', 2, 300, 600, 'USD', $4, 1400, true, '2027-01-05')`,
+      [o, folio, item, tax],
     );
   })();
   invoiceWorlds.set(operatorId, created);

@@ -267,6 +267,25 @@ const SHOTS: [string, (page: Page, m: Messages) => Promise<void>][] = [
     },
   ],
   [
+    'folios',
+    async (page, m) => {
+      await page.goto(`${BASE}/checkin`);
+      await page.getByRole('tab', { name: m.checkin!.tabFolios }).click();
+      await page.locator('button.min-h-20').first().click();
+      await page.locator('dialog[open] li').first().waitFor();
+      await page.waitForTimeout(600);
+    },
+  ],
+  [
+    'extras-settings',
+    async (page, m) => {
+      await page.goto(`${BASE}/invoices/settings`);
+      const title = page.locator(`h2:text-is("${m.folios!.settingsTitle}")`);
+      await title.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 72));
+      await page.waitForTimeout(600);
+    },
+  ],
+  [
     'operations-settings',
     async (page, m) => {
       await page.goto(`${BASE}/settings`);

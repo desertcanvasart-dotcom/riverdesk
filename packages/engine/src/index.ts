@@ -71,3 +71,5 @@ export * from './analytics/money';
 export * from './backoffice/operations';
 export * from './demo-operations';
 export * from './backoffice/stationery';
+export * from './backoffice/folios';
+export * from './demo-folios';

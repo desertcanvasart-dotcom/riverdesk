@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Check, Mail, Search } from 'lucide-react';
+import type { CheckinParty } from '@vs/engine';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { DocumentButtons } from '../../../components/documents';
@@ -9,8 +10,22 @@ import { Alert, Badge, Button, Card, Empty, Field, Input, cx } from '../../../co
 import { useErrorText } from '../../../lib/errors';
 import { formatDate, formatDateTime, formatMoney, formatNumber } from '../../../lib/format';
 import { useTRPC } from '../../../lib/trpc';
+import { Folios } from './folios';
 
 type Mark = 'passportsSeen' | 'cardsSigned' | 'keyHanded';
+type CheckinSet = {
+  isPending: boolean;
+  isError: boolean;
+  error: unknown;
+  mutate: (input: {
+    legId: string;
+    bookingCabinId: string;
+    passportsSeen?: boolean;
+    cardsSigned?: boolean;
+    keyHanded?: boolean;
+    checkedIn?: boolean;
+  }) => void;
+};
 const MARKS: Mark[] = ['passportsSeen', 'cardsSigned', 'keyHanded'];
 
 /**
@@ -22,11 +37,15 @@ export function CheckinScreen({
   canWrite,
   canPassports,
   canFleet,
+  canFolio,
+  canFolioWrite,
   onboard,
 }: {
   canWrite: boolean;
   canPassports: boolean;
   canFleet: boolean;
+  canFolio: boolean;
+  canFolioWrite: boolean;
   onboard: boolean;
 }) {
   const t = useTranslations('checkin');
@@ -80,6 +99,8 @@ export function CheckinScreen({
           legId={legId}
           canWrite={canWrite}
           canPassports={canPassports}
+          canFolio={canFolio}
+          canFolioWrite={canFolioWrite}
           onboard={onboard}
         />
       )}
@@ -102,23 +123,26 @@ function Departure({
   legId,
   canWrite,
   canPassports,
+  canFolio,
+  canFolioWrite,
   onboard,
 }: {
   legId: string;
   canWrite: boolean;
   canPassports: boolean;
+  canFolio: boolean;
+  canFolioWrite: boolean;
   onboard: boolean;
 }) {
   const t = useTranslations('checkin');
   const td = useTranslations('documents');
   const tg = useTranslations('guestDetails');
   const locale = useLocale();
-  const isArabic = locale.startsWith('ar');
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const errorText = useErrorText();
   const [search, setSearch] = useState('');
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const [view, setView] = useState<'checkin' | 'folios'>('checkin');
   const departure = useQuery(
     trpc.checkin.departure.queryOptions({ legId }, { refetchInterval: 15_000 }),
   );
@@ -268,6 +292,70 @@ function Departure({
         {canPassports && !onboard && <SendPack legId={legId} />}
       </Card>
 
+      {canFolio && (
+        <div className="flex gap-2" role="tablist">
+          {(['checkin', 'folios'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={view === v}
+              onClick={() => setView(v)}
+              className={cx(
+                'min-h-10 rounded-lg border px-4 text-sm font-medium',
+                view === v ? 'border-brand bg-brand/5' : 'border-line hover:bg-line/30',
+              )}
+            >
+              {t(v === 'checkin' ? 'tabCheckin' : 'tabFolios')}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {view === 'folios' ? (
+        <Folios legId={legId} canWrite={canFolioWrite} />
+      ) : (
+        <CheckinList
+          legId={legId}
+          canWrite={canWrite}
+          parties={parties}
+          set={set}
+          search={search}
+          setSearch={setSearch}
+          onlyOpen={onlyOpen}
+          setOnlyOpen={setOnlyOpen}
+        />
+      )}
+    </>
+  );
+}
+
+function CheckinList({
+  legId,
+  canWrite,
+  parties,
+  set,
+  search,
+  setSearch,
+  onlyOpen,
+  setOnlyOpen,
+}: {
+  legId: string;
+  canWrite: boolean;
+  parties: CheckinParty[];
+  set: CheckinSet;
+  search: string;
+  setSearch: (v: string) => void;
+  onlyOpen: boolean;
+  setOnlyOpen: (v: boolean) => void;
+}) {
+  const t = useTranslations('checkin');
+  const tg = useTranslations('guestDetails');
+  const locale = useLocale();
+  const isArabic = locale.startsWith('ar');
+  const errorText = useErrorText();
+  return (
+    <>
       {set.isError && <Alert tone="bad">{errorText(set.error)}</Alert>}
 
       <div className="flex flex-wrap items-end gap-3">

@@ -899,3 +899,15 @@ Migration 0024: a guest's language for guided visits (ISO 639-1, optional; in th
 
 **2026-10-29 · The documents.**
 Per booking: the transfer voucher (arrival and departure transfers, guests on the same flight together) and boarding passes (one per cabin, two to a page, QR code `RD:<ref>:<cabin n>` — nothing personal). Per departure: luggage tags (boarding, eight to a sheet), excursion groups (everyone aboard, by language, for each port visit on the departure's days; on the arrival day only the arrival port), the table plan (each booking at its own tables of the vessel's size; a booking is never split from itself across other parties), the muster list (by station from each cabin's deck; adult and child life jackets) and feedback forms (one per cabin leaving). Per vessel and day: the housekeeping sheet (every cabin departing, arriving, both, staying or vacant from cabin assignments; bookings aboard without a cabin listed apart). None carries passport numbers or money; the on-board login may print all of them for its own vessel. This completes the document library of documents-plan.md § 5 (the guest folio of extras waits for an extras/charges feature).
+
+## Extras E1 — price list and folios
+
+**2026-10-29 · Answers.** The owner took the recommended answers to `folio-plan.md` § 8 (listed in its status).
+
+**2026-10-29 · Model.** Migration 0025: `extra_item` (price list, per vessel or every vessel, category, AR/EN names, price, currency, optional tax line), `vessel.folio_enabled` (off by default) and `folio_currency` (USD), `folio` (one per booking cabin, unique; opened by the first charge; `bill_to`, closing fields and `invoice_id` wait for E2) and `folio_charge`. Charges copy the item's names, price and tax at posting, so price-list changes never touch them. The guest is a name copy, not a key, because a booking's guests are rewritten when names are edited.
+
+**2026-10-29 · Append-only.** No role may update or delete a charge; a mistake gets a void line (opposite quantity and amount, the reason, who and when), at most one per charge. A trigger refuses charges on a folio that is not open, in another currency than the folio, or a void that does not mirror its charge exactly. Voiding locks the folio row, since charges cannot be locked for update. A vessel's folio currency cannot change while it has open folios.
+
+**2026-10-29 · Who.** `folio.view`: owner, reservations, finance, on-board (own vessel only, through the same scope as Check-in). `folio.write`: owner, finance, on-board. The price list and folio settings need `finance`, so they sit in Invoices → Settings beside the tax lines. The on-board login now sees extras prices; still no cabin prices, balances or booking payments. A manual charge ("Other amount") takes the company's default tax line.
+
+**2026-10-29 · Not yet.** Cancelling a cabin or a booking with an open folio does not touch the folio; E2 closes it to the payer before anything is lost. Demo data: a 13-item price list and a few charges on the next departure (seed-demo, once).

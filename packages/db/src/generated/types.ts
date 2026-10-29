@@ -486,6 +486,22 @@ export interface Exception {
   updated_at: Generated<Timestamp>;
 }
 
+export interface ExtraItem {
+  active: Generated<boolean>;
+  category: string;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  id: Generated<string>;
+  name_ar: string;
+  name_en: string;
+  operator_id: string;
+  price: bigint;
+  sort_order: Generated<number>;
+  tax_rate_id: string | null;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string | null;
+}
+
 export interface FinanceSetting {
   address_ar: string | null;
   address_en: string | null;
@@ -511,6 +527,50 @@ export interface FinanceSetting {
   operator_id: string;
   tax_registration_no: string | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface Folio {
+  bill_to: Generated<string>;
+  booking_cabin_id: string;
+  booking_id: string;
+  closed_at: Timestamp | null;
+  closed_by: string | null;
+  created_at: Generated<Timestamp>;
+  currency: string;
+  id: Generated<string>;
+  invoice_id: string | null;
+  opened_at: Generated<Timestamp>;
+  opened_by: string | null;
+  operator_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Timestamp>;
+  vessel_id: string;
+}
+
+export interface FolioCharge {
+  amount: bigint;
+  category: string;
+  charged_on: string;
+  currency: string;
+  description_ar: string;
+  description_en: string;
+  extra_item_id: string | null;
+  folio_id: string;
+  guest_name: string | null;
+  id: Generated<string>;
+  note: string | null;
+  operator_id: string;
+  posted_at: Generated<Timestamp>;
+  posted_by: string | null;
+  quantity: number;
+  tax_bps: number | null;
+  tax_inclusive: boolean | null;
+  tax_name_ar: string | null;
+  tax_name_en: string | null;
+  tax_rate_id: string | null;
+  unit_amount: bigint;
+  void_reason: string | null;
+  voids_charge_id: string | null;
 }
 
 export interface Guest {
@@ -1104,6 +1164,8 @@ export interface Vessel {
   code: string;
   created_at: Generated<Timestamp>;
   dinner_time: string | null;
+  folio_currency: Generated<string>;
+  folio_enabled: Generated<boolean>;
   id: Generated<string>;
   luggage_time: string | null;
   lunch_time: string | null;
@@ -1200,7 +1262,10 @@ export interface DB {
   document_counter: DocumentCounter;
   event: Event;
   exception: Exception;
+  extra_item: ExtraItem;
   finance_setting: FinanceSetting;
+  folio: Folio;
+  folio_charge: FolioCharge;
   guest: Guest;
   guest_info_setting: GuestInfoSetting;
   hold: Hold;

@@ -13,6 +13,8 @@ export default async function CheckinPage() {
         canWrite={profile.permissions.includes('checkin.write')}
         canPassports={profile.permissions.includes('manifests')}
         canFleet={profile.permissions.includes('fleet.write')}
+        canFolio={profile.permissions.includes('folio.view')}
+        canFolioWrite={profile.permissions.includes('folio.write')}
         onboard={profile.role === 'onboard'}
       />
     </>

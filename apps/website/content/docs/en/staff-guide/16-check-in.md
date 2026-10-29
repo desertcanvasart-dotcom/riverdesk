@@ -42,7 +42,26 @@ Owners set each vessel's **on-board email** at the bottom of the screen and, if 
 
 ## The on-board login
 
-Invite the vessel's purser or receptionist with the role **On board** and choose their vessel (**Settings → People**). They see only **Check-in**, only for that vessel: no prices, balances or payments, and no other screen. They can tick guests in and download that vessel's check-in documents.
+Invite the vessel's purser or receptionist with the role **On board** and choose their vessel (**Settings → People**). They see only **Check-in**, only for that vessel: no cabin prices, balances or payments, and no other screen. They can tick guests in, download that vessel's check-in documents and charge extras to the cabins' folios.
+
+## Folios: extras on board
+
+When a vessel keeps folios, a departure has two tabs: **Check-in** and **Folios**. **Folios** shows every cabin aboard with what it has spent so far, and the total for the departure.
+
+![A cabin's folio](/screens/{locale}/guide-folios.jpg 'A cabin's folio: the price list at the top, the charges underneath.')
+
+Tap a cabin to open its folio:
+
+- **Add a charge:** choose the category (Bar, Laundry, Spa…), tap the item, set how many with − and +, pick the guest if you want, then **Add**. **Other amount** is for something not on the price list: type what it is and the price.
+- **Void:** a charge posted by mistake is voided with a reason. It stays on the folio, crossed out, with who voided it and why; nothing is ever deleted.
+
+The folio opens with its first charge. Charges are in the vessel's folio currency and keep the price they were posted at, even if the price list changes later. Every charge and void records who did it and when.
+
+The price list, the vessels that keep folios and their currency are set by owners and finance staff in **Invoices → Settings → Extras on board**. Each item has a category, an Arabic and English name, a price, the vessel it is sold on (or every vessel) and, if you use them, a tax line.
+
+![Extras on board](/screens/{locale}/guide-extras-settings.jpg 'The price list in Invoices → Settings.')
+
+Closing a folio, taking payment at reception and printing the guest's folio come next.
 
 ## Where the details come from
 

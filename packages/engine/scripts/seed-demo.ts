@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { loadConfig, required, systemActor } from '@vs/shared';
 import {
   createDemoActivity,
+  createDemoFolios,
   createDemoInvoicing,
   createDemoOperations,
   createDemoPricing,
@@ -100,6 +101,14 @@ try {
   if (receipts.length === 0) {
     await createDemoInvoicing(db, ctx);
     console.log('demo invoicing: invoices, receipts, a credit note and account codes');
+  }
+  // Extras on board (E1): a price list and a few charges on the next departure, once.
+  const extras = await db.withTenantTx(ctx.operatorId, ctx.actor, ({ db: tx }) =>
+    tx.selectFrom('extra_item').select('id').limit(1).execute(),
+  );
+  if (extras.length === 0) {
+    await createDemoFolios(db, ctx, vesselId);
+    console.log('demo extras: a price list and folios on the next departure');
   }
 } finally {
   await db.close();
