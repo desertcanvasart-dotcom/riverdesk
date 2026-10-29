@@ -1,7 +1,6 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Field, Input } from '../../components/ui';
 import { supabaseBrowser } from '../../lib/supabase-browser';
@@ -17,11 +16,12 @@ export function MfaForm({
   next: string;
 }) {
   const t = useTranslations('mfa');
-  const router = useRouter();
   const supabase = useMemo(() => supabaseBrowser(url, publishableKey), [url, publishableKey]);
   const [factor, setFactor] = useState<{ id: string; qr?: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const submitting = useRef(false);
 
   // Enrolling twice would leave two secrets and show only one (React runs effects twice in dev).
   const started = useRef(false);
@@ -57,14 +57,24 @@ export function MfaForm({
       className="flex flex-col gap-4"
       onSubmit={async (event) => {
         event.preventDefault();
-        if (!factor) return;
+        // The 6th digit submits on its own; a click on Verify right after must not send it twice.
+        if (!factor || submitting.current) return;
+        submitting.current = true;
         setBusy(true);
+        setError(null);
         const code = String(new FormData(event.currentTarget).get('code')).trim();
-        const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
-        setBusy(false);
-        if (error) return setError(t('failed'));
-        router.replace(next);
-        router.refresh();
+        const { error } = await supabase.auth.mfa
+          .challengeAndVerify({ factorId: factor.id, code })
+          .catch((thrown: unknown) => ({ error: thrown }));
+        if (error) {
+          submitting.current = false;
+          setBusy(false);
+          return setError(t('failed'));
+        }
+        // Stay busy and load the next page in full: the first dashboard load can take seconds,
+        // and a soft navigation left the form looking as if nothing had happened.
+        setDone(true);
+        window.location.assign(next);
       }}
     >
       {factor?.qr ? (
@@ -101,12 +111,13 @@ export function MfaForm({
           dir="ltr"
           // Six digits typed or pasted: verify without a click.
           onChange={(e) => {
-            if (/^[0-9]{6}$/.test(e.currentTarget.value.trim()) && !busy)
+            if (/^[0-9]{6}$/.test(e.currentTarget.value.trim()))
               e.currentTarget.form?.requestSubmit();
           }}
         />
       </Field>
       {error && <Alert tone="bad">{error}</Alert>}
+      {done && <Alert tone="ok">{t('opening')}</Alert>}
       <Button type="submit" disabled={busy || !factor}>
         {t('submit')}
       </Button>
