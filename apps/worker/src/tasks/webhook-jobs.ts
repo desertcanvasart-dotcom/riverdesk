@@ -94,24 +94,46 @@ export async function sendWebhook(
   }
 }
 
-/** Fan out new events, then send what is due, for one operator. */
-export async function runWebhooks(db: VsDatabase, ctx: EngineContext, fetchImpl?: typeof fetch) {
+/**
+ * Deliveries sent at the same time. A batch holds at most one per endpoint and resource, so order
+ * per resource holds; a batch (3 rounds of 10 s at worst) stays well inside the 2-minute lease.
+ */
+const PARALLEL = 5;
+/** No new batch is claimed after this; the rest is sent on the next run (every minute). */
+const RUN_BUDGET_MS = 20_000;
+
+/**
+ * Fan out new events, then send what is due, for one operator: in parallel, and only for about
+ * RUN_BUDGET_MS, so a receiver that times out (10 s an attempt) cannot hold the job for long.
+ */
+export async function runWebhooks(
+  db: VsDatabase,
+  ctx: EngineContext,
+  fetchImpl?: typeof fetch,
+  budgetMs = RUN_BUDGET_MS,
+) {
   const { created } = await dispatchWebhooks(db, ctx);
+  const deadline = Date.now() + budgetMs;
   let sent = 0;
   let failed = 0;
-  for (;;) {
-    const due = await claimDueDeliveries(db, ctx, 50);
+  while (Date.now() < deadline) {
+    const due = await claimDueDeliveries(db, ctx, PARALLEL * 3);
     if (due.length === 0) break;
-    for (const delivery of due) {
-      const result = await sendWebhook(delivery, { fetchImpl });
-      await recordDeliveryAttempt(db, ctx, {
-        deliveryId: delivery.deliveryId,
-        attempt: delivery.attempt,
-        ...result,
-      });
-      if (result.error) failed += 1;
-      else sent += 1;
-    }
+    const queue = [...due];
+    await Promise.all(
+      Array.from({ length: Math.min(PARALLEL, queue.length) }, async () => {
+        for (let delivery = queue.shift(); delivery; delivery = queue.shift()) {
+          const result = await sendWebhook(delivery, { fetchImpl });
+          await recordDeliveryAttempt(db, ctx, {
+            deliveryId: delivery.deliveryId,
+            attempt: delivery.attempt,
+            ...result,
+          });
+          if (result.error) failed += 1;
+          else sent += 1;
+        }
+      }),
+    );
   }
   return { created, sent, failed };
 }

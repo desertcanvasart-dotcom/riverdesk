@@ -2,7 +2,7 @@ import 'server-only';
 import { createHmac } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import pg from 'pg';
-import { loadConfig, required, roleConnection } from '@vs/shared';
+import { loadConfig, required, roleConnection, SMTP_TIMEOUTS } from '@vs/shared';
 import { normaliseWhatsApp, type PilotInput } from './pilot';
 
 let pool: pg.Pool | undefined;
@@ -85,7 +85,7 @@ export async function notifyPilotRequest(input: PilotInput, locale: string, id: 
   ]
     .filter(([, value]) => value)
     .map(([label, value]) => `${label}: ${value}`);
-  await nodemailer.createTransport(config.SMTP_URL).sendMail({
+  await nodemailer.createTransport({ url: config.SMTP_URL, ...SMTP_TIMEOUTS }).sendMail({
     from: config.MAIL_FROM ?? 'Riverdesk <no-reply@riverdsk.com>',
     to,
     replyTo: input.email.trim() || undefined,

@@ -228,4 +228,34 @@ describe('webhooks', () => {
     ).size;
     expect(applied).toBeLessThanOrEqual(distinct);
   });
+
+  it('sends in parallel, and claims nothing more once its time is up', async () => {
+    let inFlight = 0;
+    let most = 0;
+    const slow: typeof fetch = async (input, init) => {
+      inFlight += 1;
+      most = Math.max(most, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      try {
+        return await fetch(input, init);
+      } finally {
+        inFlight -= 1;
+      }
+    };
+    const ids = await Promise.all([book(), book(), book()]);
+    // Out of time: events are fanned out, but no delivery is claimed or sent.
+    for (const deadline = Date.now() + 5_000; Date.now() < deadline;) {
+      const result = await runWebhooks(db, ctx, slow, 0);
+      expect(result.sent + result.failed).toBe(0);
+      const { rows } = await owner().query<{ n: number }>(
+        `select count(*)::int as n from vs.webhook_delivery where operator_id = $1 and resource_id = any($2) and status = 'pending'`,
+        [ctx.operatorId, ids],
+      );
+      if (rows[0]!.n >= 3) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const result = await runWebhooks(db, ctx, slow);
+    expect(result.sent).toBeGreaterThanOrEqual(3);
+    expect(most).toBeGreaterThan(1);
+  });
 });

@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { quickAddJob, runOnce } from 'graphile-worker';
+import { parseCrontab, quickAddJob, runOnce } from 'graphile-worker';
 import { createOperator, owner, testConfig } from '@vs/db/testing';
 import { openDatabase, type VsDatabase } from '@vs/engine';
 import { connectionString, createLogger, roleConnection } from '@vs/shared';
-import { buildTaskList, startWorker } from '../src/worker';
+import { buildTaskList, CRONTAB, startWorker } from '../src/worker';
 
 const logger = createLogger('worker-test', { level: 'silent' });
 
@@ -19,6 +19,20 @@ describe('worker', () => {
 
   afterAll(async () => {
     await db.close();
+  });
+
+  it('every cron job runs alone (its own queue and key); only jobs safe to repeat are retried', () => {
+    const items = parseCrontab(CRONTAB);
+    for (const item of items)
+      expect(item.options, item.task).toMatchObject({ queueName: item.task, jobKey: item.task });
+    expect(items.filter((i) => (i.options.maxAttempts ?? 1) > 1).map((i) => i.task)).toEqual([
+      'assign_cabins',
+      'erase_passports',
+      'analytics_snapshot',
+    ]);
+    // What emails or cancels is never retried and never catches up twice in a run.
+    for (const task of ['outage_pack', 'overdue_balances', 'checkin_packs', 'webhooks'])
+      expect(items.find((i) => i.task === task)!.options.maxAttempts, task).toBe(1);
   });
 
   it('boots as vs_worker and registers the nightly_invariants cron job', async () => {

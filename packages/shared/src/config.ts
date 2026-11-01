@@ -134,6 +134,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return parsed.data;
 }
 
+/**
+ * Timeouts for every outgoing SMTP connection (nodemailer waits minutes by default): a slow mail
+ * server must not hold a worker slot or a visitor's request.
+ */
+export const SMTP_TIMEOUTS = {
+  connectionTimeout: 15_000,
+  greetingTimeout: 15_000,
+  socketTimeout: 30_000,
+} as const;
+
 export function required<K extends keyof Config>(config: Config, key: K): NonNullable<Config[K]> {
   const value = config[key];
   if (value === undefined || value === null || value === '') {
