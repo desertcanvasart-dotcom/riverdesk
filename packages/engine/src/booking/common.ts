@@ -596,7 +596,7 @@ async function flagAgeMismatches(
   ctx: EngineContext,
   bookingId: string,
   guests: GuestInput[],
-  cabins: { id: string; seq: number; child_ages: number[] }[],
+  cabins: { id: string; seq: number; adults: number; child_ages: number[] }[],
 ) {
   const booking = await tx
     .selectFrom('booking as b')
@@ -619,11 +619,16 @@ async function flagAgeMismatches(
       : String(child.bands.findIndex((b) => age >= b.age_from && age <= b.age_to));
   const mismatches: { cabin: number; quoted: number[]; actual: number[] }[] = [];
   for (const cabin of cabins) {
-    const quoted = cabin.child_ages.map(band);
-    const actual = guests
-      .filter((g) => g.cabin === cabin.seq && g.dateOfBirth)
-      .map((g) => ageOn(g.dateOfBirth!, embark))
-      .filter((age) => age < child.adult_from_age);
+    // Every dated guest against the quoted bands, adults included: a child quoted at 11 who is
+    // 12 on embarkation takes an adult place that was not quoted. Guests without a date of birth
+    // are taken as adults (a child's price needs an age) and fill the adult places first.
+    const inCabin = guests.filter((g) => g.cabin === cabin.seq);
+    const undated = inCabin.filter((g) => !g.dateOfBirth).length;
+    const quoted = [
+      ...cabin.child_ages.map(band),
+      ...Array<string>(Math.max(cabin.adults - undated, 0)).fill('adult'),
+    ];
+    const actual = inCabin.filter((g) => g.dateOfBirth).map((g) => ageOn(g.dateOfBirth!, embark));
     const unmatched = actual.filter((age) => {
       const i = quoted.indexOf(band(age));
       if (i < 0) return true;
@@ -637,7 +642,7 @@ async function flagAgeMismatches(
   await openException(tx, ctx, {
     kind: 'guest_age_mismatch',
     severity: 'warning',
-    summary: `Booking ${booking.ref}: a child's date of birth falls in a different price band than quoted`,
+    summary: `Booking ${booking.ref}: a guest's date of birth falls in a different price band than quoted`,
     refs: [{ entity: 'booking', id: bookingId }],
     details: { mismatches },
     dedupeKey: `guest_age_mismatch:${bookingId}`,

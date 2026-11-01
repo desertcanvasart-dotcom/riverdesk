@@ -122,13 +122,28 @@ export async function recordPayment(
       ctx,
       { scopeId: peek.channel_id, key: data.requestKey, action: 'payment.record', input: data },
       async () => {
+        // Lock order: the payment hold, then the booking (as confirmPaymentHoldInTx and the
+        // expiry job), and only then read what is paid, so two payments at once see each other.
+        await tx
+          .selectFrom('hold')
+          .select('id')
+          .where('booking_id', '=', peek.id)
+          .where('kind', '=', 'payment')
+          .forUpdate()
+          .execute();
+        const current = await tx
+          .selectFrom('booking')
+          .selectAll()
+          .where('id', '=', peek.id)
+          .forUpdate()
+          .executeTakeFirstOrThrow();
         const amountInBooking = bookingAmount(
           data.amount,
           data.currency,
-          peek.currency,
+          current.currency,
           data.fxRate,
         );
-        const reachesDeposit = peek.amount_paid + amountInBooking >= peek.deposit_amount;
+        const reachesDeposit = current.amount_paid + amountInBooking >= current.deposit_amount;
         const hadPaymentHold = await tx
           .selectFrom('hold')
           .select('id')
@@ -137,7 +152,7 @@ export async function recordPayment(
           .executeTakeFirst();
 
         let outcome: 'recorded' | 'confirmed' | 'paid_unavailable' = 'recorded';
-        if (peek.status === 'held' && reachesDeposit) {
+        if (current.status === 'held' && reachesDeposit) {
           // Holds before bookings: confirmPaymentHoldInTx guards the hold row first.
           try {
             await confirmPaymentHoldInTx(tx, ctx, peek.id);
@@ -148,21 +163,19 @@ export async function recordPayment(
             // A closed sailing: the money is recorded, the booking flagged, never confirmed.
             outcome = await retakeOrFlag(tx, ctx, peek.id, { releaseActive: closed });
           }
-        } else if (peek.status === 'expired' && hadPaymentHold && reachesDeposit) {
+        } else if (current.status === 'expired' && hadPaymentHold && reachesDeposit) {
           outcome = await retakeOrFlag(tx, ctx, peek.id);
         } else if (
           !['held', 'expired', 'confirmed', 'completed', 'paid_unavailable'].includes(
-            peek.status,
+            current.status,
           ) ||
-          (peek.status === 'expired' && !hadPaymentHold)
+          (current.status === 'expired' && !hadPaymentHold)
         ) {
           throw new DomainError('INVALID_STATE', {
-            message: `Payments cannot be recorded on a ${peek.status} booking`,
+            message: `Payments cannot be recorded on a ${current.status} booking`,
           });
         }
 
-        // Lock the booking row for the ledger update (after any hold work above).
-        await tx.selectFrom('booking').select('id').where('id', '=', peek.id).forUpdate().execute();
         const receipt = await insertBookingReceipt(tx, ctx, {
           bookingId: peek.id,
           kind: 'receipt',
@@ -180,7 +193,7 @@ export async function recordPayment(
           method: data.method,
           amount: data.amount,
           currency: data.currency,
-          fxRate: data.currency === peek.currency ? null : data.fxRate!,
+          fxRate: data.currency === current.currency ? null : data.fxRate!,
           bookingAmount: amountInBooking,
           reference: data.reference,
           receivedOn: data.receivedOn,

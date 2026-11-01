@@ -445,6 +445,33 @@ describe('holds and confirmation', () => {
     expect(flagged.rows[0].details.mismatches[0]).toMatchObject({ quoted: [7], actual: [2] });
   });
 
+  it('a child quoted at 11 who is 12 on embarkation is flagged: an adult place was not quoted', async () => {
+    const sailing = await w.sailing('LXR-4', 70);
+    const { rows } = await owner().query<{ embark: string }>(
+      `select (embark_date - interval '12 years' - interval '10 days')::date::text as embark from vs.sailing where id = $1`,
+      [sailing],
+    );
+    const hold = await createHold(w.db, w.ctx, {
+      channelId: w.channels.nilecrz,
+      quoteId: await w.quote(w.channels.nilecrz, sailing, [{ cat: 'STD', ages: [11] }]),
+      kind: 'checkout',
+    });
+    const booking = await confirmHold(w.db, w.ctx, {
+      holdId: hold.holdId,
+      guests: [
+        // What agents usually send: the child's date of birth only.
+        { cabin: 0, firstName: 'Omar', lastName: 'Saleh', lead: true },
+        { cabin: 0, firstName: 'Hana', lastName: 'Saleh' },
+        { cabin: 0, firstName: 'Nour', lastName: 'Saleh', dateOfBirth: rows[0]!.embark },
+      ],
+    });
+    const flagged = await owner().query(
+      `select details from vs.exception where kind = 'guest_age_mismatch' and refs @> $1::jsonb`,
+      [JSON.stringify([{ entity: 'booking', id: booking.bookingId }])],
+    );
+    expect(flagged.rows[0].details.mismatches[0]).toMatchObject({ quoted: [11], actual: [12] });
+  });
+
   it('guest details close at the manifest cut-off (7 days before embarkation)', async () => {
     const soon = await w.sailing('LXR-4', 0); // embarks within 7 days
     const hold = await createHold(w.db, w.ctx, {

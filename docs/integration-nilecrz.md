@@ -30,6 +30,7 @@ H="Authorization: Bearer $TOKEN"
 curl -s "$API/v1/vessels" -H "$H"
 
 # Free cabins (max 120 days per call). status: instant | on_request | sold_out
+# `free` is the most cabins of that category one booking can take on the sailing.
 curl -s "$API/v1/availability?vessel=$VESSEL&from=2026-11-02&to=2026-11-30" -H "$H"
 
 # Price it: 2 adults and a 7-year-old in a standard cabin

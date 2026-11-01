@@ -119,6 +119,17 @@ describe('payments and exceptions', () => {
     ]);
   });
 
+  it('two part-payments at the same moment that together reach the deposit confirm the booking', async () => {
+    const b = await prepaid('LXR-4', 56);
+    const deposit = BigInt((await booking(b.bookingId)).deposit_amount);
+    const part = mulDivHalfUp(deposit, 6000n, 10000n); // 60% each
+    await Promise.all([pay(w, b.bookingId, part), pay(w, b.bookingId, part)]);
+    expect(await booking(b.bookingId)).toMatchObject({
+      status: 'confirmed',
+      amount_paid: (part * 2n).toString(),
+    });
+  });
+
   it('test 8: payment after the hold expired and the cabin was sold → paid_unavailable, exception, no confirmation', async () => {
     const b = await prepaid('LXR-4', 28, 'RS');
     await expireNow('hold', b.holdId);

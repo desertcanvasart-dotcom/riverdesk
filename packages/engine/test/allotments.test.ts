@@ -3,6 +3,7 @@ import { owner } from '@vs/db/testing';
 import { isDomainError } from '@vs/contracts';
 import {
   cancelBooking,
+  channelAvailability,
   confirmHold,
   createAllotment,
   createHold,
@@ -146,5 +147,46 @@ describe('allotments', () => {
       allotmentId,
     ]);
     expect(rows[0].status).toBe('released');
+  });
+
+  it('availability shows what one booking can take: the larger of allotment and pool, not both', async () => {
+    const sailing = await w.sailing('LXR-4', 63);
+    const [leg] = (await legsOf(sailing)) as [string];
+    const rs = w.demo.categories.RS;
+    // Two royal suites: one in the credit agent's allotment, one left in the pool.
+    await createAllotment(w.db, w.ctx, {
+      channelId: w.agents.credit,
+      vesselId: w.demo.vesselId,
+      legIds: [leg],
+      categories: [{ categoryId: rs, cabins: 1 }],
+    });
+    const embark = (
+      await owner().query<{ d: string }>(
+        `select embark_date::text as d from vs.sailing where id = $1`,
+        [sailing],
+      )
+    ).rows[0]!.d;
+    const shown = await channelAvailability(w.db, w.ctx, {
+      channelId: w.agents.credit,
+      vesselId: w.demo.vesselId,
+      from: embark,
+      to: embark,
+    });
+    const suites = shown.sailings
+      .find((s) => s.sailingId === sailing)!
+      .categories.find((c) => c.categoryId === rs);
+    expect(suites?.free).toBe(1);
+    const two = await createHold(w.db, w.ctx, {
+      channelId: w.agents.credit,
+      quoteId: await w.quote(w.agents.credit, sailing, [{ cat: 'RS' }, { cat: 'RS' }]),
+      kind: 'option',
+    }).catch((e: unknown) => e);
+    expect(isDomainError(two, 'NOT_AVAILABLE')).toBe(true);
+    const one = await createHold(w.db, w.ctx, {
+      channelId: w.agents.credit,
+      quoteId: await w.quote(w.agents.credit, sailing, [{ cat: 'RS' }]),
+      kind: 'option',
+    });
+    await releaseHold(w.db, w.ctx, { holdId: one.holdId });
   });
 });

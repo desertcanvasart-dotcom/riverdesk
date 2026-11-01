@@ -50,7 +50,9 @@ interface FeeRule {
 export type ChangeKind = 'date' | 'category' | 'occupancy' | 'cabins';
 
 /**
- * Amendment fee from the booking's policy snapshot: the highest matching amendment-fee rule, plus
+ * Amendment fee from the booking's policy snapshot. A rule applies "from N days" before
+ * embarkation, like the cancellation tiers: of the rules matching the change, those with the
+ * largest from_days not above the days left apply (the highest fee among them). Plus
  * — when the new total is lower inside a penalty window — the cancellation penalty on the
  * reduction (removed nights or cabins are charged as a cancellation, spec § Amendments).
  */
@@ -65,11 +67,16 @@ export function amendmentFee(options: {
   newTotal: bigint;
   currency: string;
 }): bigint {
+  const days = Math.max(options.days, 0);
+  const matching = (options.policies.amendment_fees ?? []).filter(
+    (rule) =>
+      rule.from_days <= days &&
+      (rule.change_kind === 'any' || options.changes.includes(rule.change_kind as ChangeKind)),
+  );
+  const tier = Math.max(...matching.map((rule) => rule.from_days), -1);
   let ruleFee = 0n;
-  for (const rule of options.policies.amendment_fees ?? []) {
-    if (rule.from_days > Math.max(options.days, 0) && rule.from_days !== 0) continue;
-    if (rule.change_kind !== 'any' && !options.changes.includes(rule.change_kind as ChangeKind))
-      continue;
+  for (const rule of matching) {
+    if (rule.from_days !== tier) continue;
     const fee =
       rule.fee_kind === 'flat'
         ? rule.currency === options.currency

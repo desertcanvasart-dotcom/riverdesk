@@ -290,8 +290,9 @@ export interface ChannelAvailability {
 
 /**
  * Per sailing × contracted category: free = the minimum across the sailing's legs of what this
- * channel can take on that leg (its own unreleased allotment, plus the pool unless the contract
- * is allotment-only); 0 if a leg is not open or stopped; capped by the visible-free cap. The
+ * channel can take on that leg in one booking (its own unreleased allotment or the pool, unless
+ * the contract is allotment-only: the larger, since a booking draws all its cabins of a category
+ * on a leg from one of them); 0 if a leg is not open or stopped; capped by the visible-free cap. The
  * from-price is per person at double occupancy on the cheapest contracted plan.
  */
 export async function channelAvailability(
@@ -319,9 +320,12 @@ export async function channelAvailability(
       with per_leg as (
         select s.id as sailing_id, l.id as leg_id, c.id as category_id,
                bool_or(l.status <> 'open') or bool_or(b.kind = 'pool' and b.stop_sale) or not bool_or(b.kind = 'pool') as blocked,
-               coalesce(sum(case when b.kind = 'pool' and ${contract.allocation} <> 'allotment' then greatest(b.total - b.held - b.booked, 0) else 0 end), 0)
-             + coalesce(sum(case when b.kind = 'allotment' and b.released_at is null and a.channel_id = ${input.channelId} and a.status = 'active'
-                                 then greatest(b.total - b.held - b.booked, 0) else 0 end), 0) as free
+               -- What one booking can take: it draws all its cabins of a category on a leg from
+               -- one bucket (its allotment, else the pool), so the largest bucket, not their sum.
+               greatest(
+                 coalesce(max(case when b.kind = 'pool' and ${contract.allocation} <> 'allotment' then greatest(b.total - b.held - b.booked, 0) end), 0),
+                 coalesce(max(case when b.kind = 'allotment' and b.released_at is null and a.channel_id = ${input.channelId} and a.status = 'active'
+                                   then greatest(b.total - b.held - b.booked, 0) end), 0)) as free
         from vs.sailing s
         join vs.sailing_leg sl on sl.sailing_id = s.id
         join vs.leg l on l.id = sl.leg_id

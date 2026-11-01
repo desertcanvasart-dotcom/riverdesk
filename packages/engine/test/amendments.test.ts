@@ -106,6 +106,27 @@ describe('amendments', () => {
     expect(after.rows[0].quote_id).not.toBe(egp.id);
   });
 
+  it('amendment fee rules apply from N days, like cancellation tiers: the nearest tier wins', () => {
+    const rule = (from_days: number, amount: string, change_kind = 'any') => ({
+      change_kind,
+      from_days,
+      fee_kind: 'flat',
+      amount,
+      currency: 'USD',
+      percent_bps: null,
+    });
+    const policies = {
+      cancellation: { rules: [{ from_days: 0, penalty_bps: 0 }] },
+      amendment_fees: [rule(60, '5000'), rule(0, '20000'), rule(30, '9000', 'category')],
+    };
+    const fee = (days: number, changes: ('date' | 'category')[] = ['date']) =>
+      amendmentFee({ policies, changes, days, oldTotal: 1n, newTotal: 1n, currency: 'USD' });
+    expect(fee(90)).toBe(5000n); // 60+ days: $50, not the $200 of the "from 0 days" tier
+    expect(fee(45)).toBe(20000n); // 0–59 days for a date change
+    expect(fee(45, ['category'])).toBe(9000n); // the 30+ tier that matches the change
+    expect(fee(10, ['category'])).toBe(20000n);
+  });
+
   it('a stale revision is refused with REVISION_CHANGED', async () => {
     const booking = await book('LXR-4', 21, [{ cat: 'STD' }]);
     const first = await quoteAmendment(w.db, w.ctx, {
