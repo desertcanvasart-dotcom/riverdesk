@@ -752,6 +752,7 @@ export interface InvoiceLine {
   booking_cabin_id: string | null;
   booking_id: string | null;
   created_at: Generated<Timestamp>;
+  credits_line_id: string | null;
   description_ar: string;
   description_en: string;
   id: Generated<string>;

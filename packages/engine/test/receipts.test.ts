@@ -465,4 +465,70 @@ describe('invoicing F3: receipts and allocations', () => {
       );
     expect(changed).toBe('42501');
   });
+
+  it('credit refunded to an agency cannot be allocated or reversed again, even at the same moment', async () => {
+    const a = await book(w.agents.credit);
+    const issued = await invoiceFor([a.bookingId]);
+    const party = (await getInvoice(w.db, w.ctx, { invoiceId: issued.invoiceId })).party;
+    const free = async () =>
+      (await getPartyAccount(w.db, w.ctx, { billingPartyId: party.id })).credit.find(
+        (c) => c.currency === 'USD',
+      )?.free ?? 0n;
+    const refund = (amount: bigint) =>
+      recordPartyRefund(w.db, w.ctx, {
+        billingPartyId: party.id,
+        amount,
+        currency: 'USD',
+        method: 'bank_transfer',
+        reference: `REF-${++n}`,
+        refundedOn: today,
+      });
+    const remit = await recordReceipt(w.db, w.ctx, {
+      billingPartyId: party.id,
+      amount: 5_000n,
+      currency: 'USD',
+      method: 'agency_remittance',
+      reference: 'SWIFT-9',
+      receivedOn: today,
+      allocations: [],
+    });
+    // The party's whole credit, this receipt's 5,000 included, goes back to it.
+    await refund(await free());
+    expect(await free()).toBe(0n);
+    expect(
+      await codeOf(
+        allocateReceipt(w.db, w.ctx, {
+          receiptId: remit.receiptId,
+          invoiceId: issued.invoiceId,
+          amount: 5_000n,
+        }),
+      ),
+    ).toBe('VALIDATION_FAILED');
+    expect(
+      await codeOf(reverseReceipt(w.db, w.ctx, { receiptId: remit.receiptId, reason: 'Bounced' })),
+    ).toBe('INVALID_STATE');
+
+    // A refund and an allocation of the same 3,000 at once: one of them, never both.
+    const again = await recordReceipt(w.db, w.ctx, {
+      billingPartyId: party.id,
+      amount: 3_000n,
+      currency: 'USD',
+      method: 'agency_remittance',
+      reference: 'SWIFT-10',
+      receivedOn: today,
+      allocations: [],
+    });
+    const outcomes = await Promise.all([
+      codeOf(refund(3_000n)),
+      codeOf(
+        allocateReceipt(w.db, w.ctx, {
+          receiptId: again.receiptId,
+          invoiceId: issued.invoiceId,
+          amount: 3_000n,
+        }),
+      ),
+    ]);
+    expect(outcomes.filter((o) => o === 'ok')).toHaveLength(1);
+    expect(await free()).toBe(0n);
+  });
 });

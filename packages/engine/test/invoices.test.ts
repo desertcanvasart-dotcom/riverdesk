@@ -477,6 +477,60 @@ describe('invoicing F1', () => {
       invoice_prefix: 'INV',
     });
   });
+
+  it('credits each line at most up to its own amount, over all credit notes', async () => {
+    const a = await book(w.agents.credit);
+    const b = await book(w.agents.credit);
+    const draft = await createInvoiceDraft(w.db, w.ctx, {
+      type: 'invoice',
+      bookingIds: [a.bookingId, b.bookingId],
+    });
+    const issued = await issueInvoice(w.db, w.ctx, { invoiceId: draft.invoiceId, ...usd });
+    const { lines } = await getInvoice(w.db, w.ctx, { invoiceId: issued.invoiceId });
+    const lineA = lines.find((l) => l.booking_id === a.bookingId)!;
+    const lineB = lines.find((l) => l.booking_id === b.bookingId)!;
+
+    // The same line twice in one note is more than the line.
+    expect(
+      await codeOf(
+        issueCreditNote(w.db, w.ctx, {
+          invoiceId: issued.invoiceId,
+          reason: 'Twice',
+          lines: [
+            { lineId: lineA.id, amount: lineA.amount },
+            { lineId: lineA.id, amount: 1n },
+          ],
+        }),
+      ),
+    ).toBe('VALIDATION_FAILED');
+    // A in full, then A again: refused, though the invoice still has B's amount left.
+    await issueCreditNote(w.db, w.ctx, {
+      invoiceId: issued.invoiceId,
+      reason: 'A cancelled',
+      lines: [{ lineId: lineA.id, amount: lineA.amount }],
+    });
+    expect(
+      await codeOf(
+        issueCreditNote(w.db, w.ctx, {
+          invoiceId: issued.invoiceId,
+          reason: 'A again',
+          lines: [{ lineId: lineA.id, amount: 1n }],
+        }),
+      ),
+    ).toBe('VALIDATION_FAILED');
+    const rest = await issueCreditNote(w.db, w.ctx, {
+      invoiceId: issued.invoiceId,
+      reason: 'B cancelled',
+      lines: [{ lineId: lineB.id, amount: lineB.amount }],
+    });
+    expect(rest.invoiceStatus).toBe('cancelled');
+    const links = await owner().query<{ credits_line_id: string }>(
+      `select cl.credits_line_id from vs.invoice_line cl join vs.invoice cn on cn.id = cl.invoice_id
+       where cn.credits_invoice_id = $1 order by cn.issued_at`,
+      [issued.invoiceId],
+    );
+    expect(links.rows.map((r) => r.credits_line_id)).toEqual([lineA.id, lineB.id]);
+  });
 });
 
 describe('invoicing F1: a company continuing a paper series', () => {

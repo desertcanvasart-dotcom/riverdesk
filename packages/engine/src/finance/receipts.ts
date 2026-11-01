@@ -388,6 +388,32 @@ async function lockReceipt(tx: Tx, receiptId: string) {
   return receipt;
 }
 
+/**
+ * For a party receipt (not a booking's own), locks its billing party before the receipt, so
+ * refunds, allocations and reversals that use the party's free credit take turns and each checks
+ * it under the lock. Lock order: bookings, party, receipt, invoice.
+ */
+async function lockPartyOfReceipt(tx: Tx, receiptId: string) {
+  const peek = await tx
+    .selectFrom('receipt')
+    .select(['billing_party_id', 'booking_id'])
+    .where('id', '=', receiptId)
+    .executeTakeFirst();
+  if (!peek) throw new DomainError('NOT_FOUND', { message: 'Receipt not found' });
+  if (peek.booking_id) return;
+  await tx
+    .selectFrom('billing_party')
+    .select('id')
+    .where('id', '=', peek.billing_party_id)
+    .forUpdate()
+    .execute();
+}
+
+/** The party's free credit in a currency (see partyCredit); callers hold the party lock. */
+async function freeCredit(tx: Tx, partyId: string, currency: string) {
+  return (await partyCredit(tx, partyId)).find((c) => c.currency === currency)?.free ?? 0n;
+}
+
 async function isReversed(tx: Tx, receiptId: string) {
   return Boolean(
     await tx
@@ -461,6 +487,17 @@ async function allocateInTx(
       message: 'More than is left of the receipt',
       details: { left: left.amount.toString(), currency: receipt.currency },
     });
+  // A refund pays back the party's credit, not one receipt: what is left of this receipt may
+  // already have gone back to the party. (A new receipt brings its own credit, so this only
+  // bites on allocating older money; allocateReceipt holds the party lock for it.)
+  if (!receipt.booking_id) {
+    const free = await freeCredit(tx, receipt.billing_party_id, receipt.currency);
+    if (amount > free)
+      throw new DomainError('VALIDATION_FAILED', {
+        message: 'More than the party’s credit (part of it was refunded)',
+        details: { credit: (free > 0n ? free : 0n).toString(), currency: receipt.currency },
+      });
+  }
 
   // A booking's own receipt converts at its payment's rate and pays only that booking.
   let rate: string | null = null;
@@ -883,6 +920,7 @@ export async function allocateReceipt(
   const data = parseInput(allocateReceiptInput, input);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     await lockInvoiceBookings(tx, data.invoiceId);
+    await lockPartyOfReceipt(tx, data.receiptId);
     const receipt = await lockReceipt(tx, data.receiptId);
     return allocateInTx(tx, ctx, receipt, data.invoiceId, data.amount, data.fxRate);
   });
@@ -950,11 +988,23 @@ export async function reverseReceiptInTx(
   receiptId: string,
   reason: string,
 ) {
+  await lockPartyOfReceipt(tx, receiptId);
   const receipt = await lockReceipt(tx, receiptId);
   if (receipt.kind === 'reversal')
     throw new DomainError('INVALID_STATE', { message: 'A reversal cannot be reversed' });
   if (await isReversed(tx, receipt.id))
     throw new DomainError('INVALID_STATE', { message: 'The receipt is already reversed' });
+  // A party's receipt: the part not allocated is the party's credit, and cannot be taken back
+  // once that credit was refunded (reverse the refund first).
+  if (!receipt.booking_id && receipt.kind === 'receipt') {
+    const unallocated = (await receiptRemaining(tx, receipt.id)).amount;
+    const free = await freeCredit(tx, receipt.billing_party_id, receipt.currency);
+    if (unallocated > free)
+      throw new DomainError('INVALID_STATE', {
+        message: 'Part of this receipt was already refunded to the party; it cannot be reversed',
+        details: { unallocated: unallocated.toString(), credit: free.toString() },
+      });
+  }
   const { rows: invoices } = await sql<{ invoice_id: string }>`
     select distinct invoice_id from vs.allocation where receipt_id = ${receipt.id}`.execute(tx);
   for (const { invoice_id } of invoices) {

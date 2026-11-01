@@ -783,7 +783,8 @@ export const creditNoteInput = z.object({
 
 /**
  * Issues a credit note against an issued invoice, in the same currency and at the same rate.
- * Credit note lines carry positive amounts; the invoice's `amount_credited` rises by the credit
+ * Credit note lines carry positive amounts and name the line they credit; no line is credited
+ * beyond its own amount over all credit notes. The invoice's `amount_credited` rises by the credit
  * note total, and a fully credited invoice becomes `cancelled`.
  */
 export async function issueCreditNote(
@@ -854,14 +855,30 @@ export async function issueCreditNote(
       }));
     } else {
       const byId = new Map(original.map((l) => [l.id, l]));
+      // Each line up to its own amount, counting earlier credit notes and this one's other picks.
+      const credited = new Map(
+        (
+          await tx
+            .selectFrom('invoice_line as cl')
+            .innerJoin('invoice as cn', 'cn.id', 'cl.invoice_id')
+            .select(['cl.credits_line_id', sql<string>`sum(cl.amount)::text`.as('amount')])
+            .where('cn.credits_invoice_id', '=', invoice.id)
+            .where('cl.credits_line_id', 'is not', null)
+            .groupBy('cl.credits_line_id')
+            .execute()
+        ).map((r) => [r.credits_line_id!, BigInt(r.amount)]),
+      );
       taxSnapshots = [];
       lines = data.lines.map((pick) => {
         const line = byId.get(pick.lineId);
         if (!line) throw new DomainError('NOT_FOUND', { message: 'Invoice line not found' });
-        if (line.amount <= 0n || pick.amount > line.amount)
+        const left = line.amount - (credited.get(line.id) ?? 0n);
+        if (line.amount <= 0n || pick.amount > left)
           throw new DomainError('VALIDATION_FAILED', {
-            message: `Line ${line.seq + 1} can be credited up to its amount`,
+            message: `Line ${line.seq + 1} can be credited up to what is left of it`,
+            details: { line: line.seq + 1, left: (left > 0n ? left : 0n).toString() },
           });
+        credited.set(line.id, (credited.get(line.id) ?? 0n) + pick.amount);
         taxSnapshots.push(line);
         return {
           kind: line.kind as DraftLine['kind'],
@@ -902,6 +919,7 @@ export async function issueCreditNote(
         operator_id: ctx.operatorId,
         invoice_id: note.id,
         seq,
+        credits_line_id: source.id,
         kind: line.kind,
         booking_id: line.booking_id,
         booking_cabin_id: line.booking_cabin_id,
