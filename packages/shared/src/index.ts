@@ -6,6 +6,7 @@ export * from './db';
 export * from './ids';
 export * from './logger';
 export * from './money';
+export * from './net';
 export * from './redaction';
 export * from './time';
 export * from './tracking';

@@ -1,4 +1,7 @@
+import { lookup, type LookupAddress } from 'node:dns';
+import type { LookupFunction } from 'node:net';
 import type { Task } from 'graphile-worker';
+import { Agent, fetch as undiciFetch } from 'undici';
 import {
   claimDueDeliveries,
   dispatchWebhooks,
@@ -11,15 +14,54 @@ import {
   type EngineContext,
   type VsDatabase,
 } from '@vs/engine';
-import { systemActor, type Logger } from '@vs/shared';
+import {
+  isPublicAddress,
+  loadConfig,
+  systemActor,
+  webhookUrlProblem,
+  type Logger,
+} from '@vs/shared';
 
 const TIMEOUT_MS = 10_000;
 
-/** One HTTP POST, signed; returns the status code or the error. */
-export async function sendWebhook(delivery: DueDelivery, fetchImpl: typeof fetch = fetch) {
+/**
+ * Hosted: connects only to public addresses, checked on the DNS answer used for the connection
+ * itself, so a name that resolves inside (or is switched to an inside address later) is refused.
+ */
+export const publicLookup: LookupFunction = (hostname, options, callback) => {
+  lookup(hostname, { ...options, all: true }, (error, addresses: LookupAddress[]) => {
+    if (error) return callback(error, '', 0);
+    if (addresses.some((a) => !isPublicAddress(a.address)))
+      return callback(
+        Object.assign(new Error(`${hostname} resolves to a private address`), {
+          code: 'EPRIVATEADDR',
+        }),
+        '',
+        0,
+      );
+    if (options.all) return callback(null, addresses);
+    return callback(null, addresses[0]!.address, addresses[0]!.family);
+  });
+};
+const publicOnly = new Agent({ connect: { lookup: publicLookup } });
+const publicFetch = ((url: string, init: RequestInit) =>
+  undiciFetch(url, { ...(init as object), dispatcher: publicOnly })) as unknown as typeof fetch;
+
+/**
+ * One HTTP POST, signed; returns the status code or the error. Redirects are never followed (a
+ * 3xx is a failed attempt). Hosted: https to public addresses only.
+ */
+export async function sendWebhook(
+  delivery: DueDelivery,
+  options: { fetchImpl?: typeof fetch; hosted?: boolean } = {},
+) {
+  const hosted = options.hosted ?? loadConfig().VS_ENV === 'hosted';
+  const fetchImpl = options.fetchImpl ?? (hosted ? publicFetch : fetch);
   const body = JSON.stringify(eventJson(delivery.event));
   const timestamp = Math.floor(Date.now() / 1000);
   const started = Date.now();
+  const problem = webhookUrlProblem(delivery.url, hosted);
+  if (problem) return { statusCode: null, error: problem, durationMs: 0 };
   try {
     const response = await fetchImpl(delivery.url, {
       method: 'POST',
@@ -30,25 +72,30 @@ export async function sendWebhook(delivery: DueDelivery, fetchImpl: typeof fetch
         'x-vs-event-id': delivery.event.eventId,
       },
       body,
+      redirect: 'manual',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     await response.body?.cancel().catch(() => {});
+    const redirected = response.status >= 300 && response.status < 400;
     return {
       statusCode: response.status,
-      error: response.ok ? null : `HTTP ${response.status}`,
+      error: response.ok
+        ? null
+        : redirected
+          ? `HTTP ${response.status} (redirects are not followed)`
+          : `HTTP ${response.status}`,
       durationMs: Date.now() - started,
     };
   } catch (error) {
-    return { statusCode: null, error: (error as Error).message, durationMs: Date.now() - started };
+    // fetch reports "fetch failed"; a refused private address is worth saying.
+    const cause = (error as Error & { cause?: { code?: string; message?: string } }).cause;
+    const message = cause?.code === 'EPRIVATEADDR' ? cause.message! : (error as Error).message;
+    return { statusCode: null, error: message, durationMs: Date.now() - started };
   }
 }
 
 /** Fan out new events, then send what is due, for one operator. */
-export async function runWebhooks(
-  db: VsDatabase,
-  ctx: EngineContext,
-  fetchImpl: typeof fetch = fetch,
-) {
+export async function runWebhooks(db: VsDatabase, ctx: EngineContext, fetchImpl?: typeof fetch) {
   const { created } = await dispatchWebhooks(db, ctx);
   let sent = 0;
   let failed = 0;
@@ -56,7 +103,7 @@ export async function runWebhooks(
     const due = await claimDueDeliveries(db, ctx, 50);
     if (due.length === 0) break;
     for (const delivery of due) {
-      const result = await sendWebhook(delivery, fetchImpl);
+      const result = await sendWebhook(delivery, { fetchImpl });
       await recordDeliveryAttempt(db, ctx, {
         deliveryId: delivery.deliveryId,
         attempt: delivery.attempt,

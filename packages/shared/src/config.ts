@@ -64,6 +64,37 @@ export const envSchema = z.object({
 
 export type Config = z.infer<typeof envSchema>;
 
+/**
+ * Secrets published in .env.example: fine on a laptop, never on the hosted platform, where the
+ * example passport key would encrypt with a known key and the example token secret would let
+ * anyone sign channel API tokens.
+ */
+const EXAMPLE_SECRETS: Partial<Record<keyof Config, string>> = {
+  PASSPORT_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+  API_TOKEN_SECRET: 'bG9jYWwtb25seS10b2tlbi1zZWNyZXQtbm90LWZvci1wcm9kdWN0aW9uIQ==',
+};
+
+/** Hosted: refuses the example secrets and keys made of one repeated byte. */
+function hostedSecretProblems(config: Config): string[] {
+  if (config.VS_ENV !== 'hosted') return [];
+  const problems: string[] = [];
+  for (const [key, example] of Object.entries(EXAMPLE_SECRETS)) {
+    const value = config[key as keyof Config];
+    if (typeof value !== 'string') continue;
+    const bytes = Buffer.from(value, 'base64');
+    if (value === example || bytes.every((b) => b === bytes[0]))
+      problems.push(
+        `${key}: the example value cannot be used when VS_ENV=hosted; generate a real one`,
+      );
+  }
+  for (const entry of (config.PASSPORT_PREVIOUS_KEYS ?? '').split(',')) {
+    const value = entry.slice(entry.indexOf(':') + 1).trim();
+    if (value && value === EXAMPLE_SECRETS.PASSPORT_KEY)
+      problems.push('PASSPORT_PREVIOUS_KEYS: holds the example passport key');
+  }
+  return problems;
+}
+
 export function findRepoRoot(start = process.cwd()): string {
   // The turbopackIgnore comments mark runtime file lookups so Next.js does not bundle the repo.
   let dir = resolve(/*turbopackIgnore: true*/ start);
@@ -97,6 +128,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     );
     throw new Error(`Invalid configuration:\n  ${problems.join('\n  ')}`);
   }
+  const unsafe = hostedSecretProblems(parsed.data);
+  if (unsafe.length) throw new Error(`Invalid configuration:\n  ${unsafe.join('\n  ')}`);
   if (env === process.env) cached = parsed.data;
   return parsed.data;
 }

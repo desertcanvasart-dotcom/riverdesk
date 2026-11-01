@@ -8,6 +8,7 @@ import {
   encryptField,
   fieldKeyring,
   loadConfig,
+  webhookUrlProblem,
   type FieldKeyring,
 } from '@vs/shared';
 import { audit } from '../audit';
@@ -39,6 +40,10 @@ export async function createWebhookEndpoint(
   input: z.input<typeof createWebhookEndpointInput>,
 ) {
   const data = parseInput(createWebhookEndpointInput, input);
+  // Hosted: https to a public host only (the worker checks the address again when sending).
+  const problem = webhookUrlProblem(data.url, loadConfig().VS_ENV === 'hosted');
+  if (problem)
+    throw new DomainError('VALIDATION_FAILED', { message: problem, details: { field: 'url' } });
   const secret = `whsec_${randomBytes(32).toString('base64url')}`;
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     // New endpoints start at the current end of the feed: no back-fill of old events.

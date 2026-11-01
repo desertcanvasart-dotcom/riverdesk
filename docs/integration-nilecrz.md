@@ -91,7 +91,7 @@ Errors share one shape: `{"error":{"code":"NOT_AVAILABLE","message":"…","detai
 
 ## 6. Stay in sync: webhooks and the event feed
 
-**Webhooks.** The company registers your endpoint and gives you its signing secret.
+**Webhooks.** The company registers your endpoint and gives you its signing secret. The endpoint must be `https` on a public address; redirects are not followed, so give the final URL.
 
 - Every event is a POST with these headers:
   - `X-VS-Event-Id: <uuid>`

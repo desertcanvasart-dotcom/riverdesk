@@ -36,4 +36,29 @@ describe('config', () => {
   it('uses plain role names locally', () => {
     expect(roleConnection(loadConfig(base), 'vs_api').user).toBe('vs_api');
   });
+
+  it('hosted: refuses the example secrets from .env.example, which are fine locally', () => {
+    const example = {
+      ...base,
+      PASSPORT_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+      API_TOKEN_SECRET: 'bG9jYWwtb25seS10b2tlbi1zZWNyZXQtbm90LWZvci1wcm9kdWN0aW9uIQ==',
+    };
+    expect(() => loadConfig(example)).not.toThrow();
+    expect(() => loadConfig({ ...example, VS_ENV: 'hosted' })).toThrow(
+      /PASSPORT_KEY[\s\S]*API_TOKEN_SECRET/,
+    );
+    const real = {
+      ...base,
+      VS_ENV: 'hosted',
+      PASSPORT_KEY: Buffer.from(Array.from({ length: 32 }, (_, i) => i * 7 + 1)).toString('base64'),
+      API_TOKEN_SECRET: Buffer.from(Array.from({ length: 32 }, (_, i) => i * 5 + 3)).toString(
+        'base64',
+      ),
+    };
+    expect(() => loadConfig(real)).not.toThrow();
+    // One repeated byte is no key, whatever it is.
+    expect(() =>
+      loadConfig({ ...real, PASSPORT_KEY: Buffer.alloc(32, 9).toString('base64') }),
+    ).toThrow(/PASSPORT_KEY/);
+  });
 });
