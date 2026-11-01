@@ -217,7 +217,8 @@ export const applyAmendmentInput = z.object({
 });
 
 /**
- * One transaction (spec § Amendments): the required cabins per leg × category of the new
+ * One transaction (spec § Amendments). The quote must be on the booking's terms (vessel, market,
+ * rate plan, currency), or VALIDATION_FAILED. The required cabins per leg × category of the new
  * version against the current booking lines; acquire every increase first (booked += n,
  * conditional), then release every decrease; lines on unchanged legs keep their bucket. If any
  * acquisition fails, nothing changes.
@@ -263,6 +264,25 @@ export async function applyAmendment(
         }
         const before = { ...booking, revision: booking.revision - 1 };
         const quote = await useQuote(tx, data.amendmentQuoteId, booking.channel_id);
+        // Only a quote on the booking's own terms, as quoteAmendment prices it: same vessel,
+        // market, rate plan and currency. Any other would reprice the booking on other terms,
+        // mix currencies with what was paid, and carry no fee (a plan change is not a change kind).
+        const terms = await tx
+          .selectFrom('quote')
+          .select(['vessel_id', 'market'])
+          .where('id', '=', quote.id)
+          .executeTakeFirstOrThrow();
+        if (
+          terms.vessel_id !== booking.vessel_id ||
+          terms.market !== booking.market ||
+          quote.ratePlanId !== booking.rate_plan_id ||
+          quote.currency !== booking.currency
+        )
+          throw new DomainError('VALIDATION_FAILED', {
+            message:
+              'The quote is not on this booking’s terms; price the change with an amendment quote',
+            details: { quoteId: quote.id },
+          });
         const contract = await loadContract(tx, quote.contractId);
         const newLegs = await sailingLegs(tx, quote.sailingId);
         const sailing = await tx

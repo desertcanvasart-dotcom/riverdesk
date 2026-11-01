@@ -11,6 +11,7 @@ import {
 } from '../src/index';
 import {
   bookingWorld,
+  cancelSailing,
   counters,
   expireNow,
   lead,
@@ -207,6 +208,42 @@ describe('holds and confirmation', () => {
       ),
     ).toBe('NOT_AVAILABLE');
     await releaseHold(w.db, w.ctx, { holdId: taken.holdId });
+  });
+
+  it('a hold cannot be confirmed once its sailing is cancelled or its contract stops selling', async () => {
+    const sailing = await w.sailing('LXR-4', 63);
+    const hold = await createHold(w.db, w.ctx, {
+      channelId: w.agents.credit,
+      quoteId: await w.quote(w.agents.credit, sailing, [{ cat: 'STD' }]),
+      kind: 'option',
+    });
+    await cancelSailing(w, sailing);
+    expect(await codeOf(confirmHold(w.db, w.ctx, { holdId: hold.holdId, guests: lead }))).toBe(
+      'SAILING_CLOSED',
+    );
+    const after = await owner().query(`select status from vs.hold where id = $1`, [hold.holdId]);
+    expect(after.rows[0].status).toBe('active'); // nothing changed; the hold runs out as usual
+
+    const open = await w.sailing('LXR-4', 56);
+    const option = await createHold(w.db, w.ctx, {
+      channelId: w.agents.credit,
+      quoteId: await w.quote(w.agents.credit, open, [{ cat: 'STD' }]),
+      kind: 'option',
+    });
+    await owner().query(`update vs.channel_contract set stop_sell = true where channel_id = $1`, [
+      w.agents.credit,
+    ]);
+    try {
+      expect(await codeOf(confirmHold(w.db, w.ctx, { holdId: option.holdId, guests: lead }))).toBe(
+        'CONTRACT_FORBIDS',
+      );
+    } finally {
+      await owner().query(
+        `update vs.channel_contract set stop_sell = false where channel_id = $1`,
+        [w.agents.credit],
+      );
+    }
+    await releaseHold(w.db, w.ctx, { holdId: option.holdId });
   });
 
   it('a repeated request key returns the first result; a different body with the same key is refused', async () => {

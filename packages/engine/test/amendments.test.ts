@@ -7,6 +7,7 @@ import {
   applyAmendment,
   confirmHold,
   createHold,
+  createQuote,
   quoteAmendment,
   releaseHold,
 } from '../src/index';
@@ -80,6 +81,29 @@ describe('amendments', () => {
       [booking.bookingId],
     );
     expect(event.rows[0].payload).toMatchObject({ revision: 2, changes: ['date'] });
+  });
+
+  it("refuses a quote that is not on the booking's terms (another market and currency): nothing changes", async () => {
+    const booking = await book('LXR-4', 56, [{ cat: 'STD' }]);
+    const egp = await createQuote(w.db, w.ctx, {
+      channelId: w.channels.nilecrz,
+      sailingId: booking.sailing,
+      market: 'egyptian_resident',
+      cabins: [{ categoryId: w.demo.categories.SUP, adults: 2 }],
+    });
+    expect(egp.currency).toBe('EGP');
+    const refused = await applyAmendment(w.db, w.ctx, {
+      bookingId: booking.bookingId,
+      revision: 1,
+      amendmentQuoteId: egp.id,
+    }).catch((e: unknown) => e);
+    expect(isDomainError(refused, 'VALIDATION_FAILED')).toBe(true);
+    const after = await owner().query(
+      `select revision, currency, quote_id from vs.booking where id = $1`,
+      [booking.bookingId],
+    );
+    expect(after.rows[0]).toMatchObject({ revision: 1, currency: 'USD' });
+    expect(after.rows[0].quote_id).not.toBe(egp.id);
   });
 
   it('a stale revision is refused with REVISION_CHANGED', async () => {

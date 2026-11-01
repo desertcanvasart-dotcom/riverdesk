@@ -935,3 +935,9 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 ## Manager role
 
 **2026-10-29 · Manager.** A sixth staff role, `manager` (migration 0028), for people who run the company day to day without being its owner: everything reservations may do, plus `fleet.write`, `schedule.write`, `rates.write` and `channels.write`. Not company settings or staff (`settings.write`), guest privacy, the pilot dashboard, nor money (`finance`, `analytics.money`, folio charges and settling). Channels hold API secrets and rates move revenue, so a manager signs in with a second factor like owner and finance.
+
+## Audit fixes — confirmations and amendments (H1, H2)
+
+**2026-11-01 · Confirming after the sailing or contract changed.** A hold is checked again when it is confirmed, not only when it is taken. `confirmHold` and `acceptOffer` refuse when the sailing or any of its legs is no longer open (`SAILING_CLOSED`) or the contract has stopped selling or is inactive (`CONTRACT_FORBIDS`); nothing changes and the hold runs out as usual. A prepaid booking's deposit is different: the guest has already booked, so stop-sell does not apply, but a closed sailing does. The payment is recorded, the payment hold is released, and the booking becomes `paid_unavailable` with a critical exception ("paid but its sailing is cancelled") for staff to offer another date or refund. Holds are not released when legs are cancelled; the schedule-change exception already lists them.
+
+**2026-11-01 · Amendment quotes.** `applyAmendment` accepts only a quote on the booking's own terms, the way `quoteAmendment` prices it: same vessel, market, rate plan and currency (`VALIDATION_FAILED` otherwise). A channel could otherwise send any quote of its own, switching market, plan or currency at no fee and mixing currencies with what was already paid.

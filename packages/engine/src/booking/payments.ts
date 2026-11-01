@@ -143,8 +143,10 @@ export async function recordPayment(
             await confirmPaymentHoldInTx(tx, ctx, peek.id);
             outcome = 'confirmed';
           } catch (error) {
-            if (!isDomainError(error, 'HOLD_EXPIRED')) throw error;
-            outcome = await retakeOrFlag(tx, ctx, peek.id);
+            const closed = isDomainError(error, 'SAILING_CLOSED');
+            if (!closed && !isDomainError(error, 'HOLD_EXPIRED')) throw error;
+            // A closed sailing: the money is recorded, the booking flagged, never confirmed.
+            outcome = await retakeOrFlag(tx, ctx, peek.id, { releaseActive: closed });
           }
         } else if (peek.status === 'expired' && hadPaymentHold && reachesDeposit) {
           outcome = await retakeOrFlag(tx, ctx, peek.id);
@@ -241,22 +243,23 @@ async function retakeOrFlag(
   tx: Tx,
   ctx: EngineContext,
   bookingId: string,
+  options: { releaseActive?: boolean } = {},
 ): Promise<'confirmed' | 'paid_unavailable'> {
   // Finish the expiry the worker has not run yet: hold first, its cabins back to the buckets.
-  const stale = await tx
+  // releaseActive (the sailing closed): let the payment hold go even before it expires.
+  let stale = tx
     .updateTable('hold')
-    .set({ status: 'expired', ended_at: sql<Date>`now()` })
+    .set({ status: options.releaseActive ? 'released' : 'expired', ended_at: sql<Date>`now()` })
     .where('booking_id', '=', bookingId)
     .where('kind', '=', 'payment')
-    .where('status', '=', 'active')
-    .where(sql<boolean>`expires_at <= now()`)
-    .returning('id')
-    .execute();
+    .where('status', '=', 'active');
+  if (!options.releaseActive) stale = stale.where(sql<boolean>`expires_at <= now()`);
+  const ended = await stale.returning('id').execute();
   await releaseHoldLines(
     tx,
     ctx,
-    stale.map((h) => h.id),
-    'hold.expired',
+    ended.map((h) => h.id),
+    options.releaseActive ? 'hold.released' : 'hold.expired',
   );
 
   const booking = await tx
@@ -314,7 +317,10 @@ async function retakeOrFlag(
     await openException(tx, ctx, {
       kind: 'paid_unavailable',
       severity: 'critical',
-      summary: `Booking ${booking.ref} was paid after its hold expired and the cabins are no longer available`,
+      summary:
+        error.code === 'SAILING_CLOSED'
+          ? `Booking ${booking.ref} was paid but its sailing is cancelled`
+          : `Booking ${booking.ref} was paid after its hold expired and the cabins are no longer available`,
       refs: [{ entity: 'booking', id: bookingId }],
       details: { reason: error.code, offer_alternative_or_refund: true },
       dedupeKey: `paid_unavailable:${bookingId}`,

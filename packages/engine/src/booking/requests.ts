@@ -331,8 +331,9 @@ export async function offerAlternative(
 export const acceptOfferInput = z.object({ offerId: z.uuid(), requestKey: requestKeySchema });
 
 /**
- * Guard: offer open and its hold active. The booking moves to the alternative; then confirm
- * (credit, channel-collected) or keep the cabins on a payment hold (prepaid).
+ * Guard: offer open, its hold active, the contract still sells and the sailing open. The booking
+ * moves to the alternative; then confirm (credit, channel-collected) or keep the cabins on a
+ * payment hold (prepaid).
  * Lock order: hold, offer, booking, buckets (the expiry job also starts at the hold).
  */
 export async function acceptOffer(
@@ -360,6 +361,9 @@ export async function acceptOffer(
       async () => {
         const quote = await loadQuote(tx, peek.quote_id);
         const contract = await loadContract(tx, quote.contractId);
+        // The offer was made while both were open; either may have closed since.
+        assertContractSells(contract);
+        await assertSailingOpen(tx, quote.sailingId);
         const prepaid = contract.payment_mode === 'vessel_prepaid';
         const hold = await tx
           .updateTable('hold')

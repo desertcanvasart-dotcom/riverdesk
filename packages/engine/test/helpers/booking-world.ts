@@ -1,6 +1,7 @@
 import { owner, testConfig } from '@vs/db/testing';
 import { addDays, type BusinessDate } from '@vs/shared';
 import {
+  applyScheduleException,
   createChannel,
   createContract,
   createQuote,
@@ -127,4 +128,15 @@ export async function expireNow(table: 'hold' | 'offer', id: string) {
     `update vs.${table} set expires_at = now() - interval '1 second' where id = $1`,
     [id],
   );
+}
+
+/** Staff cancel the sailing's first leg (every sailing over that leg is cancelled with it). */
+export async function cancelSailing(world: BookingWorld, sailingId: string) {
+  const [legId] = await legsOf(sailingId);
+  await applyScheduleException(world.db, world.ctx, {
+    vesselId: world.demo.vesselId,
+    kind: 'cancel',
+    legIds: [legId!],
+    reason: 'Departure cancelled',
+  });
 }

@@ -14,6 +14,7 @@ import {
 } from '../src/index';
 import {
   bookingWorld,
+  cancelSailing,
   counters,
   expireNow,
   lead,
@@ -179,6 +180,25 @@ describe('requests and offers', () => {
     );
     expect(guests.rows).toEqual([{ status: 'active' }]); // the lead guest moved to the new cabin
     expect(await codeOf(acceptOffer(w.db, w.ctx, { offerId: offer.offerId }))).toBe('HOLD_EXPIRED');
+  });
+
+  it('an offer on a sailing cancelled since cannot be accepted', async () => {
+    const wanted = await w.sailing('LXR-4', 56);
+    const alternative = await w.sailing('LXR-4', 63);
+    const request = await createRequest(w.db, w.ctx, {
+      channelId: w.agents.onRequest,
+      quoteId: await w.quote(w.agents.onRequest, wanted, [{ cat: 'STD' }]),
+      guests: lead,
+    });
+    const offer = await offerAlternative(w.db, w.ctx, {
+      bookingId: request.bookingId,
+      quoteId: await w.quote(w.agents.onRequest, alternative, [{ cat: 'STD' }]),
+    });
+    await cancelSailing(w, alternative);
+    expect(await codeOf(acceptOffer(w.db, w.ctx, { offerId: offer.offerId }))).toBe(
+      'SAILING_CLOSED',
+    );
+    expect(await statusOf(request.bookingId)).toBe('offered');
   });
 
   it('an offer expires with its hold: the request expires and the cabins return', async () => {

@@ -22,6 +22,7 @@ import {
 } from '../src/index';
 import {
   bookingWorld,
+  cancelSailing,
   counters,
   expireNow,
   lead,
@@ -156,6 +157,27 @@ describe('payments and exceptions', () => {
     );
     expect(event.rowCount).toBe(1);
     expect((await calculateRefund(w.db, w.ctx, { bookingId: b.bookingId })).refundable).toBe(total);
+  });
+
+  it('a deposit paid after the sailing was cancelled is recorded, never confirmed: paid_unavailable, cabin released', async () => {
+    const b = await prepaid('LXR-4', 63);
+    const [leg] = await legsOf(b.sailing);
+    await cancelSailing(w, b.sailing);
+    const deposit = BigInt((await booking(b.bookingId)).deposit_amount);
+    const result = await pay(w, b.bookingId, deposit);
+    expect(result).toMatchObject({ bookingStatus: 'paid_unavailable' });
+    expect(BigInt((await booking(b.bookingId)).amount_paid)).toBe(deposit);
+    const hold = await owner().query(`select status from vs.hold where id = $1`, [b.holdId]);
+    expect(hold.rows[0].status).toBe('released');
+    expect(
+      (await counters(leg!, w.demo.categories.STD)).find((c) => c.kind === 'pool'),
+    ).toMatchObject({ held: 0, booked: 0 });
+    const exception = await owner().query<{ summary: string; details: { reason: string } }>(
+      `select summary, details from vs.exception where dedupe_key = $1`,
+      [`paid_unavailable:${b.bookingId}`],
+    );
+    expect(exception.rows[0]!.details.reason).toBe('SAILING_CLOSED');
+    expect(exception.rows[0]!.summary).toContain('sailing is cancelled');
   });
 
   it('payment on a hold that expired but was not processed yet: the engine finishes the expiry and retakes its own cabin', async () => {

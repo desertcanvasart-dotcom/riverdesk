@@ -273,9 +273,10 @@ export interface ConfirmResult {
 }
 
 /**
- * Guard: hold.status = 'active' AND expires_at > now(). Channels that collect payment themselves,
- * and credit channels, are confirmed at once (held → booked). A prepaid booking keeps its cabins
- * on a payment hold until the deposit arrives (Batch 4 records payments).
+ * Guard: hold.status = 'active' AND expires_at > now(), the contract still sells and the sailing
+ * and all its legs are still open. Channels that collect payment themselves, and credit channels,
+ * are confirmed at once (held → booked). A prepaid booking keeps its cabins on a payment hold
+ * until the deposit arrives (Batch 4 records payments).
  */
 export async function confirmHold(
   db: VsDatabase,
@@ -286,7 +287,7 @@ export async function confirmHold(
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const peek = await tx
       .selectFrom('hold')
-      .select(['channel_id', 'contract_id'])
+      .select(['channel_id', 'contract_id', 'quote_id'])
       .where('id', '=', data.holdId)
       .executeTakeFirst();
     if (!peek) throw new DomainError('NOT_FOUND', { message: 'Hold not found' });
@@ -311,6 +312,10 @@ export async function confirmHold(
             };
         }
         const contract = await loadContract(tx, peek.contract_id);
+        // The hold was taken while both were open; either may have closed since.
+        assertContractSells(contract);
+        const quote = await loadQuote(tx, peek.quote_id);
+        await assertSailingOpen(tx, quote.sailingId);
         const prepaid = contract.payment_mode === 'vessel_prepaid';
         const hold = prepaid
           ? undefined
@@ -323,16 +328,6 @@ export async function confirmHold(
               .where(sql<boolean>`expires_at > now()`)
               .returningAll()
               .executeTakeFirst();
-        const quote = await loadQuote(
-          tx,
-          (
-            await tx
-              .selectFrom('hold')
-              .select('quote_id')
-              .where('id', '=', data.holdId)
-              .executeTakeFirstOrThrow()
-          ).quote_id,
-        );
 
         if (!prepaid) {
           if (!hold) return diagnoseHold(tx, data.holdId);
@@ -451,7 +446,8 @@ export const confirmPaymentHoldInput = z.object({ bookingId: z.uuid() });
 
 /**
  * Confirms a prepaid booking while its payment hold is active (held → booked). Batch 4 calls this
- * when the deposit is recorded; it refuses once the hold has expired.
+ * when the deposit is recorded; it refuses once the hold has expired or the sailing has closed
+ * (SAILING_CLOSED). Stop-sell is not checked: the guest already booked and is paying.
  */
 export async function confirmPaymentHoldInTx(
   tx: Tx,
@@ -460,13 +456,15 @@ export async function confirmPaymentHoldInTx(
 ): Promise<ConfirmResult> {
   const pending = await tx
     .selectFrom('hold')
-    .select('id')
-    .where('booking_id', '=', bookingId)
-    .where('kind', '=', 'payment')
-    .where('status', '=', 'active')
+    .innerJoin('booking', 'booking.id', 'hold.booking_id')
+    .select(['hold.id', 'booking.sailing_id'])
+    .where('hold.booking_id', '=', bookingId)
+    .where('hold.kind', '=', 'payment')
+    .where('hold.status', '=', 'active')
     .executeTakeFirst();
   if (!pending)
     throw new DomainError('HOLD_NOT_ACTIVE', { message: 'The booking has no active payment hold' });
+  await assertSailingOpen(tx, pending.sailing_id);
   const hold = await tx
     .updateTable('hold')
     .set({ status: 'confirmed', ended_at: sql<Date>`now()` })
