@@ -57,7 +57,10 @@ export function ChannelsScreen({
   const revokeSecret = useMutation(
     trpc.channels.revokeSecret.mutationOptions({ onSuccess: () => void refresh() }),
   );
-  const failed = [updateContract, addSecret, revokeSecret].find((m) => m.isError);
+  const setClientActive = useMutation(
+    trpc.channels.setClientActive.mutationOptions({ onSuccess: () => void refresh() }),
+  );
+  const failed = [updateContract, addSecret, revokeSecret, setClientActive].find((m) => m.isError);
   const done = (shown?: { label: string; value: string }) => {
     setOpen(null);
     if (shown) setSecret(shown);
@@ -249,6 +252,9 @@ export function ChannelsScreen({
                       <span className="block text-xs text-muted">
                         {t('rateLimit', { n: k.rateLimitPerMinute })}
                       </span>
+                      {!k.active && (
+                        <span className="block text-xs font-medium text-bad">{t('clientOff')}</span>
+                      )}
                       <ul className="mt-1 flex flex-col gap-1">
                         {k.secrets.map((s) => (
                           <li
@@ -280,6 +286,18 @@ export function ChannelsScreen({
                           onClick={() => addSecret.mutate({ apiClientId: k.id })}
                         >
                           {t('rotate')}
+                        </Button>
+                      )}
+                      {canChannels && (
+                        <Button
+                          variant="ghost"
+                          className="mt-1"
+                          disabled={setClientActive.isPending}
+                          onClick={() =>
+                            setClientActive.mutate({ apiClientId: k.id, active: !k.active })
+                          }
+                        >
+                          {k.active ? t('switchOff') : t('switchOn')}
                         </Button>
                       )}
                     </li>

@@ -10,6 +10,7 @@ import {
   generateSchedule,
   openDatabase,
   revokeApiClientSecret,
+  setApiClientActive,
   type VsDatabase,
 } from '@vs/engine';
 import { addDays, createLogger, systemActor, type BusinessDate } from '@vs/shared';
@@ -210,7 +211,15 @@ describe('channel API v1', () => {
         ),
       );
       expect(both.map((r) => r.statusCode)).toEqual([200, 200]);
+      // A token from the second secret works until that secret is revoked, not until it expires.
+      const fromSecond = { authorization: `Bearer ${both[1]!.json().access_token}` };
+      expect(
+        (await app.inject({ method: 'GET', url: '/v1/vessels', headers: fromSecond })).statusCode,
+      ).toBe(200);
       await revokeApiClientSecret(backoffice, ctx(), { secretId: second.secretId });
+      expect(
+        (await app.inject({ method: 'GET', url: '/v1/vessels', headers: fromSecond })).statusCode,
+      ).toBe(401);
       const revoked = await app.inject({
         method: 'POST',
         url: '/oauth/token',
@@ -222,6 +231,37 @@ describe('channel API v1', () => {
       });
       expect(revoked.statusCode).toBe(401);
       await backoffice.close();
+    });
+    it('a switched-off client gets no token and its current tokens are refused at once', async () => {
+      const backoffice = openDatabase('vs_backoffice', { config: testConfig(), max: 1 });
+      const headers = { authorization: `Bearer ${await token(agent)}` };
+      const apiClientId = (
+        await owner().query<{ id: string }>(`select id from vs.api_client where client_id = $1`, [
+          agent.clientId,
+        ])
+      ).rows[0]!.id;
+      try {
+        await setApiClientActive(backoffice, ctx(), { apiClientId, active: false });
+        expect((await app.inject({ method: 'GET', url: '/v1/vessels', headers })).statusCode).toBe(
+          401,
+        );
+        const refused = await app.inject({
+          method: 'POST',
+          url: '/oauth/token',
+          payload: {
+            grant_type: 'client_credentials',
+            client_id: agent.clientId,
+            client_secret: agent.secret,
+          },
+        });
+        expect(refused.statusCode).toBe(401);
+      } finally {
+        await setApiClientActive(backoffice, ctx(), { apiClientId, active: true });
+        await backoffice.close();
+      }
+      expect((await app.inject({ method: 'GET', url: '/v1/vessels', headers })).statusCode).toBe(
+        200,
+      );
     });
   });
 

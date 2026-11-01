@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { localPath } from '../../../lib/local-path';
 import { supabaseServer } from '../../../server/session';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +10,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
-  const next = request.nextUrl.searchParams.get('next') ?? '/';
-  const target = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  const target = localPath(request.nextUrl.searchParams.get('next')) ?? '/';
   if (code) {
     const supabase = await supabaseServer();
     const { error } = await supabase.auth.exchangeCodeForSession(code);

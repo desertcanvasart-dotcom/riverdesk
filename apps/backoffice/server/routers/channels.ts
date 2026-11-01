@@ -22,6 +22,8 @@ import {
   replayWebhookDeliveryInput,
   revokeApiClientSecret,
   revokeApiClientSecretInput,
+  setApiClientActive,
+  setApiClientActiveInput,
   updateContract,
   updateContractInput,
 } from '@vs/engine';
@@ -58,6 +60,10 @@ export const channelsRouter = router({
   revokeSecret: procedure('channels.write')
     .input(revokeApiClientSecretInput)
     .mutation(({ ctx, input }) => revokeApiClientSecret(backofficeDb(), ctx.engine, input)),
+  /** Off: no new tokens, and current tokens are refused on their next request. */
+  setClientActive: procedure('channels.write')
+    .input(setApiClientActiveInput)
+    .mutation(({ ctx, input }) => setApiClientActive(backofficeDb(), ctx.engine, input)),
   /** Returns the signing secret once. */
   createEndpoint: procedure('channels.write')
     .input(createWebhookEndpointInput)

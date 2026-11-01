@@ -213,7 +213,8 @@ export async function v1Routes(app: FastifyInstance, options: V1Options) {
   const { db } = options;
   const committed = async (route: string) => options.afterCommit?.(route);
 
-  // Every /v1 call: a valid token, then the client's rate limit.
+  // Every /v1 call: a valid token whose secret, client and channel are still active, then the
+  // client's rate limit.
   app.addHook('onRequest', async (request, reply) => {
     const principal = await verifyToken(options.tokenSecret, request.headers.authorization);
     request.principal = principal;
@@ -221,7 +222,12 @@ export async function v1Routes(app: FastifyInstance, options: V1Options) {
       operatorId: principal.operatorId,
       actor: { type: 'channel', id: principal.channelId, label: 'channel-api' },
     };
-    const limit = await consumeRateLimit(db, request.engine, principal.apiClientId);
+    const limit = await consumeRateLimit(
+      db,
+      request.engine,
+      principal.apiClientId,
+      principal.secretId,
+    );
     void reply
       .header('X-RateLimit-Limit', limit.limit)
       .header('X-RateLimit-Remaining', limit.remaining);

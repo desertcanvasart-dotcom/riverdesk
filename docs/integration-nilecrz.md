@@ -10,7 +10,7 @@ This guide takes nilecrz from credentials to a confirmed, amended and cancelled 
 
 ## 2. Authenticate
 
-OAuth 2.0 client credentials. Tokens last 15 minutes; get a new one when you receive `401 UNAUTHENTICATED`.
+OAuth 2.0 client credentials. Tokens last 15 minutes; get a new one when you receive `401 UNAUTHENTICATED`. A token also stops working at once when the secret it was issued for is revoked or the company switches your client off; if a new token is refused too, ask the company.
 
 ```bash
 curl -s -X POST "$API/oauth/token" -u "$CLIENT_ID:$CLIENT_SECRET" -d grant_type=client_credentials

@@ -963,3 +963,9 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 **2026-11-01 · Webhook runs.** Deliveries go out 5 at a time (a batch holds at most one per endpoint and resource, so order per resource holds), and an operator's run claims no new batch after 20 seconds; the rest goes on the next minute. A receiver that times out costs at most a few batches of 10 seconds, inside the 2-minute lease, and the job holds one worker slot at most.
 
 **2026-11-01 · Mail.** Every SMTP connection (worker and website) gives up after 15 s to connect or greet and 30 s of silence, instead of nodemailer's minutes.
+
+## Audit fixes — sign-in redirect and API access (M13, M14)
+
+**2026-11-01 · Where sign-in continues.** The page after the two-step check and after an email link (`next`) is resolved the way a browser resolves it and kept only when it stays on this site (`localPath`); "/\evil.com", "//evil.com" and the like go to the dashboard instead. Before, a prefix check let "/\evil.com" through, and a staff member already past the second step was redirected without typing a code.
+
+**2026-11-01 · Revoking API access.** An access token names the secret it was issued for (`sid`). Every API request checks, in the same round trip as the rate limit, that this secret is not revoked and that the client and its channel are active; otherwise 401. Revoking a secret or switching a client off therefore takes effect on the next request, not when tokens expire. Channels → API clients has Switch off / Switch on (`channels.write`); a switched-off client keeps its secrets, so switching it on again needs no new one. Tokens issued before this change carry no `sid` and are checked for client and channel only, until they expire within 15 minutes.

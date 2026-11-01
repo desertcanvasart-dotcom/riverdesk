@@ -145,6 +145,8 @@ export interface AuthenticatedClient {
   apiClientId: string;
   operatorId: string;
   channelId: string;
+  /** The secret it signed in with: its tokens stop working when that secret is revoked. */
+  secretId: string;
 }
 
 /**
@@ -172,7 +174,7 @@ export async function authenticateClient(
   const given = Buffer.from(hash(secret), 'hex');
   const match = client.secret_hashes.find((h) => timingSafeEqual(Buffer.from(h, 'hex'), given));
   if (!match) return null;
-  await db.withTenantTx(
+  const used = await db.withTenantTx(
     client.operator_id,
     { type: 'channel', id: client.channel_id },
     ({ db: tx }) =>
@@ -180,22 +182,37 @@ export async function authenticateClient(
         .updateTable('api_client_secret')
         .set({ last_used_at: sql<Date>`now()` })
         .where('secret_hash', '=', match)
-        .execute(),
+        .returning('id')
+        .executeTakeFirstOrThrow(),
   );
   return {
     apiClientId: client.api_client_id,
     operatorId: client.operator_id,
     channelId: client.channel_id,
+    secretId: used.id,
   };
 }
 
 /**
- * Fixed one-minute window per client (Postgres-backed). Returns whether this request is allowed
- * and, when it is not, the seconds until the window resets.
+ * Every API request: is the token still good, then the client's rate limit, in one round trip.
+ * A token stops working at once when its secret is revoked, its client is deactivated or its
+ * channel is switched off, not only when it expires. Fixed one-minute window per client
+ * (Postgres-backed); `retryAfter` is the seconds until the window resets.
  */
-export async function consumeRateLimit(db: VsDatabase, ctx: EngineContext, apiClientId: string) {
+export async function consumeRateLimit(
+  db: VsDatabase,
+  ctx: EngineContext,
+  apiClientId: string,
+  /** From the token; tokens issued before it was recorded carry none (they expire in 15 min). */
+  secretId?: string,
+) {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
-    const { rows } = await sql<{ hits: number; limit: number; reset_in: number }>`
+    const { rows } = await sql<{
+      hits: number;
+      limit: number;
+      reset_in: number;
+      active: boolean;
+    }>`
       with hit as (
         insert into vs.rate_limit_counter (operator_id, api_client_id, window_start, hits)
         values (${ctx.operatorId}, ${apiClientId}, date_trunc('minute', now()), 1)
@@ -203,15 +220,53 @@ export async function consumeRateLimit(db: VsDatabase, ctx: EngineContext, apiCl
         returning hits
       )
       select hit.hits, c.rate_limit_per_minute as limit,
-             ceil(extract(epoch from date_trunc('minute', now()) + interval '1 minute' - now()))::int as reset_in
-      from hit, vs.api_client c where c.id = ${apiClientId}`.execute(tx);
-    const row = rows[0]!;
+             ceil(extract(epoch from date_trunc('minute', now()) + interval '1 minute' - now()))::int as reset_in,
+             c.active and ch.active and (${secretId ?? null}::uuid is null or exists (
+               select from vs.api_client_secret s
+               where s.id = ${secretId ?? null}::uuid and s.api_client_id = c.id and s.revoked_at is null)) as active
+      from hit, vs.api_client c join vs.channel ch on ch.id = c.channel_id
+      where c.id = ${apiClientId}`.execute(tx);
+    const row = rows[0];
+    if (!row?.active)
+      throw new DomainError('UNAUTHENTICATED', {
+        message: 'The token is no longer valid (secret revoked or client deactivated)',
+      });
     return {
       allowed: row.hits <= row.limit,
       limit: row.limit,
       remaining: Math.max(0, row.limit - row.hits),
       retryAfter: Math.max(1, row.reset_in),
     };
+  });
+}
+
+export const setApiClientActiveInput = z.object({ apiClientId: z.uuid(), active: z.boolean() });
+
+/**
+ * Switches a client off (or on again). Off: no new tokens, and its current tokens are refused on
+ * their next request. Its secrets are kept, so switching it on again needs no new secret.
+ */
+export async function setApiClientActive(
+  db: VsDatabase,
+  ctx: EngineContext,
+  input: z.input<typeof setApiClientActiveInput>,
+) {
+  const data = parseInput(setApiClientActiveInput, input);
+  return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
+    const client = await tx
+      .updateTable('api_client')
+      .set({ active: data.active })
+      .where('id', '=', data.apiClientId)
+      .returning(['id', 'client_id'])
+      .executeTakeFirst();
+    if (!client) throw new DomainError('NOT_FOUND', { message: 'API client not found' });
+    await audit(tx, ctx.operatorId, ctx.actor, {
+      action: data.active ? 'api_client.activated' : 'api_client.deactivated',
+      entity: 'api_client',
+      entityId: client.id,
+      after: { client_id: client.client_id, active: data.active },
+    });
+    return { apiClientId: client.id, active: data.active };
   });
 }
 
