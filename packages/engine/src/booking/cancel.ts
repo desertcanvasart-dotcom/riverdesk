@@ -67,6 +67,8 @@ export async function cancelBooking(
   db: VsDatabase,
   ctx: EngineContext,
   input: z.input<typeof cancelBookingInput>,
+  /** The overdue job: cancel only while the balance is still unpaid (checked under the lock). */
+  options: { onlyIfUnpaid?: boolean } = {},
 ) {
   const data = parseInput(cancelBookingInput, input);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
@@ -84,16 +86,18 @@ export async function cancelBooking(
         if (peek.status === 'held') return cancelHeld(tx, ctx, data.bookingId, data.reason);
         // Extras charged on board are never lost with the booking (folio-plan.md § 3).
         await settleFoliosBeforeCancel(tx, ctx, data.bookingId);
-        const booking = await tx
+        let cancel = tx
           .updateTable('booking')
           .set({ status: 'cancelled', cancelled_at: sql<Date>`now()`, cancel_reason: data.reason })
           .where('id', '=', data.bookingId)
-          .where('status', '=', 'confirmed')
-          .returningAll()
-          .executeTakeFirst();
+          .where('status', '=', 'confirmed');
+        if (options.onlyIfUnpaid) cancel = cancel.where(sql<boolean>`amount_paid < total + fees`);
+        const booking = await cancel.returningAll().executeTakeFirst();
         if (!booking)
           throw new DomainError('INVALID_STATE', {
-            message: `Only confirmed bookings can be cancelled (this one is ${peek.status})`,
+            message: options.onlyIfUnpaid
+              ? 'The booking is no longer confirmed and unpaid'
+              : `Only confirmed bookings can be cancelled (this one is ${peek.status})`,
           });
 
         const days = await daysBeforeEmbark(tx, booking.sailing_id);

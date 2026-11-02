@@ -1,6 +1,7 @@
 import { openDatabase } from '@vs/engine';
 import {
   createLogger,
+  exitOnUnhandledErrors,
   flushErrorTracking,
   initErrorTracking,
   loadConfig,
@@ -11,6 +12,7 @@ import { buildApp } from './app';
 const config = loadConfig();
 initErrorTracking(config, 'api');
 const logger = createLogger('api', { level: config.LOG_LEVEL });
+exitOnUnhandledErrors(logger);
 const db = openDatabase('vs_api', { config, logger });
 const app = buildApp({
   db,

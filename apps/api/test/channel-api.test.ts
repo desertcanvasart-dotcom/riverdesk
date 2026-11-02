@@ -181,6 +181,22 @@ describe('channel API v1', () => {
         payload: { grant_type: 'password' },
       });
       expect(grant.json()).toEqual({ error: 'unsupported_grant_type' });
+      // A stray "%" in Basic credentials is a bad request, not a server error.
+      const percent = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        headers: { authorization: `Basic ${Buffer.from('vsc_x:50%off').toString('base64')}` },
+        payload: { grant_type: 'client_credentials' },
+      });
+      expect([percent.statusCode, percent.json()]).toEqual([400, { error: 'invalid_request' }]);
+      // Fastify's own refusals keep their status (here: a media type it cannot read).
+      const media = await app.inject({
+        method: 'POST',
+        url: '/oauth/token',
+        headers: { 'content-type': 'application/x-unknown' },
+        payload: 'x',
+      });
+      expect(media.statusCode).toBe(415);
 
       const none = await app.inject({ method: 'GET', url: '/v1/vessels' });
       expect([none.statusCode, none.json().error.code]).toEqual([401, 'UNAUTHENTICATED']);

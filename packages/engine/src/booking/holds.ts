@@ -8,6 +8,7 @@ import { creditExposure, type CreditExposure } from '../finance/receivables';
 import { loadQuote, useQuote, type Quote } from '../pricing/quote';
 import {
   auditBooking,
+  bookingByChannelRef,
   bookingEvent,
   guestSchema,
   holdEvent,
@@ -297,12 +298,7 @@ export async function confirmHold(
       { scopeId: peek.channel_id, key: data.requestKey, action: 'hold.confirm', input: data },
       async () => {
         if (data.channelRef) {
-          const existing = await tx
-            .selectFrom('booking')
-            .select(['id', 'ref', 'status'])
-            .where('channel_id', '=', peek.channel_id)
-            .where('channel_ref', '=', data.channelRef)
-            .executeTakeFirst();
+          const existing = await bookingByChannelRef(tx, peek.channel_id, data.channelRef);
           if (existing)
             return {
               bookingId: existing.id,

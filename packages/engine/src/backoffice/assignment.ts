@@ -259,13 +259,14 @@ export async function erasePassports(db: VsDatabase, ctx: EngineContext) {
             .where(sql<boolean>`s.disembark_date + o.passport_retention_days < ${today}::date`),
         ),
       )
-      .where(
-        sql<boolean>`(passport_ciphertext is not null or date_of_birth is not null
-          or passport_country is not null or passport_expires_on is not null or visa_type is not null
-          or visa_ciphertext is not null or medical_ciphertext is not null or phone is not null
-          or emergency_name is not null or arrival_date is not null or allergies is not null
-          or departure_date is not null or departure_flight is not null
-          or cardinality(dietary) > 0 or occasion is not null or place_of_birth is not null)`,
+      // Any check-in detail still held (the same list erasure clears), so none is missed.
+      .where((eb) =>
+        eb.or([
+          ...Object.keys(ERASED_CHECKIN_DETAILS)
+            .filter((column) => column !== 'dietary')
+            .map((column) => eb(sql.ref(column), 'is not', null)),
+          eb(sql<number>`cardinality(dietary)`, '>', 0),
+        ]),
       )
       .executeTakeFirst();
     const erased = Number(result.numUpdatedRows ?? 0);

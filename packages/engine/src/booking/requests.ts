@@ -7,6 +7,7 @@ import { parseInput, type EngineContext, type Tx } from '../internal';
 import { loadQuote, useQuote } from '../pricing/quote';
 import {
   auditBooking,
+  bookingByChannelRef,
   bookingEvent,
   guestSchema,
   insertBooking,
@@ -55,12 +56,7 @@ export async function createRequest(
       { scopeId: data.channelId, key: data.requestKey, action: 'request.create', input: data },
       async () => {
         if (data.channelRef) {
-          const existing = await tx
-            .selectFrom('booking')
-            .select(['id', 'ref', 'status'])
-            .where('channel_id', '=', data.channelId)
-            .where('channel_ref', '=', data.channelRef)
-            .executeTakeFirst();
+          const existing = await bookingByChannelRef(tx, data.channelId, data.channelRef);
           if (existing)
             return {
               bookingId: existing.id,

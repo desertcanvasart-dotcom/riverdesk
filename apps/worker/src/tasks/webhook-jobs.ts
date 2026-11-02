@@ -15,6 +15,7 @@ import {
   type VsDatabase,
 } from '@vs/engine';
 import {
+  captureError,
   isPublicAddress,
   loadConfig,
   systemActor,
@@ -148,6 +149,7 @@ export function webhooksTask(db: VsDatabase, logger: Logger): Task {
           logger.info({ operatorId, ...result }, 'webhooks');
       } catch (error) {
         logger.error({ err: error, operatorId }, 'webhooks failed for operator');
+        captureError(error, { operatorId, job: 'webhooks' });
       }
     }
   };
@@ -158,7 +160,10 @@ export function pruneRateLimitsTask(db: VsDatabase, logger: Logger): Task {
   return async () => {
     for (const operatorId of await listOperatorIds(db)) {
       await pruneRateLimits(db, { operatorId, actor: systemActor('prune_rate_limits') }).catch(
-        (error: unknown) => logger.error({ err: error, operatorId }, 'prune failed'),
+        (error: unknown) => {
+          logger.error({ err: error, operatorId }, 'prune failed');
+          captureError(error, { operatorId, job: 'prune_rate_limits' });
+        },
       );
     }
   };

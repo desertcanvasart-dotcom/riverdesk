@@ -1009,3 +1009,15 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 **2026-11-02 · Worker image.** The worker runs as the image's unprivileged `node` user. It launches Chromium with its own sandbox and falls back to none, with a warning in the log, where the host does not allow it (Docker's default profile does not, and Railway most likely does not either); JavaScript and network access stay off while rendering either way. Checked in a local build of the image: it renders as `node`, falls back, and recovers after Chromium is killed.
 
 **2026-11-02 · Worker tests and cron leftovers.** The test that starts the real worker clears the cron runs it may schedule, and the per-task job tests run the queue until their own job is done (5 s at most), instead of assuming one pass empties it; a leftover cron job made one of them fail now and then (once in CI, once in six local runs).
+
+## Audit Low fixes — batch 1
+
+**2026-11-02 · Same channel_ref at once.** A confirm or request carrying a channel_ref first takes a transaction lock on (channel, channel_ref), then looks for the existing booking; two calls with the same new reference at once take turns, and the second gets the first's booking (`existing: true`) instead of a raw unique-index 500.
+
+**2026-11-02 · The overdue job.** Automatic cancellation checks, under the booking's lock, that the booking is still confirmed and unpaid (`cancelBooking` with `onlyIfUnpaid`); one paid since the list was read is skipped. Each booking is tried on its own and failures are reported together at the end.
+
+**2026-11-02 · Payment status after a cancellation.** A cancelled booking is `paid` only once what was received covers the penalty and fees; still owing part of the penalty it is `unpaid` (before: any payment showed `paid`).
+
+**2026-11-02 · Smaller ones.** Invoice and credit-note prefixes must differ. The nightly passport erasure looks for any check-in detail it clears (the same list as erasure), so a guest with only a flight or a phone is no longer skipped. An internal error's message no longer reaches the browser from the back office (it stays in the log and Sentry). The Channel API answers a stray `%` in Basic credentials with 400 `invalid_request`, and Fastify's own 4xx (413, 415, …) keep their status. The accountant CSV puts an apostrophe before text a spreadsheet would run as a formula. Webhook and rate-limit pruning failures reach Sentry, and the API and worker exit (after logging and reporting) on an unhandled rejection or uncaught exception, so the host restarts them.
+
+**2026-11-02 · Allocation order.** A receipt's allocations written in one transaction share their time; they are listed oldest sailing first (the order money is spread in), then by id, so the receipt screen and its test no longer change order from run to run.

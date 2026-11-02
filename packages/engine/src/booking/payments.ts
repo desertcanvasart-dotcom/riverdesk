@@ -849,13 +849,32 @@ export async function processOverdueBalances(db: VsDatabase, ctx: EngineContext)
     }
     return { rows, notices };
   });
+  // Each on its own: a booking paid since the list was read is skipped (checked under its lock),
+  // and one that fails does not stop the others; failures are reported at the end.
   let cancelled = 0;
+  let skipped = 0;
+  const failures: unknown[] = [];
   for (const row of flagged.rows.filter((r) => r.auto_cancel)) {
-    await cancelBooking(db, ctx, {
-      bookingId: row.id,
-      reason: 'Balance overdue (automatic cancellation per payment policy)',
-    });
-    cancelled += 1;
+    try {
+      await cancelBooking(
+        db,
+        ctx,
+        {
+          bookingId: row.id,
+          reason: 'Balance overdue (automatic cancellation per payment policy)',
+        },
+        { onlyIfUnpaid: true },
+      );
+      cancelled += 1;
+    } catch (error) {
+      if (isDomainError(error, 'INVALID_STATE')) skipped += 1;
+      else failures.push(error);
+    }
   }
-  return { overdue: flagged.rows.length, notices: flagged.notices, cancelled };
+  if (failures.length > 0)
+    throw new AggregateError(
+      failures,
+      `${failures.length} overdue booking(s) could not be cancelled`,
+    );
+  return { overdue: flagged.rows.length, notices: flagged.notices, cancelled, skipped };
 }

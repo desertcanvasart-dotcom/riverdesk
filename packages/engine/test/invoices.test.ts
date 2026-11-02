@@ -588,6 +588,10 @@ describe('invoicing F1: a company continuing a paper series', () => {
   });
 
   it('starts at the first number and prefix it chose', async () => {
+    // Not the credit notes' prefix: the first credit note would collide with invoice 1.
+    expect(await codeOf(updateFinanceSettings(w.db, w.ctx, { invoicePrefix: 'CN' }))).toBe(
+      'VALIDATION_FAILED',
+    );
     await updateFinanceSettings(w.db, w.ctx, {
       invoicePrefix: 'FAC',
       firstInvoiceNumber: 431,

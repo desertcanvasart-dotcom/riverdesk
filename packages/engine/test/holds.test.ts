@@ -317,6 +317,26 @@ describe('holds and confirmation', () => {
     ]);
     expect(rows[0].status).toBe('active');
     await releaseHold(w.db, w.ctx, { holdId: second.holdId });
+
+    // The same new channel_ref twice at the same moment: one booking, the other call gets it.
+    const holds = await Promise.all(
+      [0, 1].map(async () =>
+        createHold(w.db, w.ctx, {
+          channelId: w.channels.nilecrz,
+          quoteId: await w.quote(w.channels.nilecrz, sailing, [{ cat: 'STD' }]),
+          kind: 'checkout',
+        }),
+      ),
+    );
+    const both = await Promise.all(
+      holds.map((h) =>
+        confirmHold(w.db, w.ctx, { holdId: h.holdId, guests: lead, channelRef: 'NC-1002' }),
+      ),
+    );
+    expect(new Set(both.map((r) => r.bookingId)).size).toBe(1);
+    expect(both.filter((r) => r.existing)).toHaveLength(1);
+    const left = holds.find((_, i) => both[i]!.existing)!;
+    await releaseHold(w.db, w.ctx, { holdId: left.holdId });
   });
 
   it("prepaid: the payment hold follows the company's Unpaid booking held setting", async () => {

@@ -123,6 +123,23 @@ export async function nextBookingRef(tx: Tx): Promise<string> {
   return rows[0]!.ref;
 }
 
+/**
+ * The booking a channel already made under this channel_ref, if any. Two requests with the same
+ * new channel_ref at once take turns on a transaction lock, so the second finds the first's
+ * booking instead of failing on the unique index.
+ */
+export async function bookingByChannelRef(tx: Tx, channelId: string, channelRef: string) {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`channel_ref:${channelId}:${channelRef}`}, 0))`.execute(
+    tx,
+  );
+  return tx
+    .selectFrom('booking')
+    .select(['id', 'ref', 'status'])
+    .where('channel_id', '=', channelId)
+    .where('channel_ref', '=', channelRef)
+    .executeTakeFirst();
+}
+
 export async function insertBooking(
   tx: Tx,
   ctx: EngineContext,
@@ -683,7 +700,8 @@ export async function refreshPaymentTerms(tx: Tx, bookingId: string) {
 
 /**
  * unpaid → deposit_paid → paid while the booking stands; after a cancellation (or when paid but
- * unavailable) refund_due while more was received than is kept, then refunded.
+ * unavailable) refund_due while more was received than is kept, then refunded; paid once what was
+ * received covers the penalty and fees, unpaid while it does not.
  */
 export async function refreshPaymentStatus(tx: Tx, bookingId: string) {
   await sql`
@@ -691,7 +709,9 @@ export async function refreshPaymentStatus(tx: Tx, bookingId: string) {
       when b.status in ('cancelled', 'paid_unavailable') then case
         when b.amount_paid - coalesce(b.penalty_amount, 0) - b.fees > 0 then 'refund_due'
         when exists (select from vs.payment p where p.booking_id = b.id and p.kind = 'refund') then 'refunded'
-        when b.amount_paid > 0 then 'paid'
+        -- Paid only once what was received covers what is kept (penalty and fees): a cancelled
+        -- booking still owing part of its penalty is unpaid.
+        when b.amount_paid > 0 and b.amount_paid >= coalesce(b.penalty_amount, 0) + b.fees then 'paid'
         else 'unpaid' end
       when b.amount_paid >= b.total + b.fees then 'paid'
       when b.deposit_amount > 0 and b.amount_paid >= b.deposit_amount then 'deposit_paid'

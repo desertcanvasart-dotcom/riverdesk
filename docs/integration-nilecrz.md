@@ -6,7 +6,7 @@ This guide takes nilecrz from credentials to a confirmed, amended and cancelled 
 
 - **One API client per cruise company.** nilecrz is a channel of each company it sells for and holds one client per company. Calls with a company's credentials see only that company's vessels, and only what its contract with nilecrz allows: vessels, categories, rate plans, pool or allotment, the visible-free cap, hold TTLs and stop-sell.
 - **Sandbox.** A separate company, "Sandbox Nile Cruises", runs the demo vessel `SANDBOX` with 18 months of schedule and demo prices. The platform team creates its credentials with `pnpm sandbox:setup`.
-- **Base URLs.** `https://api.example.com` is a placeholder until the domain is chosen. Locally the API runs at `http://localhost:4000`.
+- **Base URLs.** `https://api.riverdsk.com` (interactive reference at `/docs`). Locally the API runs at `http://localhost:4000`.
 
 ## 2. Authenticate
 

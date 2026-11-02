@@ -22,8 +22,12 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     const cause = error.cause;
+    // An internal error's own message (a Postgres message quotes values) stays in the server's
+    // log and Sentry; the browser gets a plain one.
+    const internal = error.code === 'INTERNAL_SERVER_ERROR' && !isDomainError(cause);
     return {
       ...shape,
+      message: internal ? 'Something went wrong' : shape.message,
       data: {
         ...shape.data,
         domainCode: isDomainError(cause) ? cause.code : undefined,

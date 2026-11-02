@@ -1,33 +1,29 @@
-# Where we stopped (2026-10-24)
+# Where we stopped (2026-11-02)
 
 This page is written to be read by you, not by a machine. It says what exists, where it is, what is waiting on you, and what the words mean.
 
 ## In one paragraph
 
-The vessel-system MVP is built. All the planned batches (Part 0, then Batches 0 to 7) are finished, tested, and pushed to GitHub, and the automatic checks (CI) pass. The database on Supabase (the "hosted" one) has every change applied, up to migration 0009. What is left is not programming. It is setting up accounts and services that only you can create, then going through the go-live checklist. Point-in-time recovery is now enabled and verified (2026-10-24). Hosting is chosen: **Railway**. The deployment recipes are ready, and your step-by-step guide is `docs/deploy-railway.md`. The domain is **riverdsk.com**: `riverdsk.com` for the website, `app.riverdsk.com` for the back office, `api.riverdsk.com` for the API.
+The vessel-system MVP is built. All the planned batches (Part 0, then Batches 0 to 7) are finished, tested, and pushed to GitHub, and the automatic checks (CI) pass. Since then: invoicing, receipts, finance reports, analytics, documents, folios (extras on board), a manager role and a rebuilt two-step sign-in, then a full code audit (1 November 2026) whose High and Medium findings are all fixed. The database on Supabase (the "hosted" one) has every change applied, up to migration 0031. Point-in-time recovery is enabled and verified (2026-10-24). Everything runs on **Railway** (guide: `docs/deploy-railway.md`). The domain is **riverdsk.com**: `riverdsk.com` for the website, `app.riverdsk.com` for the back office, `api.riverdsk.com` for the API.
 
 ## Exactly where we stopped
 
-You were about to enable point-in-time recovery (PITR) in the Supabase dashboard. When you come back:
+The audit of 1 November 2026 is worked through: every High and Medium finding is fixed and deployed (each fix and its reason is in `docs/decisions.md`, "Audit fixes"). The Low findings are being done in batches. Waiting on you:
 
-1. Tell me whether it is enabled. If it is, say "done".
-2. I will then run two checks:
-   - `supabase backups list --project-ref nwbjuamzkguqmcxsxkkl` must show `"pitr_enabled": true`;
-   - `VS_ENV_FILE=.env.hosted pnpm db:check-roles` must show four `ok` lines.
-3. I will tick the "Backups verified" line in the go-live checklist (`docs/runbook.md`). The other half of that line (a restore drill into a scratch project) stays open.
-
-**What PITR is:** Supabase already keeps one full backup of the database per day. With PITR it also records every change, so after an accident you can restore the database to any minute of the last 7 days, not just to last night's copy. It is a paid add-on and may require a bigger compute size. On the dashboard: Database → Backups → Point in Time.
+1. **Check the worker's logs on Railway** after the last deploy: no database or TLS errors, and one expected warning, "Chromium sandbox unavailable on this host". (The Railway CLI here needs `railway login`.)
+2. **Compare the Supabase root certificate** the code now trusts (`packages/shared/src/tls.ts`) with the one in Supabase → Database settings → SSL: SHA-256 starts `80:70:25:AD` and ends `:CA:FA`.
+3. **Decide the open audit questions** listed in the latest batch report (invoice numbering in January, who may see revenue, invitations).
 
 ## What waits on you (accounts and decisions)
 
-| #   | Item                                                    | Why it matters                                                                                        | My recommendation                                                                                                                           |
-| --- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | ~~Enable PITR~~ **done 2026-10-24**                     | Lets us undo a disaster to the minute, not to last night                                              | 7 days of retention                                                                                                                         |
-| 2   | **Sentry account** (error tracking)                     | When something breaks on the live system, we see it at once, with personal data removed               | One Sentry project per environment. Put the key (`SENTRY_DSN`) in `.env.hosted` yourself, never in chat                                     |
-| 3   | **An email (SMTP) account**                             | The nightly "outage pack" PDF is emailed to the office, so staff can still work if the system is down | Use your mail provider's SMTP. Set `SMTP_URL` and `MAIL_FROM` in `.env.hosted`, and the operations email on the Settings screen             |
-| 4   | **A scratch Supabase project**                          | To rehearse a full restore into a fresh project, as the spec asks                                     | Create it near go-live, run the drill, then delete it                                                                                       |
-| 5   | **Hosting** for the API, the worker and the back office | Today they only run on your Mac. They need a server to run for real                                   | Decide this next. The worker needs a machine that can run Chromium, the built-in browser used to make PDFs                                  |
-| 6   | **The hosted sandbox for nilecrz**                      | A separate test company on the real system, so nilecrz can test their integration                     | Create it when nilecrz is ready (you asked me to wait). The command is ready: `VS_ENV_FILE=.env.hosted pnpm sandbox:setup --confirm-hosted` |
+| #   | Item                                | Why it matters                                                                                        | My recommendation                                                                                                                           |
+| --- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ~~Enable PITR~~ **done 2026-10-24** | Lets us undo a disaster to the minute, not to last night                                              | 7 days of retention                                                                                                                         |
+| 2   | **Sentry account** (error tracking) | When something breaks on the live system, we see it at once, with personal data removed               | One Sentry project per environment. Put the key (`SENTRY_DSN`) in `.env.hosted` yourself, never in chat                                     |
+| 3   | **An email (SMTP) account**         | The nightly "outage pack" PDF is emailed to the office, so staff can still work if the system is down | Use your mail provider's SMTP. Set `SMTP_URL` and `MAIL_FROM` in `.env.hosted`, and the operations email on the Settings screen             |
+| 4   | **A scratch Supabase project**      | To rehearse a full restore into a fresh project, as the spec asks                                     | Create it near go-live, run the drill, then delete it                                                                                       |
+| 5   | ~~**Hosting**~~ **done: Railway**   | The API, worker, back office and website run there                                                    | `docs/deploy-railway.md`                                                                                                                    |
+| 6   | **The hosted sandbox for nilecrz**  | A separate test company on the real system, so nilecrz can test their integration                     | Create it when nilecrz is ready (you asked me to wait). The command is ready: `VS_ENV_FILE=.env.hosted pnpm sandbox:setup --confirm-hosted` |
 
 After those comes the **go-live checklist** at the end of `docs/runbook.md`: rotate secrets, MFA, roles, backups, monitoring, outage pack, worker, nilecrz test, pilot import, staff training, pilot dashboard.
 
@@ -38,7 +34,7 @@ The code lives in one repository (`github.com/desertcanvasart-dotcom/riverdesk`)
 | Part            | Folder               | What it is                                                                                                                                                                                                          | Who uses it                   |
 | --------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | **Engine**      | `packages/engine`    | The brain: every rule (availability, prices, holds, bookings, payments, cancellations, documents). Nothing writes to the database except through it.                                                                | Everything below              |
-| **Database**    | `packages/db`        | The tables (made by "migrations" 0001–0009), the security roles, and test helpers                                                                                                                                   | The engine                    |
+| **Database**    | `packages/db`        | The tables (made by "migrations" 0001–0031), the security roles, and test helpers                                                                                                                                   | The engine                    |
 | **Back office** | `apps/backoffice`    | The website staff use: Today, New booking, Bookings, Requests, Inventory, Schedule, Rates, Channels, Payments, Guests & manifests, Vacancy sheet, Settings, Pilot. Arabic and English, works on a phone.            | Your reservations staff       |
 | **Channel API** | `apps/api`           | The door for nilecrz and other agencies' systems to check availability and book automatically. Documented at `/docs`.                                                                                               | nilecrz's developers          |
 | **Worker**      | `apps/worker`        | A program that runs in the background, all the time: expires holds, releases allotments, sends webhooks to channels, makes PDFs, assigns cabins, erases old passports, sends alerts, emails the nightly outage pack | Nobody directly. It just runs |
@@ -57,7 +53,7 @@ The code lives in one repository (`github.com/desertcanvasart-dotcom/riverdesk`)
 
 ## The public website
 
-The homepage and docs run at http://localhost:3200 (Arabic at `/ar`, English at `/en`) with `pnpm --filter @vs/website dev`. It is a separate site with no login and no database, so it can be put online on its own. Choosing hosting and a domain for it is part of item 5 above.
+The homepage and docs (Arabic at `/ar`, English at `/en`) run at https://www.riverdsk.com, and locally at http://localhost:3200 with `pnpm --filter @vs/website dev`. It has no login. Its only database access is its own role, which can do one thing: record a pilot request from the form (and email it to you).
 
 ## How to look at it on your Mac
 
@@ -69,7 +65,7 @@ The homepage and docs run at http://localhost:3200 (Arabic at `/ar`, English at 
 ## Words you will see
 
 - **Batch**: a chunk of work, ended by a report. All of them (Part 0 and Batches 0–7) are done.
-- **Migration**: a numbered file that changes the database's structure. There are 0001 to 0009, all applied to hosted.
+- **Migration**: a numbered file that changes the database's structure. There are 0001 to 0031, all applied to hosted.
 - **Hosted vs local**: hosted is the real Supabase project in the cloud (Ireland, eu-west-1); local is the copy on your Mac. Hosted passwords are in `.env.hosted`, which never leaves your machine and is never printed.
 - **CI**: GitHub runs all checks and tests on every push. Green means everything passed.
 - **RLS (row-level security)**: the database itself stops one cruise company from ever seeing another's data.
@@ -86,7 +82,7 @@ The homepage and docs run at http://localhost:3200 (Arabic at `/ar`, English at 
 
 ## Numbers at the stop
 
-- 259 automated tests, all passing; CI green on the final commit.
+- 488 automated tests, all passing; CI green on the final commit (2026-11-02).
 - Performance, with 21 vessels and 18 months of schedule (targets in brackets):
 
 | Measure                    | p95 (95% of requests faster than this) | Target       |

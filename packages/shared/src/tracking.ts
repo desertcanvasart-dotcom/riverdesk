@@ -78,3 +78,20 @@ export function captureAlert(name: string, context: Record<string, unknown> = {}
 export function flushErrorTracking(timeoutMs = 2000): Promise<boolean> {
   return enabled ? Sentry.flush(timeoutMs) : Promise.resolve(true);
 }
+
+/**
+ * A promise rejected with nobody to catch it, or an exception nothing caught: logged, sent to
+ * error tracking, and the process exits (the host restarts it) instead of carrying on in an
+ * unknown state.
+ */
+export function exitOnUnhandledErrors(logger: {
+  fatal: (object: object, message: string) => void;
+}): void {
+  const fail = (kind: string) => (error: unknown) => {
+    logger.fatal({ err: error }, kind);
+    captureError(error, { kind });
+    void flushErrorTracking().finally(() => process.exit(1));
+  };
+  process.on('unhandledRejection', fail('unhandled promise rejection'));
+  process.on('uncaughtException', fail('uncaught exception'));
+}

@@ -154,6 +154,15 @@ export async function updateFinanceSettings(
         details: { field: changed },
       });
   }
+  // Equal prefixes would number a credit note like an invoice of the same year: the first credit
+  // note would collide with invoice 1.
+  const invoicePrefix = data.invoicePrefix ?? before.invoice_prefix;
+  const creditNotePrefix = data.creditNotePrefix ?? before.credit_note_prefix;
+  if (invoicePrefix === creditNotePrefix)
+    throw new DomainError('VALIDATION_FAILED', {
+      message: 'Invoices and credit notes need different prefixes',
+      details: { field: 'creditNotePrefix' },
+    });
   if (data.baseCurrency && data.baseCurrency !== before.base_currency) {
     const any = before.numberingLocked.invoice || before.numberingLocked.credit_note;
     if (any)

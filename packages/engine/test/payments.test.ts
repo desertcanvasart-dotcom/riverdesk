@@ -443,6 +443,42 @@ describe('payments and exceptions', () => {
     expect((await booking(b.bookingId)).status).toBe('cancelled');
   });
 
+  it('the overdue job never cancels a booking paid since it was listed', async () => {
+    const b = await prepaid('ASW-3', 25, 'SUP');
+    await pay(w, b.bookingId, BigInt((await booking(b.bookingId)).deposit_amount));
+    // Paid in full a moment after the job listed it: what the job checks under the lock.
+    const due = await booking(b.bookingId);
+    await pay(w, b.bookingId, BigInt(due.total) + BigInt(due.fees) - BigInt(due.amount_paid));
+    expect(
+      await codeOf(
+        cancelBooking(
+          w.db,
+          w.ctx,
+          { bookingId: b.bookingId, reason: 'overdue' },
+          {
+            onlyIfUnpaid: true,
+          },
+        ),
+      ),
+    ).toBe('INVALID_STATE');
+    expect((await booking(b.bookingId)).status).toBe('confirmed');
+  });
+
+  it('a cancelled booking still owing part of its penalty is unpaid, not paid', async () => {
+    const b = await prepaid('ASW-3', 18, 'SUP');
+    await pay(w, b.bookingId, BigInt((await booking(b.bookingId)).deposit_amount));
+    // A 100% penalty (test-only policy): the deposit covers only part of it.
+    await owner().query(
+      `update vs.booking_revision set snapshot = jsonb_set(snapshot, '{policies,cancellation,rules}', '[{"from_days":0,"penalty_bps":10000}]')
+       where booking_id = $1`,
+      [b.bookingId],
+    );
+    await cancelBooking(w.db, w.ctx, { bookingId: b.bookingId, reason: 'Guest cancelled' });
+    const after = await booking(b.bookingId);
+    expect(BigInt(after.penalty_amount!)).toBeGreaterThan(BigInt(after.amount_paid));
+    expect(after.payment_status).toBe('unpaid');
+  });
+
   it('worked ledger: deposit, amendment fee, balance, cancellation, partial and final refund', async () => {
     const b = await prepaid('LXR-7', 35, 'SUP');
     const rows: string[][] = [];

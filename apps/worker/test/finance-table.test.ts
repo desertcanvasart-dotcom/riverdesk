@@ -59,6 +59,17 @@ describe('finance tables', () => {
     expect(financeTableBase(table)).toBe('finance-journal-2026-10-01-2026-10-31');
   });
 
+  it('keeps typed text from running as a formula in a spreadsheet', () => {
+    const text = financeTableCsv(
+      {
+        ...table,
+        rows: [{ ...table.rows[1]!, description: '=HYPERLINK("http://x","click")' }],
+      },
+      'en',
+    ).toString('utf8');
+    expect(text).toContain(`,"'=HYPERLINK(""http://x"",""click"")",`);
+  });
+
   it('writes a workbook with numbers and a sheet of the codes still to set', async () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(

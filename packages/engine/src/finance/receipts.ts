@@ -1407,6 +1407,7 @@ export async function getReceipt(db: VsDatabase, ctx: EngineContext, input: { re
       .selectFrom('allocation as a')
       .innerJoin('invoice as i', 'i.id', 'a.invoice_id')
       .leftJoin('booking as b', 'b.id', 'a.booking_id')
+      .leftJoin('sailing as s', 's.id', 'b.sailing_id')
       .select([
         'a.id',
         'a.invoice_id',
@@ -1421,7 +1422,11 @@ export async function getReceipt(db: VsDatabase, ctx: EngineContext, input: { re
         'a.created_at',
       ])
       .where('a.receipt_id', '=', receiptId)
+      // Pieces written together share created_at (one transaction): then in the order money is
+      // spread, oldest sailing first, manual lines last.
       .orderBy('a.created_at')
+      .orderBy(sql`s.embark_date`, sql`asc nulls last`)
+      .orderBy('a.id')
       .execute();
     const reversedBy = await tx
       .selectFrom('receipt')

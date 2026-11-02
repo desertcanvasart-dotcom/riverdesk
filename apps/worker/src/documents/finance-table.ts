@@ -65,11 +65,17 @@ export function financeTableXlsx(
   return finish(workbook);
 }
 
-/** RFC 4180 CSV, UTF-8 with a byte-order mark so Excel reads Arabic; decimals with a point. */
+/**
+ * RFC 4180 CSV, UTF-8 with a byte-order mark so Excel reads Arabic; decimals with a point. Text
+ * that a spreadsheet would run as a formula (starting with = + - @, a tab or a return: a party
+ * name typed by someone, say) gets a leading apostrophe; amounts are written as plain numbers.
+ */
 export function financeTableCsv(table: FinanceTable, locale: DocLocale): Buffer {
   const t = textTranslator(locale === 'both' ? 'en' : locale);
-  const quote = (value: string) =>
-    /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  const quote = (raw: string) => {
+    const value = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+    return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  };
   const lines = [table.columns.map((c) => quote(t(`fr_${c.key}`))).join(',')];
   for (const row of table.rows)
     lines.push(

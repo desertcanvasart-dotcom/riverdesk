@@ -45,7 +45,12 @@ Start it with `pnpm --filter @vs/worker start` (or `dev` to restart on changes).
 | `erase_passports`    | 01:30            | Passport numbers and dates of birth erased after the retention period         |
 | `prune_documents`    | hourly           | Deletes expired documents (manifests after a day, others after a week)        |
 | `health_alerts`      | every 5 minutes  | Checks the alert conditions below per company; logs and tracks each one       |
+| `outage_pack`        | 02:00            | The 14-day availability and manifest PDF per vessel, stored and emailed       |
+| `checkin_packs`      | every minute     | Emails the check-in pack to the vessel for departures entering its window     |
+| `analytics_snapshot` | 21:45            | Tonight's analytics snapshot per company (first run rebuilds past nights)     |
 | `render_document`    | on request       | Renders a requested PDF, Excel or PNG (queued by `vs.enqueue_document`)       |
+
+Every cron job has its own queue and job key: a run never overlaps the previous one, and at most one more waits. Daily and hourly jobs catch up a tick missed while the worker was down (`fill` in `apps/worker/src/worker.ts`); only cabin assignment, passport erasure and the analytics snapshot are retried.
 
 ## Observability
 
@@ -202,7 +207,7 @@ A restore into a separate scratch Supabase project (spec wording) needs a second
 
 Tick each line, with a date and initials, before the pilot vessel takes its first real booking.
 
-- [ ] **Secrets rotated** since development: database passwords (`vs_backoffice`, `vs_api`, `vs_worker`, admin), `API_TOKEN_SECRET`, `FIELD_KEYS` (new key current, old key kept for decryption), the nilecrz client secret (rotate: add the second secret, switch, revoke the old one), webhook signing secrets.
+- [ ] **Secrets rotated** since development: database passwords (`vs_backoffice`, `vs_api`, `vs_worker`, admin), `API_TOKEN_SECRET`, the passport key (`PASSPORT_KEY` / `PASSPORT_KEY_ID` new and current, the old one moved to `PASSPORT_PREVIOUS_KEYS` for decryption), the nilecrz client secret (rotate: add the second secret, switch, revoke the old one), webhook signing secrets.
 - [ ] **No development values on production:** `SEED_TOTP_SECRET` unset, demo users absent, `VS_ENV=hosted`.
 - [ ] **MFA on:** every owner and finance user has enrolled TOTP (they cannot work without it), and reservations users are encouraged to.
 - [ ] **Roles reviewed** on Settings: one or two owners, no shared logins, read-only for anyone who only looks. Remove leavers.

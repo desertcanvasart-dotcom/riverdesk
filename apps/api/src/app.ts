@@ -51,9 +51,10 @@ export function buildApp(options: AppOptions) {
         .header('Retry-After', '30')
         .send({ error: new DomainError('SERVICE_UNAVAILABLE').toJSON() });
     }
+    // Fastify's own 4xx (body too large, unsupported media type, bad JSON) keep their status.
     const status = (error as { statusCode?: number }).statusCode;
     if (status && status >= 400 && status < 500) {
-      return reply.status(400).send({
+      return reply.status(status).send({
         error: new DomainError('VALIDATION_FAILED', {
           message: (error as Error).message,
         }).toJSON(),
@@ -95,8 +96,13 @@ export function buildApp(options: AppOptions) {
       const decoded = Buffer.from(basic.slice(6), 'base64').toString();
       const colon = decoded.indexOf(':');
       if (colon > 0) {
-        clientId = decodeURIComponent(decoded.slice(0, colon));
-        secret = decodeURIComponent(decoded.slice(colon + 1));
+        try {
+          clientId = decodeURIComponent(decoded.slice(0, colon));
+          secret = decodeURIComponent(decoded.slice(colon + 1));
+        } catch {
+          // A stray "%" in the credentials: malformed, not a server error.
+          return reply.status(400).send({ error: 'invalid_request' });
+        }
       }
     }
     if (body.grant_type !== 'client_credentials')
