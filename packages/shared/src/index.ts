@@ -9,4 +9,5 @@ export * from './money';
 export * from './net';
 export * from './redaction';
 export * from './time';
+export * from './tls';
 export * from './tracking';

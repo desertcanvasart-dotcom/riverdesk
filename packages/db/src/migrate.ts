@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { databaseTls } from '@vs/shared';
 import { runMigrations as runGraphileMigrations } from 'graphile-worker';
 import { bootstrap, LOGIN_ROLES, OWNER_ROLE, type LoginRoleName } from './bootstrap';
 
@@ -34,7 +35,7 @@ export function listMigrations(dir = MIGRATIONS_DIR): { name: string; sql: strin
  */
 export async function migrate(options: MigrateOptions): Promise<string[]> {
   const log = options.log ?? (() => {});
-  const ssl = options.ssl ? { rejectUnauthorized: false } : undefined;
+  const ssl = databaseTls(new URL(options.adminUrl).hostname, Boolean(options.ssl)) || undefined;
   const client = new pg.Client({ connectionString: options.adminUrl, ssl });
   await client.connect();
   const applied: string[] = [];

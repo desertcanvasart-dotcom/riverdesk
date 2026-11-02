@@ -1,13 +1,6 @@
 import { run, type Runner, type TaskList } from 'graphile-worker';
-import { openDatabase, type VsDatabase } from '@vs/engine';
-import {
-  connectionString,
-  createLogger,
-  loadConfig,
-  roleConnection,
-  type Config,
-  type Logger,
-} from '@vs/shared';
+import { openDatabase, openJobQueuePool, type VsDatabase } from '@vs/engine';
+import { createLogger, loadConfig, type Config, type Logger } from '@vs/shared';
 import { closeRenderer } from './documents/render';
 import { analyticsSnapshotTask } from './tasks/analytics-jobs';
 import {
@@ -112,8 +105,9 @@ export async function startWorker(
 ): Promise<WorkerHandle> {
   const logger = options.logger ?? createLogger('worker', { level: config.LOG_LEVEL });
   const db = openDatabase('vs_worker', { config, logger, session: true });
+  const pgPool = openJobQueuePool({ config });
   const runner = await run({
-    connectionString: connectionString(roleConnection(config, 'vs_worker', { session: true })),
+    pgPool,
     concurrency: 2,
     noHandleSignals: true,
     pollInterval: 2_000,
@@ -128,6 +122,7 @@ export async function startWorker(
       await runner.stop();
       await closeRenderer();
       await db.close();
+      await pgPool.end();
     },
   };
 }

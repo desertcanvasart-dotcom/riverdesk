@@ -1,5 +1,6 @@
 import { parseArgs } from 'node:util';
 import pg from 'pg';
+import { databaseTls } from '@vs/shared';
 import { setPlatformAdmin } from '../platform';
 import { adminOptions } from './env';
 
@@ -16,7 +17,7 @@ if (!values.email) {
 const { adminUrl, ssl } = adminOptions();
 const client = new pg.Client({
   connectionString: adminUrl,
-  ssl: ssl ? { rejectUnauthorized: false } : undefined,
+  ssl: databaseTls(new URL(adminUrl).hostname, ssl) || undefined,
 });
 await client.connect();
 try {

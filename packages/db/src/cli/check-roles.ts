@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { loadConfig, roleConnection, type RuntimeRole } from '@vs/shared';
+import { databaseTls, loadConfig, roleConnection, type RuntimeRole } from '@vs/shared';
 
 /**
  * Read-only check that each runtime role can log in where it will run (transaction port for
@@ -21,7 +21,7 @@ for (const { role, session } of checks) {
   const connection = roleConnection(config, role, { session });
   const client = new pg.Client({
     ...connection,
-    ssl: connection.ssl ? { rejectUnauthorized: false } : false,
+    ssl: databaseTls(connection.host, connection.ssl),
   });
   const label = `${role} via port ${connection.port}`;
   try {

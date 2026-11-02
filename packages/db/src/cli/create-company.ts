@@ -1,5 +1,6 @@
 import { parseArgs } from 'node:util';
 import pg from 'pg';
+import { databaseTls } from '@vs/shared';
 import { createCompany } from '../platform';
 import { adminOptions } from './env';
 
@@ -26,7 +27,7 @@ for (const key of ['name', 'slug', 'prefix', 'owner-email', 'owner-name'] as con
 const { adminUrl, ssl } = adminOptions();
 const client = new pg.Client({
   connectionString: adminUrl,
-  ssl: ssl ? { rejectUnauthorized: false } : undefined,
+  ssl: databaseTls(new URL(adminUrl).hostname, ssl) || undefined,
 });
 await client.connect();
 try {

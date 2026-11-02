@@ -2,7 +2,7 @@ import 'server-only';
 import { createHmac } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import pg from 'pg';
-import { loadConfig, required, roleConnection, SMTP_TIMEOUTS } from '@vs/shared';
+import { databaseTls, loadConfig, required, roleConnection, SMTP_TIMEOUTS } from '@vs/shared';
 import { normaliseWhatsApp, type PilotInput } from './pilot';
 
 let pool: pg.Pool | undefined;
@@ -14,7 +14,7 @@ function database(): pg.Pool {
     const connection = roleConnection(config, 'vs_website');
     pool = new pg.Pool({
       ...connection,
-      ssl: connection.ssl ? { rejectUnauthorized: false } : false,
+      ssl: databaseTls(connection.host, connection.ssl),
       max: 2,
     });
     pool.on('error', () => {});

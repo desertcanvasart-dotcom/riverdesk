@@ -64,6 +64,9 @@ describe('worker', () => {
       );
     } finally {
       await worker.stop();
+      // Starting the real worker may have scheduled cron runs (catch-ups included); they are not
+      // this file's jobs, and left in the queue they can run ahead of the jobs the tests add.
+      await owner().query(`delete from graphile_worker._private_jobs where locked_at is null`);
     }
   });
 
@@ -86,11 +89,22 @@ describe('worker', () => {
       {},
       { jobKey: `test-${task}-${Date.now()}` },
     );
-    await runOnce({ connectionString: workerUrl, taskList: buildTaskList(db, logger) });
-    const { rows } = await owner().query(
-      `select last_error from graphile_worker._private_jobs where id = $1`,
-      [job.id],
-    );
+    // runOnce stops when it finds nothing runnable; run it again while the job is still queued
+    // behind another (a few seconds at most).
+    const runAndLook = async () => {
+      await runOnce({ connectionString: workerUrl, taskList: buildTaskList(db, logger) });
+      const { rows } = await owner().query<{ last_error: string | null }>(
+        `select last_error from graphile_worker._private_jobs where id = $1`,
+        [job.id],
+      );
+      return rows;
+    };
+    let rows = await runAndLook();
+    const deadline = Date.now() + 5_000;
+    while (rows.length > 0 && !rows[0]!.last_error && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      rows = await runAndLook();
+    }
     expect(rows).toHaveLength(0); // completed jobs are deleted; a failed one stays with last_error
   });
 });

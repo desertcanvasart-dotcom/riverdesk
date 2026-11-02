@@ -409,27 +409,42 @@ export function outagePackTask(db: VsDatabase, logger: Logger, config: Config): 
       const settings = await getOperatorSettings(db, ctx);
       let sent = 0;
       let stored = 0;
+      let failed = 0;
+      // Each vessel on its own: one that fails is marked failed and the others still get theirs.
       for (const vesselId of await activeVesselIds(db, ctx)) {
         const doc = await createPendingDocument(db, ctx, {
           kind: 'outage_pack',
           vesselId,
           locale: settings.defaultLocale === 'en' ? 'en' : 'ar',
         });
-        const file = await renderDocument(db, ctx, doc);
-        await completeDocument(db, ctx, doc.id, file);
-        stored += 1;
-        const mail = mailer(config);
-        if (mail && settings.opsEmail) {
-          await mail.sendMail({
-            from: config.MAIL_FROM ?? 'vessel-system <no-reply@localhost>',
-            to: settings.opsEmail,
-            subject: `${settings.name}: ${file.filename}`,
-            text: 'Availability and departure manifests for the next 14 days, in case the system is unavailable. Delete after use.',
-            attachments: [
-              { filename: file.filename, content: file.content, contentType: file.contentType },
-            ],
-          });
-          sent += 1;
+        try {
+          const file = await renderDocument(db, ctx, doc);
+          await completeDocument(db, ctx, doc.id, file);
+          stored += 1;
+          const mail = mailer(config);
+          if (mail && settings.opsEmail) {
+            await mail.sendMail({
+              from: config.MAIL_FROM ?? 'vessel-system <no-reply@localhost>',
+              to: settings.opsEmail,
+              subject: `${settings.name}: ${file.filename}`,
+              text: 'Availability and departure manifests for the next 14 days, in case the system is unavailable. Delete after use.',
+              attachments: [
+                { filename: file.filename, content: file.content, contentType: file.contentType },
+              ],
+            });
+            sent += 1;
+          }
+        } catch (error) {
+          failed += 1;
+          logger.error({ err: error, operatorId: ctx.operatorId, vesselId }, 'outage pack failed');
+          captureError(error, { operatorId: ctx.operatorId, vesselId, job: 'outage_pack' });
+          // Marks it failed unless it was stored and only the mail failed (it stays downloadable).
+          await failDocument(
+            db,
+            ctx,
+            doc.id,
+            error instanceof Error ? error.message : 'outage pack failed',
+          );
         }
       }
       if (stored > 0 && sent === 0)
@@ -437,6 +452,7 @@ export function outagePackTask(db: VsDatabase, logger: Logger, config: Config): 
           { operatorId: ctx.operatorId },
           'outage pack stored but not emailed (no SMTP_URL or ops email)',
         );
+      if (failed > 0) throw new Error(`outage pack failed for ${failed} vessel(s)`);
       return { stored, sent };
     });
 }

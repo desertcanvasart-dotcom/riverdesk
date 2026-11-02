@@ -193,10 +193,15 @@ export function roleConnection(
   };
 }
 
-/** postgres:// URL for libraries that take a connection string (Graphile Worker). */
+/**
+ * postgres:// URL for libraries that take a connection string (Graphile Worker's tools in tests).
+ * Plain connections only: a URL cannot carry the CA to verify TLS with, so a TLS connection is
+ * given to such a library as a pg pool instead (see databaseTls).
+ */
 export function connectionString(connection: PgConnection): string {
+  if (connection.ssl)
+    throw new Error('A TLS database connection needs a pool with databaseTls, not a URL');
   const user = encodeURIComponent(connection.user);
   const password = encodeURIComponent(connection.password);
-  const ssl = connection.ssl ? '?sslmode=no-verify' : '';
-  return `postgres://${user}:${password}@${connection.host}:${connection.port}/${connection.database}${ssl}`;
+  return `postgres://${user}:${password}@${connection.host}:${connection.port}/${connection.database}`;
 }

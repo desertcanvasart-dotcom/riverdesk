@@ -3,6 +3,7 @@ import { Kysely, PostgresDialect, WithSchemaPlugin, sql, type Transaction } from
 import { DomainError } from '@vs/contracts';
 import type { Actor } from './actor';
 import { isUuid } from './ids';
+import { databaseTls } from './tls';
 import type { PgConnection } from './config';
 import type { Logger } from './logger';
 
@@ -102,7 +103,7 @@ export function createDatabase<DB>(
     database: connection.database,
     user: connection.user,
     password: connection.password,
-    ssl: connection.ssl ? { rejectUnauthorized: false } : false,
+    ssl: databaseTls(connection.host, connection.ssl),
     max: connection.max ?? 10,
     application_name: connection.applicationName ?? connection.user,
     types: typeParsers,

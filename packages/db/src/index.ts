@@ -1,5 +1,7 @@
+import pg from 'pg';
 import {
   createDatabase,
+  databaseTls,
   loadConfig,
   roleConnection,
   type Config,
@@ -35,4 +37,18 @@ export function openDatabase(
     },
     { logger: options.logger, schema: 'vs' },
   );
+}
+
+/**
+ * The job queue's own pool for Graphile Worker: vs_worker in session mode (LISTEN/NOTIFY), plain
+ * pg (no custom type parsers), TLS verified like every other connection.
+ */
+export function openJobQueuePool(options: { config?: Config; max?: number } = {}): pg.Pool {
+  const config = options.config ?? loadConfig();
+  const connection = roleConnection(config, 'vs_worker', { session: true });
+  return new pg.Pool({
+    ...connection,
+    ssl: databaseTls(connection.host, connection.ssl),
+    max: options.max ?? 4,
+  });
 }
