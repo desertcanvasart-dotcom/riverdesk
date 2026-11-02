@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/node';
 import type { Config } from './config';
-import { redactDeep } from './redaction';
+import { redactDeep, scrubErrorText } from './redaction';
 
 /**
  * Error tracking (Sentry), off unless SENTRY_DSN is set. Personal data never leaves: no default
@@ -22,6 +22,12 @@ export function scrubEvent<T extends Sentry.ErrorEvent>(event: T): T {
         ),
       );
     }
+  }
+  // Exception messages may quote values (Postgres does); a database error's own fields are not
+  // sent at all (extra data is redacted below, and the SDK keeps only the message and stack).
+  for (const exception of event.exception?.values ?? []) {
+    if (exception.value)
+      exception.value = scrubErrorText(exception.value, exception.type === 'DatabaseError');
   }
   if (event.extra) event.extra = redactDeep(event.extra);
   if (event.contexts) event.contexts = redactDeep(event.contexts);

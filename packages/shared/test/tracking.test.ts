@@ -19,4 +19,20 @@ describe('error tracking scrubs personal data', () => {
     expect(event.request).toEqual({ headers: { 'user-agent': 'ua' } });
     expect(JSON.stringify(event)).not.toContain('P12345678');
   });
+
+  it('scrubs the values out of exception messages', () => {
+    const event = scrubEvent({
+      type: undefined,
+      exception: {
+        values: [
+          { type: 'DatabaseError', value: 'invalid input syntax for type uuid: "A24681357"' },
+          { type: 'Error', value: 'could not mail hana@example.com' },
+        ],
+      },
+    } as ErrorEvent);
+    expect(event.exception!.values!.map((v) => v.value)).toEqual([
+      'invalid input syntax for type uuid: "[REDACTED]"',
+      'could not mail [email]',
+    ]);
+  });
 });
