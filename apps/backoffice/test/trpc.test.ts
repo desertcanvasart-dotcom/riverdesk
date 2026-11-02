@@ -40,8 +40,14 @@ describe('back-office authorization (server side)', () => {
     expect([...MFA_REQUIRED].sort()).toEqual(['finance', 'manager', 'owner']);
   });
 
-  it('manager does what reservations does, plus the setup, and nothing of money or the company', () => {
-    const setup = ['fleet.write', 'schedule.write', 'rates.write', 'channels.write'];
+  it('manager does what reservations does, plus the setup and the revenue reports, and nothing else of money or the company', () => {
+    const setup = [
+      'fleet.write',
+      'schedule.write',
+      'rates.write',
+      'channels.write',
+      'reports.money',
+    ];
     for (const permission of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) {
       expect(can('manager', permission)).toBe(
         can('reservations', permission) || setup.includes(permission),
@@ -62,6 +68,12 @@ describe('back-office authorization (server side)', () => {
     expect(can('reservations', 'finance')).toBe(false);
     expect(can('reservations', 'rates.write')).toBe(false);
     expect(can('owner', 'settings.write')).toBe(true);
+    // Revenue reports, statements and receivables: owner, manager and finance (2026-11-02).
+    expect(
+      (['owner', 'manager', 'reservations', 'finance', 'read_only', 'onboard'] as const).filter(
+        (role) => can(role, 'reports.money'),
+      ),
+    ).toEqual(['owner', 'manager', 'finance']);
   });
 
   it('every mutation refuses a read-only user before touching its input', async () => {

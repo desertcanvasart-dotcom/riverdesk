@@ -45,11 +45,13 @@ describe('settings, channels and payments ledger', () => {
 
   it('invites staff once per email, revokes, and keeps at least one active owner', async () => {
     const email = `res-${w.ctx.operatorId.slice(-8)}@example.test`;
-    const { invitationId } = await inviteStaff(w.db, w.ctx, {
+    const invited = await inviteStaff(w.db, w.ctx, {
       email,
       displayName: 'Res',
       role: 'reservations',
     });
+    if (invited.reactivated) throw new Error('a new email is invited, not reactivated');
+    const { invitationId } = invited;
     expect(
       await codeOf(inviteStaff(w.db, w.ctx, { email, displayName: 'Again', role: 'finance' })),
     ).toBe('INVALID_STATE');
@@ -63,6 +65,30 @@ describe('settings, channels and payments ledger', () => {
     expect(await codeOf(updateStaff(w.db, w.ctx, { staffUserId: ownerId, active: false }))).toBe(
       'INVALID_STATE',
     );
+  });
+
+  it('inviting someone who was deactivated here switches them back on with the new role', async () => {
+    const email = `back-${w.ctx.operatorId.slice(-8)}@example.test`;
+    const { rows } = await owner().query<{ id: string }>(
+      `insert into vs.staff_user (operator_id, auth_user_id, email, display_name, role, active)
+       values ($1, gen_random_uuid(), $2, 'Former', 'reservations', false) returning id`,
+      [w.ctx.operatorId, email],
+    );
+    const again = await inviteStaff(w.db, w.ctx, {
+      email,
+      displayName: 'Former, back',
+      role: 'finance',
+    });
+    expect(again).toEqual({ staffUserId: rows[0]!.id, reactivated: true });
+    const after = await owner().query(
+      `select active, role, display_name from vs.staff_user where id = $1`,
+      [rows[0]!.id],
+    );
+    expect(after.rows[0]).toEqual({ active: true, role: 'finance', display_name: 'Former, back' });
+    // Active now: inviting them once more is refused.
+    expect(
+      await codeOf(inviteStaff(w.db, w.ctx, { email, displayName: 'x', role: 'finance' })),
+    ).toBe('INVALID_STATE');
   });
 
   it('refuses a change to one’s own role, even with another owner left', async () => {

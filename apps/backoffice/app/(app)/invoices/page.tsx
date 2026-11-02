@@ -7,6 +7,7 @@ export default async function InvoicesPage() {
   const profile = await (await serverCaller()).me.profile();
   const t = await getTranslations('invoices');
   const canFinance = profile.permissions.includes('finance');
+  const canReports = profile.permissions.includes('reports.money');
   return (
     <>
       <PageHeader
@@ -14,9 +15,13 @@ export default async function InvoicesPage() {
         subtitle={t('subtitle')}
         actions={
           <>
-            <LinkButton href="/invoices/statements">{t('statements')}</LinkButton>
-            <LinkButton href="/invoices/receivables">{t('receivables')}</LinkButton>
-            <LinkButton href="/invoices/reports">{t('reports')}</LinkButton>
+            {canReports && (
+              <>
+                <LinkButton href="/invoices/statements">{t('statements')}</LinkButton>
+                <LinkButton href="/invoices/receivables">{t('receivables')}</LinkButton>
+                <LinkButton href="/invoices/reports">{t('reports')}</LinkButton>
+              </>
+            )}
             {canFinance && <LinkButton href="/invoices/settings">{t('settings')}</LinkButton>}
           </>
         }

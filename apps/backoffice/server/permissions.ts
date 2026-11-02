@@ -28,6 +28,8 @@ export const PERMISSIONS = {
   /** Analytics: occupancy, pace, channels. Money figures need analytics.money as well. */
   'analytics.view': ['owner', 'manager', 'reservations', 'finance', 'read_only'],
   'analytics.money': ['owner', 'finance'],
+  /** Revenue reports, statements and the aging of receivables (decided 2026-11-02). */
+  'reports.money': ['owner', 'manager', 'finance'],
   'guests.assign': ['owner', 'manager', 'reservations'],
   /** Data subject requests: export or erase one guest's personal data. */
   'guests.privacy': ['owner'],

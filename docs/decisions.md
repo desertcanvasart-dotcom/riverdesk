@@ -1021,3 +1021,11 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 **2026-11-02 · Smaller ones.** Invoice and credit-note prefixes must differ. The nightly passport erasure looks for any check-in detail it clears (the same list as erasure), so a guest with only a flight or a phone is no longer skipped. An internal error's message no longer reaches the browser from the back office (it stays in the log and Sentry). The Channel API answers a stray `%` in Basic credentials with 400 `invalid_request`, and Fastify's own 4xx (413, 415, …) keep their status. The accountant CSV puts an apostrophe before text a spreadsheet would run as a formula. Webhook and rate-limit pruning failures reach Sentry, and the API and worker exit (after logging and reporting) on an unhandled rejection or uncaught exception, so the host restarts them.
 
 **2026-11-02 · Allocation order.** A receipt's allocations written in one transaction share their time; they are listed oldest sailing first (the order money is spread in), then by id, so the receipt screen and its test no longer change order from run to run.
+
+## Owner decisions on the audit (2026-11-02)
+
+**Invoice numbering in January.** Each year starts again at the company's chosen first number, for invoices and credit notes alike (`INV-2027-0001`, or `0431` for a company continuing a paper series), as built; the settings screen now says "(each year)" by those fields.
+
+**Who sees revenue.** Revenue reports, statements and the aging of receivables are for owner, manager and finance (`reports.money`); reservations, read-only and on-board staff no longer see them or their buttons, and their pages answer not found. An agency's credit exposure stays readable by whoever books, since the booking page shows it after a booking over a warn-mode limit.
+
+**Invitations.** Inviting the email of someone who was staff here and was deactivated switches them back on at once with the new role, vessel and name (audited as `staff_user.reactivated`); they sign in as before. An active staff member cannot be invited again. One open invitation per email across all companies stays.

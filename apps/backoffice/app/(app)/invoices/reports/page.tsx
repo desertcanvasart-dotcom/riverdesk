@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { PageHeader } from '../../../../components/ui';
 import { serverCaller } from '../../../../server/caller';
@@ -10,6 +11,7 @@ export default async function FinanceReportsPage() {
     caller.book.vessels(),
     caller.channels.list(),
   ]);
+  if (!profile.permissions.includes('reports.money')) notFound();
   const t = await getTranslations('financeReports');
   return (
     <>

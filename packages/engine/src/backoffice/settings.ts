@@ -65,7 +65,11 @@ export const inviteStaffInput = z.object({
   vesselId: z.uuid().nullish(),
 });
 
-/** The person signs in with this email (verified) and becomes staff with this role. */
+/**
+ * The person signs in with this email (verified) and becomes staff with this role. Someone who
+ * was staff here and was deactivated is switched back on at once with the new role (they keep
+ * their sign-in); an active staff member cannot be invited again.
+ */
 export async function inviteStaff(
   db: VsDatabase,
   ctx: EngineContext,
@@ -77,11 +81,32 @@ export async function inviteStaff(
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const existing = await tx
       .selectFrom('staff_user')
-      .select('id')
+      .select(['id', 'active', 'role'])
       .where('email', '=', email)
+      .forUpdate()
       .executeTakeFirst();
-    if (existing)
+    if (existing?.active)
       throw new DomainError('INVALID_STATE', { message: 'This person is already staff' });
+    if (existing) {
+      await tx
+        .updateTable('staff_user')
+        .set({
+          active: true,
+          role: data.role,
+          vessel_id: vesselId,
+          display_name: data.displayName,
+        })
+        .where('id', '=', existing.id)
+        .execute();
+      await audit(tx, ctx.operatorId, ctx.actor, {
+        action: 'staff_user.reactivated',
+        entity: 'staff_user',
+        entityId: existing.id,
+        before: { active: false, role: existing.role },
+        after: { active: true, role: data.role, vesselId },
+      });
+      return { staffUserId: existing.id, reactivated: true as const };
+    }
     // One open invitation per email across the platform: the unique index answers for every
     // company without this one being able to see the others.
     const invitation = await sql<{ id: string }>`
@@ -100,7 +125,7 @@ export async function inviteStaff(
       entityId: row.id,
       after: { email, role: data.role, vesselId },
     });
-    return { invitationId: row.id };
+    return { invitationId: row.id, reactivated: false as const };
   });
 }
 

@@ -82,8 +82,8 @@ export function SettingsScreen({ canWrite, selfId }: { canWrite: boolean; selfId
   );
   const sendInvite = useMutation(
     trpc.settings.invite.mutationOptions({
-      onSuccess: () => {
-        setNotice(t('invited'));
+      onSuccess: (r) => {
+        setNotice(t(r.reactivated ? 'reactivated' : 'invited'));
         setInvite({ email: '', displayName: '', role: 'reservations', vesselId: null });
         void refreshStaff();
       },

@@ -15,14 +15,14 @@ import { backofficeDb } from '../db';
 import { procedure, router } from '../trpc';
 
 /**
- * Invoicing F5: finance reports (anyone who can see invoices, like statements), and the
- * accountant's exports and account codes (finance).
+ * Invoicing F5: finance reports (owner, manager and finance), and the accountant's exports and
+ * account codes (finance).
  */
 export const financeReportsRouter = router({
-  report: procedure('read')
+  report: procedure('reports.money')
     .input(financeReportInput)
     .query(({ ctx, input }) => getFinanceReport(backofficeDb(), ctx.engine, input)),
-  requestReport: procedure('read')
+  requestReport: procedure('reports.money')
     .input(requestFinanceReportInput)
     .mutation(({ ctx, input }) => requestFinanceReport(backofficeDb(), ctx.engine, input)),
   exportPreview: procedure('finance')
