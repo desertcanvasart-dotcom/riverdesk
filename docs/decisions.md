@@ -979,3 +979,13 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 **2026-11-02 · Ages that cross into adult.** The age check compares every guest with a date of birth to the quoted places, adults included, so a child quoted at 11 who is 12 on embarkation is flagged (still a warning, not a new price). Guests without a date of birth are taken as adults and fill the quoted adult places first, which catches the usual case where only the child's date is given.
 
 **2026-11-02 · What availability shows.** The channel API's `free` is the most cabins of a category one booking can take on a sailing: for each leg the larger of the channel's own allotment and the pool (when its contract sells from the pool), then the smallest over the legs. A booking draws all its cabins of a category on a leg from one bucket, so the sum shown before could not be booked in one go. Splitting one booking across allotment and pool was not done: every booking line and hold line assumes one bucket per leg and category.
+
+## Audit fixes — folios, invoice lines, exposure and commission (M7, M8, M11, M12)
+
+**2026-11-02 · Folios after the booking completes.** The hourly job completes a booking the day after it leaves, without touching its folios. A completed booking's folios can still be listed on the departure, read, voided, closed and paid, so charges left on an open folio still reach an invoice; only new charges need the booking confirmed ("the guests have left; close and settle the folio instead").
+
+**2026-11-02 · Moving lines off an issued invoice.** The database guard on invoice lines now checks, on an update, the invoice the line comes from as well as the one it goes to (migration 0030), so a line cannot be moved off an issued invoice onto a draft.
+
+**2026-11-02 · Credit exposure.** An agency's exposure counts completed (sailed) bookings not yet invoiced, not only confirmed ones, so its credit limit does not free up the day after a sailing.
+
+**2026-11-02 · Commission on a credit note.** Crediting a booking's cabin lines on an agency invoice credits that booking's commission with them, in proportion: the commission credited so far is the booking's commission × the share of its cabin lines credited so far, rounded half-up, so it all comes back once all cabin lines are credited. A commission line still cannot be picked on its own. A whole cabin line can now be credited (it was above what the invoice still bills while its commission stayed).

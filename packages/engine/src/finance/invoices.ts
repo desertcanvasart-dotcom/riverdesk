@@ -891,6 +891,31 @@ export async function issueCreditNote(
           tax_rate_id: line.tax_rate_id,
         };
       });
+      // A booking's commission goes back with its cabins: in proportion to how much of the
+      // booking's cabin lines is credited so far (this note included), so all of it once all are.
+      for (const commission of original.filter((l) => l.kind === 'commission' && l.booking_id)) {
+        const cabins = original.filter(
+          (l) => l.kind === 'cabin' && l.booking_id === commission.booking_id,
+        );
+        const cabinTotal = cabins.reduce((sum, l) => sum + l.amount, 0n);
+        if (cabinTotal <= 0n || !data.lines.some((p) => cabins.some((l) => l.id === p.lineId)))
+          continue;
+        const cabinsCredited = cabins.reduce((sum, l) => sum + (credited.get(l.id) ?? 0n), 0n);
+        const target = mulDivHalfUp(-commission.amount, cabinsCredited, cabinTotal);
+        const share = target + (credited.get(commission.id) ?? 0n);
+        if (share <= 0n) continue;
+        taxSnapshots.push(commission);
+        lines.push({
+          kind: 'commission',
+          booking_id: commission.booking_id,
+          booking_cabin_id: null,
+          description_ar: commission.description_ar,
+          description_en: commission.description_en,
+          quantity: 1,
+          unit_amount: -share,
+          tax_rate_id: commission.tax_rate_id,
+        });
+      }
     }
 
     const { settings, snapshot } = await issuerSnapshot(tx);

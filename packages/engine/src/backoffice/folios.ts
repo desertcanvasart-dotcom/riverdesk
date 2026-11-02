@@ -268,7 +268,7 @@ export async function departureFolios(
              (i.total - i.amount_credited - i.amount_paid)::bigint as balance
       from vs.booking_line bl
       join vs.leg l on l.id = bl.leg_id
-      join vs.booking b on b.id = bl.booking_id and b.status = 'confirmed'
+      join vs.booking b on b.id = bl.booking_id and b.status in ('confirmed', 'completed')
       join vs.sailing s on s.id = b.sailing_id
       join vs.booking_cabin bc on bc.id = bl.booking_cabin_id
       left join vs.cabin cab on cab.id = bl.assigned_cabin_id
@@ -389,7 +389,17 @@ export interface FolioDetail {
 }
 
 /** Asserts the booking cabin is aboard this departure (and in scope); returns its vessel. */
-async function cabinAboard(tx: Tx, legId: string, bookingCabinId: string, scope: CheckinScope) {
+/**
+ * The cabin's booking line on this leg. After the booking completes (the day after it leaves) its
+ * folio can still be read, voided, closed and paid; only new charges need it confirmed.
+ */
+async function cabinAboard(
+  tx: Tx,
+  legId: string,
+  bookingCabinId: string,
+  scope: CheckinScope,
+  options: { charging?: boolean } = {},
+) {
   await assertInScope(tx, legId, scope);
   const row = await tx
     .selectFrom('booking_line as bl')
@@ -405,9 +415,14 @@ async function cabinAboard(tx: Tx, legId: string, bookingCabinId: string, scope:
     .where('bl.leg_id', '=', legId)
     .where('bl.booking_cabin_id', '=', bookingCabinId)
     .where('bl.status', '=', 'confirmed')
-    .where('b.status', '=', 'confirmed')
+    .where('b.status', 'in', ['confirmed', 'completed'])
+    .select('b.status')
     .executeTakeFirst();
   if (!row) throw new DomainError('NOT_FOUND', { message: 'This cabin is not aboard here' });
+  if (options.charging && row.status !== 'confirmed')
+    throw new DomainError('INVALID_STATE', {
+      message: 'The guests have left; close and settle the folio instead',
+    });
   return row;
 }
 
@@ -576,7 +591,9 @@ export async function postCharge(
 ): Promise<FolioDetail> {
   const data = parseInput(postChargeInput, input);
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
-    const aboard = await cabinAboard(tx, data.legId, data.bookingCabinId, scope);
+    const aboard = await cabinAboard(tx, data.legId, data.bookingCabinId, scope, {
+      charging: true,
+    });
     if (!aboard.enabled)
       throw new DomainError('INVALID_STATE', { message: 'This vessel keeps no folios' });
     const staffId = ctx.actor.type === 'staff' ? ctx.actor.id : null;

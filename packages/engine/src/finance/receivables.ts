@@ -483,7 +483,8 @@ export interface CreditExposure {
 }
 
 /**
- * What an agency owes on credit, in its limit currency: confirmed bookings not yet invoiced, plus
+ * What an agency owes on credit, in its limit currency: confirmed and completed (sailed) bookings
+ * not yet invoiced, plus
  * open invoices, less money it paid that is not on an invoice yet. Bookings and invoices in
  * another currency are not counted (as before invoicing).
  */
@@ -509,7 +510,7 @@ export async function creditExposure(tx: Tx, channelId: string): Promise<CreditE
   const { rows } = await sql<{ uninvoiced: string; open: string; credit: string }>`
     select
       (select coalesce(sum(b.total + b.fees - b.amount_paid), 0) from vs.booking b
-       where b.channel_id = ${channelId} and b.status = 'confirmed' and b.currency = ${currency}
+       where b.channel_id = ${channelId} and b.status in ('confirmed', 'completed') and b.currency = ${currency}
          and not exists (select from vs.invoice_line l join vs.invoice i on i.id = l.invoice_id
                          where l.booking_id = b.id and i.type = 'invoice'
                            and i.status in ('issued', 'partially_paid', 'paid')))::text as uninvoiced,

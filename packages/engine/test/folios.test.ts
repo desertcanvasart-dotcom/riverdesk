@@ -254,6 +254,28 @@ describe('extras E1: price list and folios', () => {
     );
   });
 
+  it('after the booking completes its folios can still be read and closed, not charged', async () => {
+    await owner().query(`update vs.booking set status = 'completed' where id = $1`, [bookingId]);
+    try {
+      const listed = await departureFolios(w.db, w.ctx, legId, office);
+      expect(listed.cabins.map((c) => c.bookingCabinId)).toEqual(expect.arrayContaining(cabins));
+      expect(
+        await codeOf(getFolio(w.db, w.ctx, { legId, bookingCabinId: cabins[0]! }, office)),
+      ).toBe('ok');
+      // Past the "aboard" check: what stops it now is only the missing exchange rate.
+      expect(
+        await codeOf(closeFolio(w.db, w.ctx, { legId, bookingCabinId: cabins[0]! }, office)),
+      ).toBe('VALIDATION_FAILED');
+      expect(
+        await codeOf(
+          postCharge(w.db, w.ctx, { legId, bookingCabinId: cabins[0]!, itemId: water }, office),
+        ),
+      ).toBe('INVALID_STATE');
+    } finally {
+      await owner().query(`update vs.booking set status = 'confirmed' where id = $1`, [bookingId]);
+    }
+  });
+
   it('closes a folio into an invoice of extras, then takes payment at reception', async () => {
     // The folio is in USD, the company's base currency EGP: a rate is needed.
     expect(

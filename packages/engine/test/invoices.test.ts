@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { owner, testConfig } from '@vs/db/testing';
 import { isDomainError, type ErrorCode } from '@vs/contracts';
+import { mulDivHalfUp } from '@vs/shared';
 import {
   cancelBooking,
   createChannel,
@@ -260,7 +261,34 @@ describe('invoicing F1', () => {
       [a.bookingId],
     );
     expect(draft.total).toBe(BigInt(rows[0]!.net_total));
-    await deleteInvoiceDraft(w.db, w.ctx, { invoiceId: draft.invoiceId });
+
+    // Crediting the cabin takes its commission back with it, in proportion: half the cabin, half
+    // the commission; the rest of the cabin, the rest of the commission (to the unit).
+    const issued = await issueInvoice(w.db, w.ctx, { invoiceId: draft.invoiceId, ...usd });
+    const [cabin, commission] = lines as [(typeof lines)[0], (typeof lines)[0]];
+    const half = cabin.amount / 2n;
+    const first = await issueCreditNote(w.db, w.ctx, {
+      invoiceId: issued.invoiceId,
+      reason: 'Half the cabin',
+      lines: [{ lineId: cabin.id, amount: half }],
+    });
+    const firstLines = (await getInvoice(w.db, w.ctx, { invoiceId: first.creditNoteId })).lines;
+    expect(firstLines.map((l) => [l.kind, l.amount])).toEqual([
+      ['cabin', half],
+      ['commission', -mulDivHalfUp(-commission.amount, half, cabin.amount)],
+    ]);
+    const rest = await issueCreditNote(w.db, w.ctx, {
+      invoiceId: issued.invoiceId,
+      reason: 'The rest',
+      lines: [{ lineId: cabin.id, amount: cabin.amount - half }],
+    });
+    expect(rest.invoiceStatus).toBe('cancelled');
+    const { rows: back } = await owner().query<{ sum: string }>(
+      `select sum(cl.amount)::text as sum from vs.invoice_line cl join vs.invoice cn on cn.id = cl.invoice_id
+       where cn.credits_invoice_id = $1 and cl.kind = 'commission'`,
+      [issued.invoiceId],
+    );
+    expect(BigInt(back[0]!.sum)).toBe(commission.amount);
   });
 
   it('invoices only the penalty of a cancelled booking', async () => {
@@ -355,6 +383,21 @@ describe('invoicing F1', () => {
         ),
       ),
     ).toBe('42501');
+    // Nor can a line be moved off it onto a draft.
+    const other = await book(w.agents.credit);
+    const draft = await createInvoiceDraft(w.db, w.ctx, {
+      type: 'invoice',
+      bookingIds: [other.bookingId],
+    });
+    expect(
+      await pgCode(
+        db.query(
+          `update vs.invoice_line set invoice_id = $2, seq = seq + 50 where invoice_id = $1`,
+          [id, draft.invoiceId],
+        ),
+      ),
+    ).toBe('42501');
+    await deleteInvoiceDraft(w.db, w.ctx, { invoiceId: draft.invoiceId });
     // Status and the paid amount may still move.
     expect(
       await pgCode(

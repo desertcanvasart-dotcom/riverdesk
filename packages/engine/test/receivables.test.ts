@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { owner } from '@vs/db/testing';
 import { addDays, type BusinessDate } from '@vs/shared';
 import {
   confirmHold,
@@ -203,6 +204,14 @@ describe('invoicing F4: statements, aging, credit limit, Today', () => {
       exposure: -7_000n,
     });
     expect(exposure.remaining).toBe(100_000_000n + 7_000n);
+
+    // A booking that has sailed and is not invoiced yet still counts.
+    const sailed = await book(channel);
+    await owner().query(`update vs.booking set status = 'completed' where id = $1`, [
+      sailed.bookingId,
+    ]);
+    exposure = await getCreditExposure(w.db, w.ctx, { channelId: channel });
+    expect(exposure).toMatchObject({ uninvoiced: sailed.total, exposure: sailed.total - 7_000n });
   });
 
   it('over the limit: a block contract makes a request, a warn contract confirms and says so', async () => {

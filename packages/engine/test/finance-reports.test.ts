@@ -184,9 +184,10 @@ describe('invoicing F5: finance reports, account codes, accountant exports', () 
     expect(row).toMatchObject({
       currency: 'USD',
       invoices: 1,
-      open: invoiceTotal - 1_140n - 20_000n,
+      // The 1,140 cabin credit takes its 10% commission back with it: 1,026 net.
+      open: invoiceTotal - 1_026n - 20_000n,
       unapplied: 5_000n,
-      net: invoiceTotal - 1_140n - 25_000n,
+      net: invoiceTotal - 1_026n - 25_000n,
     });
   });
 
@@ -258,7 +259,8 @@ describe('invoicing F5: finance reports, account codes, accountant exports', () 
     const invoices = await getAccountantExport(w.db, w.ctx, { content: 'invoices', ...period() });
     expect(invoices.rows.map((r) => r.type).sort()).toEqual(['credit_note', 'invoice']);
     // Credit notes are negative, so the totals add up to net sales.
-    expect(invoices.rows.find((r) => r.type === 'credit_note')!.total).toBe(-1_140n);
+    // The 1,140 cabin credit less its 10% commission.
+    expect(invoices.rows.find((r) => r.type === 'credit_note')!.total).toBe(-1_026n);
     const payments = await getAccountantExport(w.db, w.ctx, { content: 'payments', ...period() });
     expect(
       payments.rows.filter((r) => r.party === 'Reports Agent').map((r) => r.reference),
