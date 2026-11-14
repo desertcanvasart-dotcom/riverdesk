@@ -406,12 +406,19 @@ export async function reversePayment(
       throw new DomainError('INVALID_STATE', {
         message: 'This payment came from a party receipt; take it off the invoice on the receipt',
       });
-    await tx
+    const held = await tx
       .selectFrom('booking')
-      .select('id')
+      .select('amount_paid')
       .where('id', '=', original.booking_id)
       .forUpdate()
-      .execute();
+      .executeTakeFirstOrThrow();
+    // Money already refunded cannot also be reversed: the booking would show less than nothing
+    // received, and the refund would stand with no payment behind it.
+    if (original.booking_amount > held.amount_paid)
+      throw new DomainError('INVALID_STATE', {
+        message: 'Part of this payment was refunded; reverse the refund first',
+        details: { reason: 'refunded' },
+      });
     const already = await tx
       .selectFrom('payment')
       .select('id')
@@ -470,9 +477,10 @@ async function refundFor(tx: Tx, bookingId: string): Promise<RefundCalculation> 
     .where('id', '=', bookingId)
     .executeTakeFirst();
   if (!b) throw new DomainError('NOT_FOUND', { message: 'Booking not found' });
-  if (!['cancelled', 'paid_unavailable'].includes(b.status)) {
+  // Expired: money that came in below the deposit, on a booking that then lapsed. Nothing is kept.
+  if (!['cancelled', 'paid_unavailable', 'expired'].includes(b.status)) {
     throw new DomainError('INVALID_STATE', {
-      message: 'Refunds follow a cancellation or a paid-but-unavailable booking',
+      message: 'Refunds follow a cancellation, an expired booking or a paid-but-unavailable one',
     });
   }
   const { rows } = await sql<{ refunded: string }>`
@@ -721,9 +729,8 @@ export async function getActionList(db: VsDatabase, ctx: EngineContext): Promise
         and contract_id in (select id from vs.channel_contract where payment_mode = 'vessel_prepaid')
       order by balance_due_date`.execute(tx);
     const unavailable = await sql<ActionList['paidUnavailable'][number]>`
-      select id as "bookingId", ref, amount_paid as paid, currency from vs.booking where status = 'paid_unavailable'`.execute(
-      tx,
-    );
+      select id as "bookingId", ref, amount_paid as paid, currency from vs.booking
+      where status = 'paid_unavailable' or (status = 'expired' and amount_paid > 0)`.execute(tx);
     const exceptions = await sql<ActionList['exceptions'][number]>`
       select id, kind, severity, summary from vs.exception where status in ('open', 'acknowledged')
       order by case severity when 'critical' then 0 when 'warning' then 1 else 2 end, created_at`.execute(

@@ -1,7 +1,7 @@
 import { sql } from 'kysely';
 import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
-import type { EngineContext, Tx } from '../internal';
+import { bookingOwed, type EngineContext, type Tx } from '../internal';
 
 /**
  * Read model for the channel API. Every function takes the calling channel and only returns what
@@ -454,11 +454,13 @@ export async function getBookingView(
 ): Promise<BookingView> {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const b = await tx
-      .selectFrom('booking')
+      .selectFrom('booking as b')
       .selectAll()
       // The booking date is a Cairo calendar date (the deposit is due on it), not the UTC one.
-      .select(sql<string>`(created_at at time zone 'Africa/Cairo')::date::text`.as('booked_on'))
-      .where('id', '=', bookingId)
+      .select(sql<string>`(b.created_at at time zone 'Africa/Cairo')::date::text`.as('booked_on'))
+      // What the payer owes: net of commission where the agency is billed.
+      .select(bookingOwed.as('owed'))
+      .where('b.id', '=', bookingId)
       .executeTakeFirstOrThrow();
     const [sailing] = await sailingViews(tx, { ids: [b.sailing_id] });
     const cabins = await tx
@@ -503,7 +505,7 @@ export async function getBookingView(
         });
       const paidTowardsBalance =
         b.amount_paid > b.deposit_amount ? b.amount_paid : b.deposit_amount;
-      const balance = b.total + b.fees - paidTowardsBalance;
+      const balance = b.owed - paidTowardsBalance;
       if (balance > 0n && b.balance_due_date)
         paymentsDue.push({ kind: 'balance', amount: balance, dueDate: b.balance_due_date });
     }

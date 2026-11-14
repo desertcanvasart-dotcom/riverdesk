@@ -54,13 +54,22 @@ export function hoursLeft(value: Date | string): number {
 
 /**
  * "585.5" / "٥٨٥٫٥٠" → 58550n minor units of `currency` (3 decimals for KWD, BHD, OMR); null
- * when it is not an amount or has more decimals than the currency.
+ * when it is not an amount or has more decimals than the currency. Commas: "1,234.50" groups
+ * thousands; "585,50" (one comma, one or two digits after it, no point) is a decimal comma, as
+ * phone keypads in many regions type it. Any other comma is not an amount: it is never dropped
+ * silently, which would read "585,50" as 58,550.
  */
 export function parseMoney(text: string, currency = 'USD'): bigint | null {
-  const western = text
+  let western = text
     .trim()
     .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660))
-    .replace(/[٫,]/g, (c) => (c === '٫' ? '.' : ''));
+    .replace(/٫/g, '.')
+    .replace(/٬/g, ',');
+  if (/^\d+,\d{1,2}$/.test(western)) western = western.replace(',', '.');
+  else if (western.includes(',')) {
+    if (!/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(western)) return null;
+    western = western.replaceAll(',', '');
+  }
   return decimalToMinor(western, currency);
 }
 

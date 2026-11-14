@@ -42,4 +42,23 @@ export default tseslint.config(
     files: ['apps/*/src/**/*.{ts,tsx}'],
     rules: appImportRules,
   },
+  // Type-aware: a promise nobody awaits loses its error (and its order) silently.
+  {
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['*.config.{ts,mjs}', '*/*/vitest.config.ts'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
+    },
+  },
 );

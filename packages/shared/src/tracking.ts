@@ -84,13 +84,24 @@ export function flushErrorTracking(timeoutMs = 2000): Promise<boolean> {
  * error tracking, and the process exits (the host restarts it) instead of carrying on in an
  * unknown state.
  */
-export function exitOnUnhandledErrors(logger: {
-  fatal: (object: object, message: string) => void;
-}): void {
+export function exitOnUnhandledErrors(
+  logger: { fatal: (object: object, message: string) => void },
+  /** Last thing before exiting (the worker gives its job locks back); given five seconds. */
+  release?: () => Promise<void> | undefined,
+): void {
+  let failing = false;
   const fail = (kind: string) => (error: unknown) => {
     logger.fatal({ err: error }, kind);
     captureError(error, { kind });
-    void flushErrorTracking().finally(() => process.exit(1));
+    if (failing) return;
+    failing = true;
+    const released = Promise.race([
+      Promise.resolve()
+        .then(() => release?.())
+        .catch(() => undefined),
+      new Promise((done) => setTimeout(done, 5_000).unref()),
+    ]);
+    void released.then(() => flushErrorTracking()).finally(() => process.exit(1));
   };
   process.on('unhandledRejection', fail('unhandled promise rejection'));
   process.on('uncaughtException', fail('uncaught exception'));

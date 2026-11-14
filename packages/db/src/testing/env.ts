@@ -28,6 +28,8 @@ export function owner(): pg.Pool {
     ownerPool = new pg.Pool({
       connectionString: required(config, 'DATABASE_URL_ADMIN'),
       max: 4,
+      // pg-pool awaits onConnect before handing the client out; its types still say void.
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       onConnect: async (client) => {
         await client.query('set role vs_owner');
       },

@@ -656,6 +656,30 @@ export async function issueInvoiceInTx(
         details: { ref: b.ref, status: b.status },
       });
   }
+  // The draft's booking lines were written when it was made. A booking amended or cancelled
+  // since would be invoiced at its old price, so the draft is refused: made again, it is right.
+  const party = await tx
+    .selectFrom('billing_party')
+    .select('kind')
+    .where('id', '=', draft.billing_party_id)
+    .executeTakeFirstOrThrow();
+  const fromBooking = ['cabin', 'fee', 'penalty', 'commission'];
+  const shape = (rows: { kind: string; booking_cabin_id: string | null; unit_amount: bigint }[]) =>
+    rows
+      .map((l) => `${l.kind}|${l.booking_cabin_id ?? ''}|${l.unit_amount}`)
+      .sort()
+      .join(';');
+  for (const b of bookings) {
+    const stored = lines.filter((l) => l.booking_id === b.id && fromBooking.includes(l.kind));
+    // A folio invoice names its booking on extras lines only: nothing to compare.
+    if (!stored.length) continue;
+    const now = await bookingLines(tx, b, party.kind === 'agency', null);
+    if (shape(stored) !== shape(now))
+      throw new DomainError('INVALID_STATE', {
+        message: `Booking ${b.ref} changed after this draft was made; delete the draft and create it again`,
+        details: { ref: b.ref, reason: 'draft_stale' },
+      });
+  }
   const open = await bookingsOnOpenInvoices(tx, bookingIds, draft.id);
   if (open.length)
     throw new DomainError('INVALID_STATE', {

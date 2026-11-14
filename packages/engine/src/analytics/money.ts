@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import type { VsDatabase } from '@vs/db';
 import { addDays, convert, money, mulDivHalfUp, type BusinessDate } from '@vs/shared';
-import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
+import { bookingOwed, cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
 import { creditExposure, getAgingInTx, type AgingBucket } from '../finance/receivables';
 import { loadFinanceSettings } from '../finance/settings';
 import { dateSchema } from '../schedule/setup';
@@ -197,11 +197,11 @@ async function cashFor(
       and not exists (select from vs.invoice_line l join vs.invoice i on i.id = l.invoice_id
                       where l.booking_id = b.id and i.type = 'invoice' and i.status not in ('draft', 'cancelled'))
     union all
-    -- Agency bookings not invoiced yet: no due date.
-    select b.currency, null, (b.total + b.fees - b.amount_paid)::text
+    -- Agency bookings not invoiced yet, sailed or not: no due date. Net of commission.
+    select b.currency, null, (${bookingOwed} - b.amount_paid)::text
     from vs.booking b join vs.channel_contract cc on cc.id = b.contract_id
-    where cc.payment_mode <> 'vessel_prepaid' and b.status = 'confirmed'
-      and b.total + b.fees > b.amount_paid ${vessel ? sql`and b.vessel_id = ${vessel}` : sql``}
+    where cc.payment_mode <> 'vessel_prepaid' and b.status in ('confirmed', 'completed')
+      and ${bookingOwed} > b.amount_paid ${vessel ? sql`and b.vessel_id = ${vessel}` : sql``}
       and not exists (select from vs.invoice_line l join vs.invoice i on i.id = l.invoice_id
                       where l.booking_id = b.id and i.type = 'invoice' and i.status not in ('draft', 'cancelled'))`.execute(
     tx,
@@ -247,7 +247,7 @@ async function cashFor(
   }>`
     select to_char(s.embark_date, 'YYYY-MM') as month, b.currency, count(*)::int as bookings,
            sum(b.amount_paid)::text as paid,
-           sum(greatest(b.total + b.fees - b.amount_paid, 0))::text as outstanding
+           sum(greatest(${bookingOwed} - b.amount_paid, 0))::text as outstanding
     from vs.booking b join vs.sailing s on s.id = b.sailing_id
     where b.status in ('held', 'confirmed') and s.embark_date > ${today}::date and b.amount_paid > 0
       ${vessel ? sql`and b.vessel_id = ${vessel}` : sql``}

@@ -92,7 +92,42 @@ export function buildTaskList(
 export interface WorkerHandle {
   runner: Runner;
   db: VsDatabase;
-  stop(): Promise<void>;
+  /**
+   * Lets running jobs finish, for at most `deadlineMs`; then they are failed, which gives their
+   * locks back. Never waits for ever: the host kills the process soon after asking it to stop.
+   */
+  stop(deadlineMs?: number): Promise<void>;
+  /** For a crash: fails the running jobs so their locks are given back, and nothing else. */
+  abandon(): Promise<void>;
+}
+
+/** Running jobs get this long to finish when the worker is asked to stop. */
+export const STOP_DEADLINE_MS = 30_000;
+/** A lock older than this belongs to a worker that died: no job here runs nearly that long. */
+export const STALE_LOCK_MINUTES = 30;
+
+/**
+ * Gives back job and queue locks left by a worker that was killed mid-job. Graphile Worker does
+ * this itself only after four hours, and every cron job here has its own queue, so until then
+ * that job would not run at all: holds not expiring, webhooks not going out.
+ */
+export async function releaseStaleJobLocks(
+  pgPool: ReturnType<typeof openJobQueuePool>,
+  minutes = STALE_LOCK_MINUTES,
+): Promise<{ jobs: number; queues: number }> {
+  const { rows } = await pgPool.query<{ jobs: number; queues: number }>(
+    `with j as (
+       update graphile_worker._private_jobs
+       set locked_at = null, locked_by = null, run_at = greatest(run_at, now())
+       where locked_at < now() - make_interval(mins => $1) returning 1),
+     q as (
+       update graphile_worker._private_job_queues
+       set locked_at = null, locked_by = null
+       where locked_at < now() - make_interval(mins => $1) returning 1)
+     select (select count(*)::int from j) as jobs, (select count(*)::int from q) as queues`,
+    [minutes],
+  );
+  return rows[0]!;
 }
 
 /**
@@ -114,15 +149,40 @@ export async function startWorker(
     taskList: buildTaskList(db, logger, config),
     crontab: CRONTAB,
   });
+  const sweep = () =>
+    releaseStaleJobLocks(pgPool).then(
+      (released) => {
+        if (released.jobs || released.queues)
+          logger.warn(released, 'released job locks left by a dead worker');
+      },
+      (error: unknown) => logger.error({ err: error }, 'could not release stale job locks'),
+    );
+  await sweep();
+  const sweeping = setInterval(() => void sweep(), 5 * 60_000);
+  sweeping.unref();
   logger.info('worker started');
   return {
     runner,
     db,
-    async stop() {
-      await runner.stop();
+    async stop(deadlineMs = STOP_DEADLINE_MS) {
+      clearInterval(sweeping);
+      let timer: NodeJS.Timeout | undefined;
+      const late = new Promise<'late'>((done) => {
+        timer = setTimeout(() => done('late'), deadlineMs);
+      });
+      const outcome = await Promise.race([runner.stop().then(() => 'stopped' as const), late]);
+      clearTimeout(timer);
+      if (outcome === 'late') {
+        logger.warn({ deadlineMs }, 'jobs still running at the deadline; failing them');
+        await runner.kill('stop deadline reached').catch(() => undefined);
+      }
       await closeRenderer();
       await db.close();
       await pgPool.end();
+    },
+    async abandon() {
+      clearInterval(sweeping);
+      await runner.kill('worker crashed').catch(() => undefined);
     },
   };
 }

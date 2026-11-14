@@ -1,11 +1,20 @@
-/** Where the website links to. Set per environment; the defaults are the local servers. */
+/** A production build never points at localhost, even if a setting was left out. */
+const live = process.env.NODE_ENV === 'production';
+
+/** Where the website links to. Set per environment; the defaults are riverdsk.com, or the local servers. */
 export const site = {
   /** This website's own address, for canonical links, hreflang and Open Graph. */
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3200',
+  siteUrl:
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (live ? 'https://www.riverdsk.com' : 'http://localhost:3200'),
   /** The back office (staff sign in). */
-  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3100',
+  appUrl:
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (live ? 'https://app.riverdsk.com' : 'http://localhost:3100'),
   /** The live Channel API reference (rendered from openapi.yaml). */
-  apiDocsUrl: process.env.NEXT_PUBLIC_API_DOCS_URL ?? 'http://localhost:4000/docs',
+  apiDocsUrl:
+    process.env.NEXT_PUBLIC_API_DOCS_URL ??
+    (live ? 'https://api.riverdsk.com/docs' : 'http://localhost:4000/docs'),
   /** WhatsApp number in international format, digits only (201001234567). Unset: no WhatsApp buttons. */
   whatsappNumber: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '').replace(/\D/g, ''),
   /** How many founding vessels the program takes. */

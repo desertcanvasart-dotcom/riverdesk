@@ -12,13 +12,12 @@ import {
   refreshPaymentTerms,
   bookingEvent,
   requestKeySchema,
-  sailingLegs,
   withRequestKey,
   writeRevision,
   type QuotedCabin,
 } from './common';
 import { settleFoliosBeforeCancel } from '../backoffice/folios';
-import { loadContract } from './holds';
+import { assertContractSells, assertSailingOpen, creditCheckAmount, loadContract } from './holds';
 import { renumberCabins } from './requests';
 import { releaseUnits, takeUnits } from './units';
 
@@ -291,15 +290,27 @@ export async function applyAmendment(
             details: { quoteId: quote.id },
           });
         const contract = await loadContract(tx, quote.contractId);
-        const newLegs = await sailingLegs(tx, quote.sailingId);
-        const sailing = await tx
-          .selectFrom('sailing')
-          .select('status')
-          .where('id', '=', quote.sailingId)
-          .executeTakeFirstOrThrow();
-        if (sailing.status !== 'open' || newLegs.some((l) => l.status !== 'open'))
-          throw new DomainError('SAILING_CLOSED');
+        // Open and not departed, as for a new booking.
+        const newLegs = await assertSailingOpen(tx, quote.sailingId);
         const { changes, fee } = await feeFor(tx, before, quote);
+        // On credit, what the change adds (price difference and fee) counts against the agency's
+        // limit as a new booking would: without this, one cabin inside the limit could be amended
+        // to twenty. An amendment cannot become a request, so over the limit it is refused; a
+        // contract that only warns lets it through.
+        const added = quote.netTotal - before.net_total + fee;
+        if (contract.payment_mode === 'credit' && added > 0n) {
+          const credit = await creditCheckAmount(tx, booking.channel_id, added, quote.currency);
+          if (credit.over && !(contract.credit_limit_mode === 'warn' && credit.allowed))
+            throw new DomainError('CONTRACT_FORBIDS', {
+              message: 'The change would take the agency over its credit limit',
+              details: {
+                reason: 'credit_limit',
+                added: added.toString(),
+                currency: quote.currency,
+                remaining: credit.exposure.remaining?.toString() ?? null,
+              },
+            });
+        }
 
         const newCabins = quote.cabins as QuotedCabin[];
         const oldLines = await tx
@@ -329,6 +340,8 @@ export async function applyAmendment(
           .map(([k, n]) => ({ k, n: n - (current.get(k)?.length ?? 0) }))
           .filter((x) => x.n > 0)
           .map(({ k, n }) => ({ legId: k.split('|')[0]!, categoryId: k.split('|')[1]!, n }));
+        // More cabins or other nights are a new sale: not while the contract is off or stopped.
+        if (increases.length > 0) assertContractSells(contract);
         const taken = await takeUnits(tx, ctx, {
           channelId: booking.channel_id,
           allocation: contract.allocation,

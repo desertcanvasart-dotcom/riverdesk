@@ -22,6 +22,36 @@ const typeParsers = {
 /** SQLSTATEs that mean "run the whole transaction again" (rule 5). */
 const RETRYABLE = new Set(['40P01', '40001']);
 
+/** SQLSTATE of a lock not granted within lock_timeout. */
+const LOCK_TIMEOUT = '55P03';
+
+/**
+ * Limits on every transaction, so a stuck connection or a lock nobody releases ends in an error
+ * instead of a request or a job that never finishes. Set per transaction (`set local`), which
+ * works through a connection pooler in any mode.
+ */
+export interface TxTimeouts {
+  /** One statement may run this long. */
+  statementMs: number;
+  /** A statement waits this long for a lock; then RETRY_LATER. */
+  lockMs: number;
+  /** A transaction may sit idle between statements this long. */
+  idleInTransactionMs: number;
+}
+
+export const DEFAULT_TX_TIMEOUTS: TxTimeouts = {
+  statementMs: 60_000,
+  lockMs: 20_000,
+  idleInTransactionMs: 120_000,
+};
+
+/**
+ * A request waits this long for a connection (a new one, or a free one when the pool is all in
+ * use), then fails: the API answers 503 instead of hanging. Not for the worker, whose jobs may
+ * rightly queue for a connection longer than that.
+ */
+export const CONNECT_TIMEOUT_MS = 10_000;
+
 export interface TenantTx<DB> {
   db: Transaction<DB>;
   operatorId: string;
@@ -82,6 +112,9 @@ async function withRetries<T>(
       return await run(attempt);
     } catch (error) {
       const code = pgErrorCode(error);
+      // Waited too long for a lock: the caller may try again, but not in a loop here.
+      if (code === LOCK_TIMEOUT)
+        throw new DomainError('RETRY_LATER', { cause: error, details: { reason: 'lock_timeout' } });
       if (!code || !RETRYABLE.has(code)) throw error;
       if (attempt >= maxRetries) {
         throw new DomainError('RETRY_LATER', { cause: error, details: { attempts: attempt + 1 } });
@@ -95,8 +128,21 @@ async function withRetries<T>(
 
 export function createDatabase<DB>(
   connection: PgConnection & { max?: number; applicationName?: string },
-  options: { logger?: Logger; schema?: string } = {},
+  options: {
+    logger?: Logger;
+    schema?: string;
+    timeouts?: Partial<TxTimeouts>;
+    /** 0: wait for a connection without limit. */
+    connectTimeoutMs?: number;
+  } = {},
 ): Database<DB> {
+  const timeouts = { ...DEFAULT_TX_TIMEOUTS, ...options.timeouts };
+  const limits = (db: Transaction<DB>) =>
+    sql`select set_config('statement_timeout', ${String(timeouts.statementMs)}, true),
+               set_config('lock_timeout', ${String(timeouts.lockMs)}, true),
+               set_config('idle_in_transaction_session_timeout', ${String(timeouts.idleInTransactionMs)}, true)`.execute(
+      db,
+    );
   const pool = new pg.Pool({
     host: connection.host,
     port: connection.port,
@@ -105,6 +151,9 @@ export function createDatabase<DB>(
     password: connection.password,
     ssl: databaseTls(connection.host, connection.ssl),
     max: connection.max ?? 10,
+    connectionTimeoutMillis: options.connectTimeoutMs ?? CONNECT_TIMEOUT_MS,
+    // TCP keep-alive: a connection cut silently (a proxy, a network change) is noticed.
+    keepAlive: true,
     application_name: connection.applicationName ?? connection.user,
     types: typeParsers,
   });
@@ -126,6 +175,7 @@ export function createDatabase<DB>(
       return withRetries(
         (attempt) =>
           kysely.transaction().execute(async (db) => {
+            await limits(db);
             await sql`select set_config('app.operator_id', ${operatorId}, true)`.execute(db);
             return fn({ db, operatorId, actor, attempt });
           }),
@@ -134,7 +184,15 @@ export function createDatabase<DB>(
       );
     },
     withLookupTx(fn, txOptions = {}) {
-      return withRetries(() => kysely.transaction().execute(fn), txOptions, options.logger);
+      return withRetries(
+        () =>
+          kysely.transaction().execute(async (db) => {
+            await limits(db);
+            return fn(db);
+          }),
+        txOptions,
+        options.logger,
+      );
     },
     async close() {
       await kysely.destroy();

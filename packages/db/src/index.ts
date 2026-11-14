@@ -35,9 +35,18 @@ export function openDatabase(
       ...roleConnection(config, role, { session: options.session }),
       max: options.max ?? config.DATABASE_POOL_MAX,
     },
-    { logger: options.logger, schema: 'vs' },
+    {
+      logger: options.logger,
+      schema: 'vs',
+      // The worker's nightly jobs (snapshot, invariants, packs) read far more than a request does.
+      timeouts: role === 'vs_worker' ? WORKER_TX_TIMEOUTS : undefined,
+      connectTimeoutMs: role === 'vs_worker' ? 0 : undefined,
+    },
   );
 }
+
+/** Background jobs get ten minutes where a request gets one. */
+export const WORKER_TX_TIMEOUTS = { statementMs: 600_000, idleInTransactionMs: 600_000 };
 
 /**
  * The job queue's own pool for Graphile Worker: vs_worker in session mode (LISTEN/NOTIFY), plain
@@ -50,5 +59,6 @@ export function openJobQueuePool(options: { config?: Config; max?: number } = {}
     ...connection,
     ssl: databaseTls(connection.host, connection.ssl),
     max: options.max ?? 4,
+    keepAlive: true,
   });
 }

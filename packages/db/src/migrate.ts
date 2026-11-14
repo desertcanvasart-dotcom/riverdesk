@@ -128,6 +128,8 @@ async function installGraphileWorker(adminUrl: string, ssl: pg.ConnectionConfig[
     connectionString: adminUrl,
     ssl,
     max: 1,
+    // pg-pool awaits onConnect before handing the client out; its types still say void.
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onConnect: async (connection) => {
       await connection.query(`set role ${OWNER_ROLE}`);
     },

@@ -10,3 +10,7 @@
 docs/screenshots
 supabase/.temp
 *.log
+**/coverage
+**/test-results
+**/playwright-report
+.claude

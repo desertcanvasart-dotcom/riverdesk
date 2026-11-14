@@ -197,6 +197,28 @@ describe('channel API v1', () => {
         payload: 'x',
       });
       expect(media.statusCode).toBe(415);
+      // Too many token requests from one address in a minute: 429 with Retry-After.
+      const strict = buildApp({ db, logger, tokenSecret, tokenRequestsPerMinute: 2 });
+      const ask = (address = '203.0.113.7') =>
+        strict.inject({
+          method: 'POST',
+          url: '/oauth/token',
+          remoteAddress: address,
+          payload: {
+            grant_type: 'client_credentials',
+            client_id: nilecrz.clientId,
+            client_secret: nilecrz.secret,
+          },
+        });
+      expect((await ask()).statusCode).toBe(200);
+      expect((await ask()).statusCode).toBe(200);
+      const third = await ask();
+      expect([third.statusCode, third.json().error.code]).toEqual([429, 'RATE_LIMITED']);
+      expect(Number(third.headers['retry-after'])).toBeGreaterThan(0);
+      // Another caller is not affected, and an internal address is never counted.
+      expect((await ask('198.51.100.9')).statusCode).toBe(200);
+      for (let i = 0; i < 4; i += 1) expect((await ask('10.0.0.5')).statusCode).toBe(200);
+      await strict.close();
 
       const none = await app.inject({ method: 'GET', url: '/v1/vessels' });
       expect([none.statusCode, none.json().error.code]).toEqual([401, 'UNAUTHENTICATED']);

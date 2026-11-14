@@ -35,6 +35,18 @@ export async function cairoToday(tx: Tx): Promise<BusinessDate> {
   return rows[0]!.today as BusinessDate;
 }
 
+/**
+ * What the payer owes on a standing booking `b`, as SQL: the total and fees, less the commission
+ * when the agency is billed for it (finance/parties.ts `billsAgency`: not a back-office channel,
+ * not prepaid to the vessel). The agency's invoice deducts the commission, so the booking is paid
+ * once the net is in.
+ */
+export const bookingOwed = sql<bigint>`(case when exists (
+    select from vs.channel owed_ch join vs.channel_contract owed_cc on owed_cc.id = b.contract_id
+    where owed_ch.id = b.channel_id and owed_ch.type <> 'back_office'
+      and owed_cc.payment_mode <> 'vessel_prepaid')
+  then b.net_total else b.total end + b.fees)`;
+
 export async function dbNow(tx: Tx): Promise<Date> {
   const { rows } = await sql<{ now: Date }>`select now() as now`.execute(tx);
   return rows[0]!.now;

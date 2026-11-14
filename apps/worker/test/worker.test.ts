@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { parseCrontab, quickAddJob, runOnce } from 'graphile-worker';
 import { createOperator, owner, testConfig } from '@vs/db/testing';
-import { openDatabase, type VsDatabase } from '@vs/engine';
+import { openDatabase, openJobQueuePool, type VsDatabase } from '@vs/engine';
 import { connectionString, createLogger, roleConnection } from '@vs/shared';
-import { buildTaskList, CRONTAB, startWorker } from '../src/worker';
+import { buildTaskList, CRONTAB, releaseStaleJobLocks, startWorker } from '../src/worker';
 
 const logger = createLogger('worker-test', { level: 'silent' });
 
@@ -33,6 +33,49 @@ describe('worker', () => {
     // What emails or cancels is never retried and never catches up twice in a run.
     for (const task of ['outage_pack', 'overdue_balances', 'checkin_packs', 'webhooks'])
       expect(items.find((i) => i.task === task)!.options.maxAttempts, task).toBe(1);
+  });
+
+  it('gives back job and queue locks a dead worker left, and leaves fresh ones alone', async () => {
+    const pool = openJobQueuePool({ config, max: 1 });
+    try {
+      for (const name of ['stale_lock_test', 'fresh_lock_test'])
+        await quickAddJob({ connectionString: workerUrl }, name, {}, { queueName: name });
+      const lock = (name: string, minutes: number) =>
+        owner().query(
+          `with q as (
+             update graphile_worker._private_job_queues
+             set locked_at = now() - make_interval(mins => $2), locked_by = 'dead-worker'
+             where queue_name = $1 returning id)
+           update graphile_worker._private_jobs j
+           set locked_at = now() - make_interval(mins => $2), locked_by = 'dead-worker'
+           from q where j.job_queue_id = q.id`,
+          [name, minutes],
+        );
+      await lock('stale_lock_test', 31);
+      await lock('fresh_lock_test', 5);
+      expect(await releaseStaleJobLocks(pool)).toEqual({ jobs: 1, queues: 1 });
+      const { rows } = await owner().query<{ queue_name: string; job: boolean; queue: boolean }>(
+        `select q.queue_name, j.locked_at is not null as job, q.locked_at is not null as queue
+         from graphile_worker._private_job_queues q
+         join graphile_worker._private_jobs j on j.job_queue_id = q.id
+         where q.queue_name in ('stale_lock_test', 'fresh_lock_test') order by q.queue_name`,
+      );
+      expect(rows).toEqual([
+        { queue_name: 'fresh_lock_test', job: true, queue: true },
+        { queue_name: 'stale_lock_test', job: false, queue: false },
+      ]);
+    } finally {
+      await owner().query(
+        `delete from graphile_worker._private_jobs where job_queue_id in (
+           select id from graphile_worker._private_job_queues
+           where queue_name in ('stale_lock_test', 'fresh_lock_test'))`,
+      );
+      await owner().query(
+        `update graphile_worker._private_job_queues set locked_at = null, locked_by = null
+         where queue_name in ('stale_lock_test', 'fresh_lock_test')`,
+      );
+      await pool.end();
+    }
   });
 
   it('boots as vs_worker and registers the nightly_invariants cron job', async () => {

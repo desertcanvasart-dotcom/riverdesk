@@ -1029,3 +1029,55 @@ Per booking: the transfer voucher (arrival and departure transfers, guests on th
 **Who sees revenue.** Revenue reports, statements and the aging of receivables are for owner, manager and finance (`reports.money`); reservations, read-only and on-board staff no longer see them or their buttons, and their pages answer not found. An agency's credit exposure stays readable by whoever books, since the booking page shows it after a booking over a warn-mode limit.
 
 **Invitations.** Inviting the email of someone who was staff here and was deactivated switches them back on at once with the new role, vessel and name (audited as `staff_user.reactivated`); they sign in as before. An active staff member cannot be invited again. One open invitation per email across all companies stays.
+
+## Audit hardening batch (2026-11-02)
+
+**Security headers.** The back office and the website send, on every page: `frame-ancestors 'none'` and `X-Frame-Options: DENY` (no clickjacking), `nosniff`, `base-uri` and `form-action 'self'`, `object-src 'none'`, a strict referrer policy, HSTS for a year, and no camera, microphone, location or payment access. Scripts are not limited by the policy: Next.js inline scripts would need per-request nonces, a separate step.
+
+**Website.** `robots.txt` (all public pages, not `/api/`) and `sitemap.xml` (every page and doc in both languages, with hreflang alternates). A production build falls back to riverdsk.com, never localhost, if an address setting is missing.
+
+**Token endpoint.** `/oauth/token` takes at most 30 requests a minute per client address (429 `rate_limited` with Retry-After), in memory per API instance. The API trusts exactly one proxy hop (Railway's edge) for the address, so a caller cannot choose it with X-Forwarded-For. Secrets are 32 random bytes, so this is about load, not guessing.
+
+**Images.** Dependencies are fetched from the lockfile alone in their own layer (`pnpm fetch`), then installed offline, so a code change no longer re-downloads every package. All four images run as the unprivileged `node` user (the Next.js apps own their `.next` cache).
+
+**CI.** The workflow's token is read-only; actions are pinned to commits (tags noted); `pnpm audit --prod` fails the run on high or critical advisories (today: 5 moderate, in exceljs and Sentry's bundler plugin, none reachable with outside input); a second job builds the four images and checks they run as `node`, so a broken Dockerfile fails CI instead of a deploy.
+
+**Lint.** Type-aware `no-floating-promises` and `no-misused-promises` are on for every package; the code already awaited or deliberately `void`ed every promise, so nothing needed fixing.
+
+**Database write rights: unchanged.** The worker issues invoices (cancelling an overdue booking first closes its open folios into an invoice, which writes and replaces draft lines), so its insert, update and delete rights on invoices are needed; the back office edits and deletes drafts. Issued invoices, their lines and the numbering are protected by database triggers whatever the role.
+
+## Review fixes, batch 1: booking lifecycle (2026-11-14)
+
+From the read-only review of 14 November 2026. Tests: `packages/engine/test/lifecycle.test.ts`.
+
+**Departed sailings.** A sailing sells up to and on the day it boards (Cairo date). After that, quoting, holding, confirming, accepting a request and amending onto it answer `SAILING_CLOSED` (details `reason: departed`), whatever the sailing's status says: nothing sets a status when a sailing leaves. This also means a booking cannot be amended once its own sailing has left; changes on board go on the folio.
+
+**Credit on amendments.** On a credit contract, what an amendment adds (price difference plus fee) is checked against the agency's limit as a new booking is. An amendment cannot become a request, so over the limit it is refused with `CONTRACT_FORBIDS` (details `reason: credit_limit`); a contract in warn mode lets it through. An amendment that takes more cabins or other nights is also refused while the contract is inactive or on stop-sell; one that only gives cabins back is not.
+
+**Shifted sailings.** When a schedule exception moves a sailing, the balance due date of its held and confirmed bookings moves with it. Before, a shifted booking was flagged overdue, or cancelled where the policy allows, on the old date.
+
+**Cancelled sailings.** The daily completion job skips bookings on a cancelled sailing. They stay confirmed, on the schedule exception's list, until staff move or cancel them, and never count as sailed.
+
+**Money on an expired booking.** A payment below the deposit on a booking that then expired can be refunded in full (nothing is kept). Its payment status becomes refund due, then refunded, and it appears on Today with the paid-but-unavailable bookings until the money is returned.
+
+## Review fixes, batch 2: money (2026-11-14)
+
+From the read-only review of 14 November 2026. Tests: `packages/engine/test/money-fixes.test.ts`, `apps/backoffice/test/format.test.ts`.
+
+**What a booking owes.** A standing booking owes its total and fees, less the commission when the agency is billed for it (not a back-office channel, not prepaid to the vessel): the agency's invoice already deducts the commission, so that is what comes in. One SQL expression (`bookingOwed` in the engine) now says this everywhere it matters: the payment status (such a booking reaches paid once the net is in; before, it stayed unpaid with the commission as its balance for ever), the agency's credit exposure and the credit checks at confirmation and amendment, the cash forecast and the outstanding figure in money analytics, and the balance the channel API reports. The forecast also counts sailed agency bookings not yet invoiced. Booked value and revenue reports stay gross of commission, as decided on 2026-10-29. A guest paying the vessel owes the full price as before.
+
+**Stale drafts.** A draft or proforma keeps the booking lines written when it was made. At issue, each booking's lines are compared with what the booking would be invoiced now; if it was amended or cancelled since, issuing is refused (`INVALID_STATE`, details `reason: draft_stale`) and the draft is deleted and made again. Refusing rather than rebuilding: an invoice total should not change under the person issuing it.
+
+**Refunded, then reversed.** A booking payment cannot be reversed for more than the booking still holds: once part of it was refunded, the refund is reversed first. Before, both could stand and the booking showed less than nothing received.
+
+**Commas in amounts.** In the back office's amount fields, `1,234.50` groups thousands and `585,50` (one comma, one or two digits after it) is a decimal comma. Any other comma is refused. Before, every comma was dropped, so `585,50` was read as 58,550.00.
+
+## Review fixes, batch 3: infrastructure (2026-11-14)
+
+From the read-only review of 14 November 2026. Tests: `packages/db/test/timeouts.test.ts`, `apps/api/test/token-limiter.test.ts`, `apps/worker/test/worker.test.ts`.
+
+**Worker stopped mid-job.** Every cron job has its own queue, and Graphile Worker gives back the lock of a job whose worker died only after four hours: until then that job did not run at all (holds not expiring, webhooks not going out). Three changes. (1) Asked to stop, the worker lets running jobs finish for 30 seconds, then fails them, which gives their locks back; Railway now waits 60 seconds between SIGTERM and SIGKILL (`drainingSeconds`). (2) On a crash (an unhandled error) it fails its running jobs before exiting, within five seconds. (3) At start and every five minutes it gives back job and queue locks older than 30 minutes, for the kills nothing can catch (out of memory). No job here runs nearly 30 minutes. A failed cron job is not retried unless it was marked safe to repeat; the next tick runs it.
+
+**Database time limits.** Every engine transaction now sets, for itself only (`set local`, so it works through the pooler): one statement 60 seconds, waiting for a lock 20 seconds, idle between statements 2 minutes. The worker gets 10 minutes for statements and idle, since its nightly jobs read far more. A lock not granted in time answers `RETRY_LATER` (once, not in a loop). The API and back office wait at most 10 seconds for a connection, then fail (the API answers 503); the worker waits without limit, as its jobs may rightly queue. Connections use TCP keep-alive, so one cut silently is noticed.
+
+**Token rate limit.** Three corrections to the hardening batch's limiter. An IPv6 caller is counted by its /64, not per address. A private or loopback address is not counted at all: behind Railway's edge every caller has a public address, so a private one means an unexpected proxy hop is being read as the client, and counting it would lock every channel out together. The table of addresses is capped (20,000; past it, it is emptied) and swept every ten seconds rather than on each request. The 429 now has the standard error shape (`RATE_LIMITED`), as the contract declares.

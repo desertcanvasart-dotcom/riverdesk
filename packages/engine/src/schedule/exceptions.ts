@@ -369,6 +369,18 @@ async function refreshSailings(tx: Tx, legIds: string[]) {
     from shape
     where s.id = shape.sailing_id
     returning s.id, s.version, s.status, s.embark_date::text`.execute(tx);
+  // A moved sailing moves what hangs on its date: the balance due date of its live bookings (as
+  // refreshPaymentTerms computes it). Otherwise a shifted booking is flagged overdue, or
+  // cancelled where the policy allows, on the old date.
+  await sql`
+    update vs.booking b
+    set balance_due_date = greatest(s.embark_date - (q.policies->'payment'->>'balance_due_days')::int,
+                                    (b.created_at at time zone 'Africa/Cairo')::date)
+    from vs.quote q, vs.sailing s
+    where b.sailing_id = any(${changed.map((sailing) => sailing.id)}::uuid[])
+      and b.status in ('held', 'confirmed') and q.id = b.quote_id and s.id = b.sailing_id`.execute(
+    tx,
+  );
   return {
     changed,
     closed: changed.filter((sailing) => sailing.status === 'closed').map((sailing) => sailing.id),

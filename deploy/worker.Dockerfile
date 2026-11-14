@@ -3,9 +3,12 @@
 FROM node:22-bookworm-slim
 RUN corepack enable
 WORKDIR /repo
+# Dependencies first, from the lockfile alone: this layer is reused until the lockfile changes.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN pnpm fetch --frozen-lockfile
 COPY . .
 # Only this app and the workspace packages it uses.
-RUN pnpm install --frozen-lockfile --filter @vs/worker...
+RUN pnpm install --offline --frozen-lockfile --filter @vs/worker...
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN pnpm --filter @vs/worker exec playwright install --with-deps chromium
 ENV NODE_ENV=production

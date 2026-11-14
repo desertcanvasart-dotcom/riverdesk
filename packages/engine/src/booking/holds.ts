@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
 import { audit } from '../audit';
-import { parseInput, type EngineContext, type Tx } from '../internal';
+import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
 import { creditExposure, type CreditExposure } from '../finance/receivables';
 import { loadQuote, useQuote, type Quote } from '../pricing/quote';
 import {
@@ -15,6 +15,7 @@ import {
   insertBooking,
   insertBookingLines,
   needsFor,
+  refreshPaymentStatus,
   replaceGuests,
   requestKeySchema,
   sailingLegs,
@@ -39,15 +40,25 @@ export function assertContractSells(contract: { active: boolean; stop_sell: bool
     throw new DomainError('CONTRACT_FORBIDS', { message: 'Sales are stopped for this channel' });
 }
 
+/**
+ * Open, every leg open, and not departed: a sailing sells up to and on the day it boards (Cairo
+ * date). Nothing sets a status when a sailing leaves, so the date is checked here.
+ */
 export async function assertSailingOpen(tx: Tx, sailingId: string) {
   const sailing = await tx
     .selectFrom('sailing')
-    .select(['status'])
+    .select(['status', 'embark_date'])
     .where('id', '=', sailingId)
     .executeTakeFirstOrThrow();
   const legs = await sailingLegs(tx, sailingId);
   if (sailing.status !== 'open' || legs.some((leg) => leg.status !== 'open')) {
     throw new DomainError('SAILING_CLOSED', { details: { sailingId } });
+  }
+  if ((sailing.embark_date as string) < (await cairoToday(tx))) {
+    throw new DomainError('SAILING_CLOSED', {
+      message: 'The sailing has departed',
+      details: { sailingId, reason: 'departed' },
+    });
   }
   return legs;
 }
@@ -612,10 +623,13 @@ export async function expireHolds(
           .where('status', '=', 'held')
           .returning('id')
           .executeTakeFirst();
-        if (booking)
+        if (booking) {
+          // Part of the deposit may have come in: the status then says a refund is due.
+          await refreshPaymentStatus(tx, booking.id);
           await bookingEvent(tx, ctx, booking.id, 'hold.expired', {
             reason: 'payment_hold_expired',
           });
+        }
       }
       if (hold.kind === 'offer' && hold.booking_id) {
         await tx
@@ -670,11 +684,22 @@ export async function creditCheck(
   channelId: string,
   quote: Quote,
 ): Promise<{ over: boolean; allowed: boolean; exposure: CreditExposure }> {
+  // Net of commission: what the agency will be invoiced, as the exposure counts it.
+  return creditCheckAmount(tx, channelId, quote.netTotal, quote.currency);
+}
+
+/** The same check for any added amount: a new booking's total, or what an amendment adds. */
+export async function creditCheckAmount(
+  tx: Tx,
+  channelId: string,
+  amount: bigint,
+  currency: string,
+): Promise<{ over: boolean; allowed: boolean; exposure: CreditExposure }> {
   await tx.selectFrom('channel').select('id').where('id', '=', channelId).forUpdate().execute();
   const exposure = await creditExposure(tx, channelId);
-  if (!exposure.allowed || exposure.limit === null || exposure.currency !== quote.currency)
+  if (!exposure.allowed || exposure.limit === null || exposure.currency !== currency)
     return { over: true, allowed: false, exposure };
-  return { over: exposure.exposure + quote.total > exposure.limit, allowed: true, exposure };
+  return { over: exposure.exposure + amount > exposure.limit, allowed: true, exposure };
 }
 
 export async function exceedsCredit(tx: Tx, channelId: string, quote: Quote): Promise<boolean> {

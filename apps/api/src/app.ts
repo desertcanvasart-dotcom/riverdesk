@@ -7,12 +7,15 @@ import { authenticateClient, pingDatabase, type VsDatabase } from '@vs/engine';
 import { captureError, createLogger, type Logger } from '@vs/shared';
 import { issueToken, TOKEN_TTL_SECONDS } from './auth';
 import { v1Routes, type V1Options } from './routes/v1';
+import { TOKEN_REQUESTS_PER_MINUTE, tokenLimiter } from './token-limiter';
 
 export interface AppOptions {
   db: VsDatabase;
   logger?: Logger;
   /** API_TOKEN_SECRET, decoded. */
   tokenSecret: Uint8Array;
+  /** Tests: a lower limit on /oauth/token. */
+  tokenRequestsPerMinute?: number;
   afterCommit?: V1Options['afterCommit'];
 }
 
@@ -28,13 +31,21 @@ function isOutage(error: unknown): boolean {
   );
 }
 
+/** No connection within the pool's connect timeout (pg gives this error no code). */
+function isConnectTimeout(error: unknown): boolean {
+  return error instanceof Error && /timeout exceeded when trying to connect/i.test(error.message);
+}
+
 /** Channel API v1 server (packages/contracts/openapi.yaml). */
 export function buildApp(options: AppOptions) {
   const app = Fastify({
     loggerInstance: options.logger ?? createLogger('api'),
     genReqId: () => crypto.randomUUID(),
     bodyLimit: 256 * 1024,
+    // Behind Railway's edge: the client address is the one it adds, not one a caller sends.
+    trustProxy: (_address: string, hop: number) => hop === 0,
   });
+  const tokenRequest = tokenLimiter(options.tokenRequestsPerMinute ?? TOKEN_REQUESTS_PER_MINUTE);
 
   // One place maps errors to HTTP. Unknown errors are INTERNAL and never leak their message.
   app.setErrorHandler((error, request, reply) => {
@@ -43,7 +54,7 @@ export function buildApp(options: AppOptions) {
         void reply.header('Retry-After', '1');
       return reply.status(error.status).send({ error: error.toJSON() });
     }
-    if (isOutage(error)) {
+    if (isOutage(error) || isConnectTimeout(error)) {
       request.log.error({ err: error }, 'database unavailable');
       captureError(error, { route: request.routeOptions.url, outage: true });
       return reply
@@ -88,6 +99,12 @@ export function buildApp(options: AppOptions) {
 
   // OAuth 2.0 client credentials (RFC 6749 §4.4): Basic auth or form fields; OAuth error format.
   app.post('/oauth/token', async (request, reply) => {
+    const limited = tokenRequest(request.ip);
+    if (!limited.allowed) {
+      // The contract's 429: the standard error shape, as on every other route.
+      void reply.header('Retry-After', String(limited.retryAfter));
+      throw new DomainError('RATE_LIMITED');
+    }
     const body = (request.body ?? {}) as Record<string, string | undefined>;
     let clientId = body.client_id;
     let secret = body.client_secret;

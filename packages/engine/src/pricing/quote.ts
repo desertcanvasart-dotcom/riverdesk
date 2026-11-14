@@ -5,7 +5,7 @@ import type { VsDatabase } from '@vs/db';
 import { ageOn, type BusinessDate } from '@vs/shared';
 import { audit } from '../audit';
 import { withRequestKey } from '../booking/common';
-import { parseInput, type EngineContext, type Tx } from '../internal';
+import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
 import { dateSchema } from '../schedule/setup';
 import {
   computePrice,
@@ -86,6 +86,13 @@ export async function priceSailingInTx(tx: Tx, input: PriceSailingInput): Promis
     });
   }
   const embarkDate = sailing.embark_date as BusinessDate;
+  // Sold up to and on the day it boards; a sailing that left is closed whatever its status says.
+  if (embarkDate < (await cairoToday(tx))) {
+    throw new DomainError('SAILING_CLOSED', {
+      message: 'The sailing has departed',
+      details: { sailingId: sailing.id, reason: 'departed' },
+    });
+  }
 
   const contract = await tx
     .selectFrom('channel_contract')

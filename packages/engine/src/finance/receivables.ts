@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { DomainError } from '@vs/contracts';
 import type { VsDatabase } from '@vs/db';
 import { audit } from '../audit';
-import { cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
+import { bookingOwed, cairoToday, parseInput, type EngineContext, type Tx } from '../internal';
 import { dateSchema } from '../schedule/setup';
 import { issuerSnapshot } from './invoices';
 import type { InvoiceIssuer } from './documents';
@@ -470,7 +470,7 @@ export interface CreditExposure {
   allowed: boolean;
   limit: bigint | null;
   currency: string | null;
-  /** Confirmed bookings not on an issued invoice: total + fees − paid. */
+  /** Confirmed bookings not on an issued invoice: what the agency owes (net of commission) − paid. */
   uninvoiced: bigint;
   /** The agency's issued invoices still open. */
   openInvoices: bigint;
@@ -509,7 +509,7 @@ export async function creditExposure(tx: Tx, channelId: string): Promise<CreditE
     };
   const { rows } = await sql<{ uninvoiced: string; open: string; credit: string }>`
     select
-      (select coalesce(sum(b.total + b.fees - b.amount_paid), 0) from vs.booking b
+      (select coalesce(sum(${bookingOwed} - b.amount_paid), 0) from vs.booking b
        where b.channel_id = ${channelId} and b.status in ('confirmed', 'completed') and b.currency = ${currency}
          and not exists (select from vs.invoice_line l join vs.invoice i on i.id = l.invoice_id
                          where l.booking_id = b.id and i.type = 'invoice'

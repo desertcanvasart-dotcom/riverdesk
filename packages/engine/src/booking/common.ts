@@ -11,7 +11,14 @@ import {
   type FieldKeyring,
 } from '@vs/shared';
 import { audit } from '../audit';
-import { cairoToday, emitEvents, openException, type EngineContext, type Tx } from '../internal';
+import {
+  bookingOwed,
+  cairoToday,
+  emitEvents,
+  openException,
+  type EngineContext,
+  type Tx,
+} from '../internal';
 import { dateSchema } from '../schedule/setup';
 import type { Quote } from '../pricing/quote';
 
@@ -700,20 +707,21 @@ export async function refreshPaymentTerms(tx: Tx, bookingId: string) {
 
 /**
  * unpaid → deposit_paid → paid while the booking stands; after a cancellation (or when paid but
- * unavailable) refund_due while more was received than is kept, then refunded; paid once what was
- * received covers the penalty and fees, unpaid while it does not.
+ * unavailable, or expired with part of the deposit received) refund_due while more was received
+ * than is kept, then refunded; paid once what was received covers the penalty and fees, unpaid
+ * while it does not.
  */
 export async function refreshPaymentStatus(tx: Tx, bookingId: string) {
   await sql`
     update vs.booking b set payment_status = case
-      when b.status in ('cancelled', 'paid_unavailable') then case
+      when b.status in ('cancelled', 'paid_unavailable', 'expired') then case
         when b.amount_paid - coalesce(b.penalty_amount, 0) - b.fees > 0 then 'refund_due'
         when exists (select from vs.payment p where p.booking_id = b.id and p.kind = 'refund') then 'refunded'
         -- Paid only once what was received covers what is kept (penalty and fees): a cancelled
         -- booking still owing part of its penalty is unpaid.
         when b.amount_paid > 0 and b.amount_paid >= coalesce(b.penalty_amount, 0) + b.fees then 'paid'
         else 'unpaid' end
-      when b.amount_paid >= b.total + b.fees then 'paid'
+      when b.amount_paid >= ${bookingOwed} then 'paid'
       when b.deposit_amount > 0 and b.amount_paid >= b.deposit_amount then 'deposit_paid'
       else 'unpaid' end
     where b.id = ${bookingId}`.execute(tx);

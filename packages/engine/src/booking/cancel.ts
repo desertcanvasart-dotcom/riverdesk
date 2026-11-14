@@ -200,13 +200,17 @@ async function cancelHeld(tx: Tx, ctx: EngineContext, bookingId: string, reason:
   };
 }
 
-/** Worker job (daily): confirmed bookings whose last leg has arrived become completed. */
+/**
+ * Worker job (daily): confirmed bookings whose last leg has arrived become completed. Not on a
+ * cancelled sailing: nobody sailed, so the booking stays confirmed (and on the schedule
+ * exception's list) until staff move or cancel it, and never counts as sailed.
+ */
 export async function completeBookings(db: VsDatabase, ctx: EngineContext) {
   return db.withTenantTx(ctx.operatorId, ctx.actor, async ({ db: tx }) => {
     const { rows } = await sql<{ id: string }>`
       update vs.booking b set status = 'completed', completed_at = now()
       from vs.sailing s
-      where s.id = b.sailing_id and b.status = 'confirmed'
+      where s.id = b.sailing_id and b.status = 'confirmed' and s.status <> 'cancelled'
         and s.disembark_date < (now() at time zone 'Africa/Cairo')::date
       returning b.id`.execute(tx);
     if (rows.length > 0) {
